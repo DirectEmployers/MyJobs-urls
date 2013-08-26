@@ -17,7 +17,7 @@ class RedirectFactory(factory.Factory):
     FACTORY_FOR = models.Redirect
 
     guid = '1234567890abcdef1234567890abcdef'
-    canonical_microsite = factory.SubFactory(CanonicalMicrositeFactory)
+    buid = 0
     uid = 0
     url = 'jobs.jobs'
     new_date = datetime.now(tz=pytz.utc)

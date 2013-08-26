@@ -10,7 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 
 class Redirect(models.Model):
     guid = models.CharField(max_length=32, unique=True)
-    canonical_microsite = models.ForeignKey('CanonicalMicrosite')
+    buid = models.IntegerField(default=0)
     uid = models.IntegerField(unique=True)
     url = models.URLField()
     new_date = models.DateTimeField()
@@ -29,7 +29,7 @@ class CanonicalMicrosite(models.Model):
 
 
 class RedirectAction(models.Model):
-    canonical_microsite = models.ForeignKey('CanonicalMicrosite')
+    buid = models.IntegerField(default=0)
     view_source = models.ForeignKey('ViewSource')
     action = models.CharField(max_length=255)
 
