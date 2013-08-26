@@ -8,17 +8,30 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 
+class Redirect(models.Model):
+    guid = models.CharField(max_length=32, unique=True)
+    canonical_microsite = models.ForeignKey('CanonicalMicrosite')
+    uid = models.IntegerField(unique=True)
+    url = models.URLField()
+    new_date = models.DateTimeField()
+    expired_date = models.DateTimeField(blank=True, null=True)
+
+
+class ATSSourceCode(models.Model):
+    ats_name = models.CharField(max_length=255)
+    parameter_name = models.CharField(max_length=255)
+    parameter_value = models.CharField(max_length=255)
+
+
 class CanonicalMicrosite(models.Model):
     buid = models.IntegerField()
     canonical_microsite_url = models.URLField()
 
 
-class Redirect(models.Model):
-    guid = models.CharField(max_length=32, unique=True)
-    buid = models.ForeignKey(CanonicalMicrosite)
-    url = models.URLField()
-    new_date = models.DateTimeField()
-    expired_date = models.DateTimeField(blank=True, null=True)
+class RedirectAction(models.Model):
+    canonical_microsite = models.ForeignKey('CanonicalMicrosite')
+    view_source = models.ForeignKey('ViewSource')
+    action = models.CharField(max_length=255)
 
 
 class ViewSource(models.Model):
@@ -38,15 +51,3 @@ class ViewSource(models.Model):
             except ViewSource.DoesNotExist:
                 self.viewsource_id = 0
         super(ViewSource, self).save(*args, **kwargs)
-
-
-class RedirectAction(models.Model):
-    buid = models.ForeignKey(CanonicalMicrosite)
-    view_source = models.ForeignKey(ViewSource)
-    action = models.CharField(max_length=255)
-
-
-class ATSSourceCode(models.Model):
-    ats_name = models.CharField(max_length=255)
-    parameter_name = models.CharField(max_length=255)
-    parameter_value = models.CharField(max_length=255)
