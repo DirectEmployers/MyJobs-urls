@@ -94,10 +94,9 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
     'south',
-    'django_nose'
 )
 
-PROJECT_APPS = ('viewsource',)
+PROJECT_APPS = ('redirect',)
 
 INSTALLED_APPS += PROJECT_APPS
 

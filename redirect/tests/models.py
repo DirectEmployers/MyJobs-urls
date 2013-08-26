@@ -1,11 +1,13 @@
 from datetime import datetime, timedelta
+import unittest
+
 import pytz
 import uuid
 
 from django.test import TestCase
 
-from viewsource.models import ViewSource
-from viewsource.tests.factories import ViewSourceFactory
+from redirect.models import ViewSource
+from redirect.tests.factories import RedirectFactory, ViewSourceFactory
 
 
 class ViewSourceTests(TestCase):
@@ -29,13 +31,3 @@ class ViewSourceTests(TestCase):
         self.assertEqual(vs.viewsource_id, 7)
 
         self.assertEqual(ViewSource.objects.count(), 5)
-
-    def test_get_url(self):
-        fake_guid = str(uuid.uuid4()).replace('-', '')
-        vs = ViewSourceFactory()
-        self.assertEqual(vs.get_url(fake_guid), vs.redirect_url)
-
-        vs.date_new = datetime.now(tz=pytz.utc) - timedelta(minutes=30)
-        vs.save()
-        with self.assertRaises(NotImplementedError):
-            vs.get_url(fake_guid)
