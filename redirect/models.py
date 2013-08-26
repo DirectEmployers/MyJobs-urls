@@ -12,12 +12,14 @@ class CanonicalMicrosite(models.Model):
     buid = models.IntegerField()
     canonical_microsite_url = models.URLField()
 
+
 class Redirect(models.Model):
     guid = models.CharField(max_length=32, unique=True)
     buid = models.ForeignKey(CanonicalMicrosite)
     url = models.URLField()
     new_date = models.DateTimeField()
     expired_date = models.DateTimeField(blank=True, null=True)
+
 
 class ViewSource(models.Model):
     viewsource_id = models.IntegerField(primary_key=True, default=0)
@@ -37,10 +39,12 @@ class ViewSource(models.Model):
                 self.viewsource_id = 0
         super(ViewSource, self).save(*args, **kwargs)
 
+
 class RedirectAction(models.Model):
     buid = models.ForeignKey(CanonicalMicrosite)
     view_source = models.ForeignKey(ViewSource)
     action = models.CharField(max_length=255)
+
 
 class ATSSourceCode(models.Model):
     ats_name = models.CharField(max_length=255)

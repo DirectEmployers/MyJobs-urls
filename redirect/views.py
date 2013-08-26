@@ -9,11 +9,7 @@ from redirect import models
 
 def home(request, guid, vsid='0'):
     guid_redirect = get_object_or_404(models.Redirect, guid=guid)
-    try:
-        vs = models.ViewSource.objects.get(viewsource_id=vsid)
-        vsid = vs.viewsource_id
-    except models.ViewSource.DoesNotExist:
-        vsid = 0
-    return_val = {'guid': guid_redirect.guid, 'vsid': vsid}
+    viewsource = get_object_or_404(models.ViewSource, viewsource_id=vsid)
+    return_val = {'guid': guid_redirect.guid, 'vsid': viewsource.viewsource_id}
 
     return HttpResponse(json.dumps(return_val))

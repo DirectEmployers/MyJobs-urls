@@ -12,6 +12,7 @@ class CanonicalMicrositeFactory(factory.Factory):
     buid = 0
     canonical_microsite_url = 'jobs.jobs'
 
+
 class RedirectFactory(factory.Factory):
     FACTORY_FOR = models.Redirect
 
@@ -19,6 +20,7 @@ class RedirectFactory(factory.Factory):
     buid = factory.SubFactory(CanonicalMicrositeFactory)
     url = 'jobs.jobs'
     new_date = datetime.now(tz=pytz.utc)
+
 
 class ViewSourceFactory(factory.Factory):
     FACTORY_FOR = models.ViewSource
