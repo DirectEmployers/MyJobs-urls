@@ -15,14 +15,22 @@ class Redirect(models.Model):
     """
     guid = models.CharField(max_length=32, unique=True,
                             help_text=_('32-character hex string'))
-    buid = models.IntegerField(default=0)
-    uid = models.IntegerField(unique=True)
+    buid = models.IntegerField(default=0,
+                               help_text=_('Used in conjunction with'
+                                           'viewsource_id to index into the '
+                                           'RedirectAction table'))
+    uid = models.IntegerField(unique=True,
+                              help_text=_("Unique id on partner's ATS or "
+                                          "other job repository"))
     url = models.URLField(help_text=_('URL being manipulated'))
     new_date = models.DateTimeField(help_text=_('Date that this job was '
                                                 'added'))
     expired_date = models.DateTimeField(blank=True, null=True,
                                         help_text=_('Date that this job was'
                                                     'marked as expired'))
+    job_location = models.CharField(max_length=255, blank=True)
+    job_title = models.CharField(max_length=255, blank=True)
+    company_name = models.CharField(max_length=255, blank=True)
 
 
 class ATSSourceCode(models.Model):

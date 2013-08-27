@@ -21,6 +21,11 @@ class RedirectFactory(factory.Factory):
     uid = 0
     url = 'jobs.jobs'
     new_date = datetime.now(tz=pytz.utc)
+    # Unused for current testing but may be useful later
+    expired_date = None
+    job_location = ''
+    job_title = ''
+    company_name = ''
 
 
 class ViewSourceFactory(factory.Factory):
