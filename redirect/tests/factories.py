@@ -31,6 +31,6 @@ class RedirectFactory(factory.Factory):
 class ViewSourceFactory(factory.Factory):
     FACTORY_FOR = models.ViewSource
 
-    viewsource_id = 0
+    view_source_id = 0
     name = 'View Source'
     microsite = True

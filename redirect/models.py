@@ -13,7 +13,7 @@ class Redirect(models.Model):
     Contains most of the information required to determine how a url
     is to be transformed
     """
-    guid = models.CharField(max_length=32, unique=True,
+    guid = models.CharField(max_length=32, primary_key=True,
                             help_text=_('32-character hex string'))
     buid = models.IntegerField(default=0,
                                help_text=_('Used in conjunction with'
@@ -32,23 +32,37 @@ class Redirect(models.Model):
     job_title = models.CharField(max_length=255, blank=True)
     company_name = models.CharField(max_length=255, blank=True)
 
+    def __unicode__(self):
+        return u'%s for guid %s' % (self.url, self.guid)
+
 
 class ATSSourceCode(models.Model):
     """
     Represents one entry in a query string of the form
     ?parameter_name=parameter_value
     """
+    buid = models.IntegerField(default=0)
+    view_source = models.ForeignKey('ViewSource', blank=False, null=True)
     ats_name = models.CharField(max_length=255)
     parameter_name = models.CharField(max_length=255)
     parameter_value = models.CharField(max_length=255)
 
     class Meta:
-        unique_together = ('ats_name', 'parameter_name', 'parameter_value')
+        unique_together = (('ats_name', 'parameter_name', 'parameter_value'),
+                           ('buid', 'view_source'))
+
+    def __unicode__(self):
+        return u'buid %d, view source %d' % \
+            (self.buid, self.view_source_id)
 
 
 class CanonicalMicrosite(models.Model):
-    buid = models.IntegerField()
+    buid = models.IntegerField(primary_key=True, default=0)
     canonical_microsite_url = models.URLField()
+
+    def __unicode__(self):
+        return u'%s for buid %d' % \
+            (self.canonical_microsite_url, self.buid)
 
 
 class RedirectAction(models.Model):
@@ -61,26 +75,34 @@ class RedirectAction(models.Model):
     action = models.CharField(max_length=255)
 
     class Meta:
-        unique_together = ('buid', 'view_source')
+        unique_together = ('buid', 'view_source', 'action')
         index_together = [['buid', 'view_source']]
+
+    def __unicode__(self):
+        return '%s for buid %d, view source %d' % \
+            (self.action, self.buid, self.view_source_id)
 
 
 class ViewSource(models.Model):
-    viewsource_id = models.IntegerField(primary_key=True, default=0)
+    view_source_id = models.IntegerField(primary_key=True, blank=True,
+                                         default=None)
     name = models.CharField(max_length=255)
-    microsite = models.BooleanField()
+    microsite = models.BooleanField(help_text=_('View source is a microsite'))
 
     class Meta:
-        get_latest_by = 'viewsource_id'
+        get_latest_by = 'view_source_id'
+
+    def __unicode__(self):
+        return u'%s, view source %d' % (self.name, self.view_source_id)
 
     def save(self, *args, **kwargs):
-        if not self.viewsource_id:
+        if not self.view_source_id:
             # if viewsource_id was not provided, set it to the next
             # available value
             try:
-                latest = ViewSource.objects.values_list('viewsource_id',
+                latest = ViewSource.objects.values_list('view_source_id',
                                                         flat=True).latest()
-                self.viewsource_id = latest + 1
+                self.view_source_id = latest + 1
             except ViewSource.DoesNotExist:
-                self.viewsource_id = 0
+                self.view_source_id = 0
         super(ViewSource, self).save(*args, **kwargs)

@@ -12,8 +12,8 @@ class ViewSourceViewTests(TestCase):
     def setUp(self):
         self.client = Client()
         self.redirect = RedirectFactory()
-        self.vs0 = ViewSourceFactory(viewsource_id=0)
-        self.vs100 = ViewSourceFactory(viewsource_id=100)
+        self.vs0 = ViewSourceFactory(view_source_id=0)
+        self.vs100 = ViewSourceFactory(view_source_id=100)
 
     def test_get_with_no_vsid(self):
         """
@@ -24,7 +24,7 @@ class ViewSourceViewTests(TestCase):
                                            args=[self.redirect.guid]))
         content = json.loads(response.content)
         self.assertEqual(content['guid'], self.redirect.guid)
-        self.assertEqual(content['vsid'], self.vs0.viewsource_id)
+        self.assertEqual(content['vsid'], self.vs0.view_source_id)
 
     def test_get_with_vsid(self):
         """
@@ -33,10 +33,10 @@ class ViewSourceViewTests(TestCase):
         """
         response = self.client.get(reverse('home',
                                            args=[self.redirect.guid,
-                                                 self.vs100.viewsource_id]))
+                                                 self.vs100.view_source_id]))
         content = json.loads(response.content)
         self.assertEqual(content['guid'], self.redirect.guid)
-        self.assertEqual(content['vsid'], self.vs100.viewsource_id)
+        self.assertEqual(content['vsid'], self.vs100.view_source_id)
 
         response = self.client.get(reverse('home',
                                            args=[self.redirect.guid,
