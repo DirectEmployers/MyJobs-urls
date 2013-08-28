@@ -42,6 +42,9 @@ class ATSSourceCode(models.Model):
     parameter_name = models.CharField(max_length=255)
     parameter_value = models.CharField(max_length=255)
 
+    class Meta:
+        unique_together = ('ats_name', 'parameter_name', 'parameter_value')
+
 
 class CanonicalMicrosite(models.Model):
     buid = models.IntegerField()
@@ -56,6 +59,10 @@ class RedirectAction(models.Model):
     buid = models.IntegerField(default=0)
     view_source = models.ForeignKey('ViewSource')
     action = models.CharField(max_length=255)
+
+    class Meta:
+        unique_together = ('buid', 'view_source')
+        index_together = [['buid', 'view_source']]
 
 
 class ViewSource(models.Model):
