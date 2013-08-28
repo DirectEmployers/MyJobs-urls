@@ -1,0 +1,40 @@
+# Compiled
+*.pyc
+*.db
+*.flv
+*.wmv
+
+# Editor aritfacts
+*~
+*-
+*#
+.project
+.pydevproject
+.tmp*
+content_226
+.coverage
+*.swp
+dev_setting*
+
+# Secret Stuff
+secrets*
+
+# Log Files
+*.log
+logfile
+
+# OS generated
+.DS_Store*
+.DS_Store
+ehthumbs.db
+Icon?
+Thumbs.db
+*.directory
+*.settings
+.directory
+
+# Secret stuff. Shhhhh.
+secrets.py
+newrelic.ini
+
+settings.py
