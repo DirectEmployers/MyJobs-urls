@@ -34,3 +34,22 @@ class ViewSourceFactory(factory.Factory):
     view_source_id = 0
     name = 'View Source'
     microsite = True
+    
+
+class ATSSourceCodeFactory(factory.Factory):
+    FACTORY_FOR = models.ATSSourceCode
+    
+    buid = 0
+    view_source_id = 0
+    ats_name = 'Test'
+    parameter_name = 'sourcecodetag'
+    parameter_value = '&src=JB-11380'   
+    
+
+class RedirectActionFactory(factory.Factory):
+    FACTORY_FOR = models.RedirectAction
+    
+    buid = 0
+    view_source_id = 0    
+    action = 'sourcecodetag'
+    

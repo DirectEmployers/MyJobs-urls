@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.test.client import Client
 from django.core.urlresolvers import reverse, NoReverseMatch
 
-from redirect.tests.factories import RedirectFactory, ViewSourceFactory
+from redirect.tests.factories import RedirectFactory, ViewSourceFactory, ATSSourceCodeFactory, RedirectActionFactory
 
 
 class ViewSourceViewTests(TestCase):
@@ -14,6 +14,8 @@ class ViewSourceViewTests(TestCase):
         self.redirect = RedirectFactory()
         self.vs0 = ViewSourceFactory(view_source_id=0)
         self.vs100 = ViewSourceFactory(view_source_id=100)
+        self.atssource = ATSSourceCodeFactory()
+        self.redirectaction = RedirectActionFactory()
 
     def test_get_with_no_vsid(self):
         """
