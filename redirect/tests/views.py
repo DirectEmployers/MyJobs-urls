@@ -1,11 +1,12 @@
 import json
 import uuid
+import unittest
 
 from django.test import TestCase
 from django.test.client import Client
 from django.core.urlresolvers import reverse, NoReverseMatch
 
-from redirect.tests.factories import RedirectFactory, ViewSourceFactory, ATSSourceCodeFactory, RedirectActionFactory
+from redirect.tests.factories import *
 
 
 class ViewSourceViewTests(TestCase):
@@ -16,6 +17,7 @@ class ViewSourceViewTests(TestCase):
         self.vs100 = ViewSourceFactory(view_source_id=100)
         self.atssource = ATSSourceCodeFactory()
         self.redirectaction = RedirectActionFactory()
+        self.microsite = CanonicalMicrositeFactory()
 
     def test_get_with_no_vsid(self):
         """
@@ -27,6 +29,8 @@ class ViewSourceViewTests(TestCase):
         content = json.loads(response.content)
         self.assertEqual(content['guid'], self.redirect.guid)
         self.assertEqual(content['vsid'], self.vs0.view_source_id)
+        
+        print response
 
     def test_get_with_vsid(self):
         """
@@ -39,11 +43,15 @@ class ViewSourceViewTests(TestCase):
         content = json.loads(response.content)
         self.assertEqual(content['guid'], self.redirect.guid)
         self.assertEqual(content['vsid'], self.vs100.view_source_id)
-
+        
+        print response
+        
         response = self.client.get(reverse('home',
                                            args=[self.redirect.guid,
                                                  50]))
         self.assertEqual(response.status_code, 404)
+        
+        print response
 
     def test_get_with_malformed_guid(self):
         """
@@ -54,15 +62,29 @@ class ViewSourceViewTests(TestCase):
                                               'hex characters']:
             with self.assertRaises(NoReverseMatch):
                 self.client.get(reverse('home', args=[guid]))
-                
-    def test_sourcecodetag(self):           
-        site = ATSSourceCodeFactory.build()
-        site.save()        
-        resp = self.client.get('/indeed/1000/job?src=indeed_test', 
-            follow=True, HTTP_HOST='buckconsultants.jobs')
-        target_path = u'indianapolis-in/1000/job/?utm_source=indeed&utm_medium=feed&src=indeed_test'
-        quoted_path = urlquote(target_path, safe='&:=?/')
-        target = u'http://buckconsultants.jobs/{0}'.format(quoted_path)
-        self.assertRedirects(resp,target,status_code=301)
+    
+    
+    def test_sourcecodetag_redirect(self):
+        """
+        Check view that manipulates a url with the sourcecodetag action creates
+        the correct redirect url
+        """                      
+        response = self.client.get('manipulated_url_view', {'buid': self.atssource.buid, 
+                                                            'view_source_id': self.atssource.view_source_id})        
+        content = response.content
+        self.assertEqual(content['guid'], self.redirect.guid)
+        #self.assertRedirects(resp,target,status_code=301)
+        
+    
+    def test_microsite_redirect(self):
+        """
+        Check view that manipulates a url with the microsite action creates
+        the correct redirect url
+        """                      
+        response = self.client.get('manipulated_url_view', {'buid': self.microsite.buid, 
+                                                            'canonical_microsite_url': self.microsite.canonical_microsite_url})
+        content = response.content
+        #self.assertRedirects(resp,target,status_code=301)
         
         
+
