@@ -54,3 +54,15 @@ class ViewSourceViewTests(TestCase):
                                               'hex characters']:
             with self.assertRaises(NoReverseMatch):
                 self.client.get(reverse('home', args=[guid]))
+                
+    def test_sourcecodetag(self):           
+        site = ATSSourceCodeFactory.build()
+        site.save()        
+        resp = self.client.get('/indeed/1000/job?src=indeed_test', 
+            follow=True, HTTP_HOST='buckconsultants.jobs')
+        target_path = u'indianapolis-in/1000/job/?utm_source=indeed&utm_medium=feed&src=indeed_test'
+        quoted_path = urlquote(target_path, safe='&:=?/')
+        target = u'http://buckconsultants.jobs/{0}'.format(quoted_path)
+        self.assertRedirects(resp,target,status_code=301)
+        
+        

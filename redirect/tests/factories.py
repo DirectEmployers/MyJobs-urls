@@ -39,11 +39,11 @@ class ViewSourceFactory(factory.Factory):
 class ATSSourceCodeFactory(factory.Factory):
     FACTORY_FOR = models.ATSSourceCode
     
-    buid = 0
-    view_source_id = 0
-    ats_name = 'Test'
+    buid = 1000
+    view_source_id = 1554
+    ats_name = 'Indeed Test'
     parameter_name = 'sourcecodetag'
-    parameter_value = '&src=JB-11380'   
+    parameter_value = '&src=indeed_test'   
     
 
 class RedirectActionFactory(factory.Factory):
