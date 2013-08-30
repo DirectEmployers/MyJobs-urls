@@ -10,7 +10,7 @@ class CanonicalMicrositeFactory(factory.Factory):
     FACTORY_FOR = models.CanonicalMicrosite
 
     buid = 0
-    canonical_microsite_url = 'jobs.jobs'
+    canonical_microsite_url = 'jobs.jobs/%s/job'
 
 
 class RedirectFactory(factory.Factory):
@@ -19,7 +19,7 @@ class RedirectFactory(factory.Factory):
     guid = '1234567890abcdef1234567890abcdef'
     buid = 0
     uid = 0
-    url = 'jobs.jobs'
+    url = 'directemployers.org'
     new_date = datetime.now(tz=pytz.utc)
     # Unused for current testing but may be useful later
     expired_date = None
@@ -42,8 +42,8 @@ class ATSSourceCodeFactory(factory.Factory):
     buid = 0
     view_source_id = 0
     ats_name = 'Indeed Test'
-    parameter_name = 'sourcecodetag'
-    parameter_value = '&src=indeed_test'   
+    parameter_name = 'src'
+    parameter_value = 'indeed_test'   
     
 
 class RedirectActionFactory(factory.Factory):
@@ -51,5 +51,5 @@ class RedirectActionFactory(factory.Factory):
     
     buid = 0
     view_source_id = 0    
-    action = 'sourcecodetag'
+    action = models.RedirectAction.SOURCECODETAG_ACTION
     

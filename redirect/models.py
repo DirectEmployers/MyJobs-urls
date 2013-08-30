@@ -70,9 +70,20 @@ class RedirectAction(models.Model):
     Determines what transformation(s) should take place based on the provided
     parameters
     """
+    (SOURCECODETAG_ACTION, MICROSITE_ACTION, MICROSITETAG_ACTION,
+        PASSTHROUGH_ACTION) = range(4)
+
+    ACTION_CHOICES = (
+        (SOURCECODETAG_ACTION, 'sourcecodetag'),
+        (MICROSITE_ACTION, 'microsite'),
+        (MICROSITETAG_ACTION, 'micrositetag'),
+        (PASSTHROUGH_ACTION, 'passthrough'),
+    )
+
     buid = models.IntegerField(default=0)
     view_source = models.ForeignKey('ViewSource')
-    action = models.CharField(max_length=255)
+    action = models.IntegerField(choices=ACTION_CHOICES,
+                                 default=PASSTHROUGH_ACTION)
 
     class Meta:
         unique_together = ('buid', 'view_source', 'action')
@@ -97,7 +108,7 @@ class ViewSource(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.view_source_id:
-            # if viewsource_id was not provided, set it to the next
+            # if view_source_id was not provided, set it to the next
             # available value
             try:
                 latest = ViewSource.objects.values_list('view_source_id',
