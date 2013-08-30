@@ -51,6 +51,8 @@ class ViewSourceViewTests(TestCase):
                                                  50]))
         self.assertEqual(response.status_code, 404)
         
+        test_url = self.redirect.url + '/' + self.atssource.parameter_value
+        print test_url
         print response
 
     def test_get_with_malformed_guid(self):
@@ -72,8 +74,10 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get('manipulated_url_view', {'buid': self.atssource.buid, 
                                                             'view_source_id': self.atssource.view_source_id})        
         content = response.content
-        self.assertEqual(content['guid'], self.redirect.guid)
-        #self.assertRedirects(resp,target,status_code=301)
+        test_url = self.redirect.url + '/' + self.atssource.parameter_value
+        self.assertEqual(content['url'], test_url)
+        # Redirect used in seo
+        # self.assertRedirects(resp,target,status_code=301)
         
     
     def test_microsite_redirect(self):
@@ -84,7 +88,8 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get('manipulated_url_view', {'buid': self.microsite.buid, 
                                                             'canonical_microsite_url': self.microsite.canonical_microsite_url})
         content = response.content
-        #self.assertRedirects(resp,target,status_code=301)
+        # Redirect used in seo
+        # self.assertRedirects(resp,target,status_code=301)
         
         
 
