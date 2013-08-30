@@ -88,6 +88,7 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get('manipulated_url_view', {'buid': self.microsite.buid, 
                                                             'canonical_microsite_url': self.microsite.canonical_microsite_url})
         content = response.content
+        self.assertEqual(content['url'], self.microsite.canonical_microsite_url)
         # Redirect used in seo
         # self.assertRedirects(resp,target,status_code=301)
         
