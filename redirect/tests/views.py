@@ -63,11 +63,12 @@ class ViewSourceViewTests(TestCase):
     def test_sourcecodetag_redirect(self):
         """
         Check view that manipulates a url with the sourcecodetag action creates
-        the correct redirect url
+        the correct redirect url which will have a sourcecode tag on the end
+        examples: &Codes=DE-DEA, &src=JB-11380, &src=indeed_test
         """                      
         response = self.client.get('manipulated_url_view', {'buid': self.atssource.buid, 
                                                             'view_source_id': self.atssource.view_source_id,
-                                                            'redirect_url': self.redirect.url})        
+                                                            'url': self.redirect.url})        
         content = response.content
         test_url = self.redirect.url + '/' + self.atssource.parameter_value
         self.assertEqual(content['url'], test_url)
@@ -75,17 +76,41 @@ class ViewSourceViewTests(TestCase):
         # self.assertRedirects(resp,target,status_code=301)
         
     
-    def test_microsite_redirect(self):
+    def test_micrositetag_redirect(self):
         """
-        Check view that manipulates a url with the microsite action creates
-        the correct redirect url
+        Check view that manipulates a url with the micrositetag action creates
+        the correct redirect url which should be to the microsite with the
+        unique ID        
         """                      
         response = self.client.get('manipulated_url_view', {'buid': self.microsite.buid, 
-                                                            'canonical_microsite_url': self.microsite.canonical_microsite_url})
+                                                            'url': self.microsite.canonical_microsite_url})
         content = response.content
         self.assertEqual(content['url'], self.microsite.canonical_microsite_url)
         # Redirect used in seo
         # self.assertRedirects(resp,target,status_code=301)
         
+    
+    def test_microsite_redirect(self):
+        """
+        Check view that manipulates a url with the microsite action creates
+        the correct redirect url similar to micrositetag but adds '?vs=' on 
+        the end
+        example: http://cadence.jobs/noida-ind/smcs/37945336/job/?vs=274
+        """                      
+        response = self.client.get('manipulated_url_view', {'buid': self.microsite.buid,
+                                                            'view_source_id': self.vs100.view_source_id,
+                                                            'url': self.microsite.canonical_microsite_url})
+        content = response.content
+        test_url = self.microsite.canonical_microsite_url + '/?vs=' + self.vs100.view_source_id
+        self.assertEqual(content['url'], test_url)
+        # Redirect used in seo
+        # self.assertRedirects(resp,target,status_code=301)
         
+   
+    def test_amptoamp_redirect(self):
+        pass 
+    
+    
+    def test_cframe_redirect(self):
+        pass 
 
