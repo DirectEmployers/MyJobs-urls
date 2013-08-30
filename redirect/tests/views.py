@@ -30,8 +30,7 @@ class ViewSourceViewTests(TestCase):
         self.assertEqual(content['guid'], self.redirect.guid)
         self.assertEqual(content['vsid'], self.vs0.view_source_id)
         
-        print response
-
+        
     def test_get_with_vsid(self):
         """
         Navigating to a url with both a guid and view source id will use the
@@ -42,18 +41,13 @@ class ViewSourceViewTests(TestCase):
                                                  self.vs100.view_source_id]))
         content = json.loads(response.content)
         self.assertEqual(content['guid'], self.redirect.guid)
-        self.assertEqual(content['vsid'], self.vs100.view_source_id)
-        
-        print response
-        
+        self.assertEqual(content['vsid'], self.vs100.view_source_id)        
+                
         response = self.client.get(reverse('home',
                                            args=[self.redirect.guid,
                                                  50]))
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 404)        
         
-        test_url = self.redirect.url + '/' + self.atssource.parameter_value
-        print test_url
-        print response
 
     def test_get_with_malformed_guid(self):
         """
@@ -72,7 +66,8 @@ class ViewSourceViewTests(TestCase):
         the correct redirect url
         """                      
         response = self.client.get('manipulated_url_view', {'buid': self.atssource.buid, 
-                                                            'view_source_id': self.atssource.view_source_id})        
+                                                            'view_source_id': self.atssource.view_source_id,
+                                                            'redirect_url': self.redirect.url})        
         content = response.content
         test_url = self.redirect.url + '/' + self.atssource.parameter_value
         self.assertEqual(content['url'], test_url)
