@@ -108,9 +108,15 @@ class ViewSourceViewTests(TestCase):
         
    
     def test_amptoamp_redirect(self):
+        """
+        Information about test
+        """
         pass 
     
     
     def test_cframe_redirect(self):
+        """
+        Information about test
+        """
         pass 
 
