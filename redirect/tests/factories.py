@@ -40,7 +40,7 @@ class ATSSourceCodeFactory(factory.Factory):
     FACTORY_FOR = models.ATSSourceCode
     
     buid = 1000
-    view_source_id = 1554
+    view_source_id = 0
     ats_name = 'Indeed Test'
     parameter_name = 'sourcecodetag'
     parameter_value = '&src=indeed_test'   
