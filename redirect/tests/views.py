@@ -66,9 +66,10 @@ class ViewSourceViewTests(TestCase):
         the correct redirect url which will have a sourcecode tag on the end
         examples: &Codes=DE-DEA, &src=JB-11380, &src=indeed_test
         """                      
-        response = self.client.get('manipulated_url_view', {'buid': self.atssource.buid, 
-                                                            'view_source_id': self.atssource.view_source_id,
-                                                            'url': self.redirect.url})        
+        response = self.client.get('manipulated_url_view', 
+                                  {'buid': self.atssource.buid, 
+                                   'view_source_id': self.atssource.view_source_id,
+                                   'url': self.redirect.url})        
         content = response.content
         test_url = self.redirect.url + '/' + self.atssource.parameter_value
         self.assertEqual(content['url'], test_url)
@@ -82,8 +83,9 @@ class ViewSourceViewTests(TestCase):
         the correct redirect url which should be to the microsite with the
         unique ID        
         """                      
-        response = self.client.get('manipulated_url_view', {'buid': self.microsite.buid, 
-                                                            'url': self.microsite.canonical_microsite_url})
+        response = self.client.get('manipulated_url_view', 
+                                  {'buid': self.microsite.buid, 
+                                   'url': self.microsite.canonical_microsite_url})
         content = response.content
         self.assertEqual(content['url'], self.microsite.canonical_microsite_url)
         # Redirect used in seo
@@ -97,9 +99,10 @@ class ViewSourceViewTests(TestCase):
         the end
         example: http://cadence.jobs/noida-ind/smcs/37945336/job/?vs=274
         """                      
-        response = self.client.get('manipulated_url_view', {'buid': self.microsite.buid,
-                                                            'view_source_id': self.vs100.view_source_id,
-                                                            'url': self.microsite.canonical_microsite_url})
+        response = self.client.get('manipulated_url_view', 
+                                  {'buid': self.microsite.buid,
+                                   'view_source_id': self.vs100.view_source_id,
+                                   'url': self.microsite.canonical_microsite_url})
         content = response.content
         test_url = self.microsite.canonical_microsite_url + '/?vs=' + self.vs100.view_source_id
         self.assertEqual(content['url'], test_url)
