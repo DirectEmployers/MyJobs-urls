@@ -139,5 +139,26 @@ class ViewSourceViewTests(TestCase):
         """
         Information about test
         """
+        pass
+    
+    
+    def test_sourcecodeinsertion_redirect(self):
+        """
+        Information about test
+        """
+        pass
+    
+    
+    def test_sourceurlwrapunencodedappend_redirect(self):
+        """
+        Information about test
+        """
+        pass
+    
+    
+    def test_sourceurlwrapunencoded_redirect(self):
+        """
+        Information about test
+        """
         pass 
 
