@@ -39,7 +39,7 @@ class ViewSourceFactory(factory.Factory):
 class ATSSourceCodeFactory(factory.Factory):
     FACTORY_FOR = models.ATSSourceCode
     
-    buid = 1000
+    buid = 0
     view_source_id = 0
     ats_name = 'Indeed Test'
     parameter_name = 'sourcecodetag'
