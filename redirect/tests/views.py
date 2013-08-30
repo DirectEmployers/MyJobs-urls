@@ -118,5 +118,26 @@ class ViewSourceViewTests(TestCase):
         """
         Information about test
         """
+        pass
+    
+
+    def test_sourceurlwrapappend_redirect(self):
+        """
+        Information about test
+        """
+        pass
+    
+
+    def test_anchorredirectissue_redirect(self):
+        """
+        Information about test
+        """
+        pass
+    
+    
+    def test_replacethenaddpre_redirect(self):
+        """
+        Information about test
+        """
         pass 
 
