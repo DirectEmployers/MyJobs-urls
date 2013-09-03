@@ -21,6 +21,32 @@ class ViewSourceViewTests(TestCase):
             view_source_id=self.view_source.pk,
             action=RedirectAction.SOURCECODETAG_ACTION)
 
+    def test_get_with_no_vsid(self):
+        """
+        If no view source id is provided, default to 0
+        """
+        ats_source = ATSSourceCodeFactory(parameter_name='src',
+                                          parameter_value='val')
+        response = self.client.get(reverse('home', args=[self.redirect.guid]))
+        content = json.loads(response.content)
+        self.assertEqual(content['type'],
+                         self.redirect_action.get_method_name())
+        # In this case, view source id 0 is a sourcecodetag redirect
+        test_url = self.redirect.url + u'?%s=%s' % \
+            (ats_source.parameter_name, ats_source.parameter_value)
+        self.assertEqual(content['url'], test_url)
+
+    def test_get_with_nonexistent_vsid(self):
+        """
+        If a view source does not exist for the given view source id,
+        redirect to the job url with no manipulation
+        """
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect.guid, 5]))
+        content = json.loads(response.content)
+        self.assertEqual(content['type'], 'no_vsid')
+        self.assertEqual(content['url'], self.redirect.url)
+
     def test_get_with_malformed_guid(self):
         """
         Navigating to a url with a malformed guid or a guid that contains
@@ -44,6 +70,8 @@ class ViewSourceViewTests(TestCase):
                                            args=[self.redirect.guid,
                                                  self.view_source.pk]))
         content = json.loads(response.content)
+        self.assertEqual(content['type'],
+                         self.redirect_action.get_method_name())
         test_url = self.redirect.url + u'?%s=%s' % \
             (ats_source.parameter_name, ats_source.parameter_value)
         self.assertEqual(content['url'], test_url)
@@ -63,6 +91,8 @@ class ViewSourceViewTests(TestCase):
                                            args=[self.redirect.guid, 
                                                  self.view_source.pk]))
         content = json.loads(response.content)
+        self.assertEqual(content['type'],
+                         self.redirect_action.get_method_name())
         test_url = self.microsite.canonical_microsite_url % self.redirect.uid
         self.assertEqual(content['url'], test_url)
         # Redirect used in seo
@@ -83,6 +113,8 @@ class ViewSourceViewTests(TestCase):
                                            args=[self.redirect.guid,
                                                  self.view_source.pk]))
         content = json.loads(response.content)
+        self.assertEqual(content['type'],
+                         self.redirect_action.get_method_name())
         test_url = (self.microsite.canonical_microsite_url + '?vs=%s') % \
             (self.redirect.uid, str(self.view_source.pk))
         self.assertEqual(content['url'], test_url)

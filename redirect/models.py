@@ -93,6 +93,9 @@ class RedirectAction(models.Model):
         return '%s for buid %d, view source %d' % \
             (self.action, self.buid, self.view_source_id)
 
+    def get_method_name(self):
+        return self.ACTION_CHOICES[self.action][1]
+
 
 class ViewSource(models.Model):
     view_source_id = models.IntegerField(primary_key=True, blank=True,
