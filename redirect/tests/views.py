@@ -1,11 +1,12 @@
 import json
 import uuid
+import unittest
 
 from django.test import TestCase
 from django.test.client import Client
 from django.core.urlresolvers import reverse, NoReverseMatch
 
-from redirect.tests.factories import RedirectFactory, ViewSourceFactory
+from redirect.tests.factories import *
 
 
 class ViewSourceViewTests(TestCase):
@@ -14,6 +15,9 @@ class ViewSourceViewTests(TestCase):
         self.redirect = RedirectFactory()
         self.vs0 = ViewSourceFactory(view_source_id=0)
         self.vs100 = ViewSourceFactory(view_source_id=100)
+        self.atssource = ATSSourceCodeFactory()
+        self.redirectaction = RedirectActionFactory()
+        self.microsite = CanonicalMicrositeFactory()
 
     def test_get_with_no_vsid(self):
         """
@@ -25,7 +29,8 @@ class ViewSourceViewTests(TestCase):
         content = json.loads(response.content)
         self.assertEqual(content['guid'], self.redirect.guid)
         self.assertEqual(content['vsid'], self.vs0.view_source_id)
-
+        
+        
     def test_get_with_vsid(self):
         """
         Navigating to a url with both a guid and view source id will use the
@@ -36,12 +41,13 @@ class ViewSourceViewTests(TestCase):
                                                  self.vs100.view_source_id]))
         content = json.loads(response.content)
         self.assertEqual(content['guid'], self.redirect.guid)
-        self.assertEqual(content['vsid'], self.vs100.view_source_id)
-
+        self.assertEqual(content['vsid'], self.vs100.view_source_id)        
+                
         response = self.client.get(reverse('home',
                                            args=[self.redirect.guid,
                                                  50]))
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 404)        
+        
 
     def test_get_with_malformed_guid(self):
         """
@@ -52,3 +58,110 @@ class ViewSourceViewTests(TestCase):
                                               'hex characters']:
             with self.assertRaises(NoReverseMatch):
                 self.client.get(reverse('home', args=[guid]))
+    
+    
+    def test_sourcecodetag_redirect(self):
+        """
+        Check view that manipulates a url with the sourcecodetag action creates
+        the correct redirect url which will have a sourcecode tag on the end
+        examples: &Codes=DE-DEA, &src=JB-11380, &src=indeed_test
+        """                      
+        response = self.client.get('manipulated_url_view', 
+                                  {'buid': self.atssource.buid, 
+                                   'view_source_id': self.atssource.view_source_id,
+                                   'url': self.redirect.url})        
+        content = response.content
+        test_url = self.redirect.url + '/' + self.atssource.parameter_value
+        self.assertEqual(content['url'], test_url)
+        # Redirect used in seo
+        # self.assertRedirects(resp,target,status_code=301)
+        
+    
+    def test_micrositetag_redirect(self):
+        """
+        Check view that manipulates a url with the micrositetag action creates
+        the correct redirect url which should be to the microsite with the
+        unique ID        
+        """                      
+        response = self.client.get('manipulated_url_view', 
+                                  {'buid': self.microsite.buid, 
+                                   'url': self.microsite.canonical_microsite_url})
+        content = response.content
+        self.assertEqual(content['url'], self.microsite.canonical_microsite_url)
+        # Redirect used in seo
+        # self.assertRedirects(resp,target,status_code=301)
+        
+    
+    def test_microsite_redirect(self):
+        """
+        Check view that manipulates a url with the microsite action creates
+        the correct redirect url similar to micrositetag but adds '?vs=' on 
+        the end
+        example: http://cadence.jobs/noida-ind/smcs/37945336/job/?vs=274
+        """                      
+        response = self.client.get('manipulated_url_view', 
+                                  {'buid': self.microsite.buid,
+                                   'view_source_id': self.vs100.view_source_id,
+                                   'url': self.microsite.canonical_microsite_url})
+        content = response.content
+        test_url = self.microsite.canonical_microsite_url + '/?vs=' + self.vs100.view_source_id
+        self.assertEqual(content['url'], test_url)
+        # Redirect used in seo
+        # self.assertRedirects(resp,target,status_code=301)
+        
+   
+    def test_amptoamp_redirect(self):
+        """
+        Information about test
+        """
+        pass 
+    
+    
+    def test_cframe_redirect(self):
+        """
+        Information about test
+        """
+        pass
+    
+
+    def test_sourceurlwrapappend_redirect(self):
+        """
+        Information about test
+        """
+        pass
+    
+
+    def test_anchorredirectissue_redirect(self):
+        """
+        Information about test
+        """
+        pass
+    
+    
+    def test_replacethenaddpre_redirect(self):
+        """
+        Information about test
+        """
+        pass
+    
+    
+    def test_sourcecodeinsertion_redirect(self):
+        """
+        Information about test
+        """
+        pass
+    
+    
+    def test_sourceurlwrapunencodedappend_redirect(self):
+        """
+        Information about test
+        """
+        pass
+    
+    
+    def test_sourceurlwrapunencoded_redirect(self):
+        """
+        Information about test
+        """
+        pass 
+
