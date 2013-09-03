@@ -56,7 +56,7 @@ class ViewSourceViewTests(TestCase):
                                               'hex characters']:
             with self.assertRaises(NoReverseMatch):
                 self.client.get(reverse('home', args=[guid]))
-    
+
     def test_sourcecodetag_redirect(self):
         """
         Check view that manipulates a url with the sourcecodetag action creates
@@ -77,18 +77,18 @@ class ViewSourceViewTests(TestCase):
         self.assertEqual(content['url'], test_url)
         # Redirect used in seo
         # self.assertRedirects(resp,target,status_code=301)
-        
+
     def test_micrositetag_redirect(self):
         """
         Check view that manipulates a url with the micrositetag action creates
         the correct redirect url which should be to the microsite with the
-        unique ID        
+        unique ID
         """
         self.redirect_action.action = RedirectAction.MICROSITETAG_ACTION
         self.redirect_action.save()
 
-        response = self.client.get(reverse('home', 
-                                           args=[self.redirect.guid, 
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect.guid,
                                                  self.view_source.pk]))
         content = json.loads(response.content)
         self.assertEqual(content['type'],
@@ -97,11 +97,11 @@ class ViewSourceViewTests(TestCase):
         self.assertEqual(content['url'], test_url)
         # Redirect used in seo
         # self.assertRedirects(resp,target,status_code=301)
-    
+
     def test_microsite_redirect(self):
         """
         Check view that manipulates a url with the microsite action creates
-        the correct redirect url similar to micrositetag but adds '?vs=' on 
+        the correct redirect url similar to micrositetag but adds '?vs=' on
         the end
         example: http://cadence.jobs/noida-ind/smcs/37945336/job/?vs=274
         """
@@ -109,7 +109,7 @@ class ViewSourceViewTests(TestCase):
         self.redirect_action.save()
         ATSSourceCodeFactory()
 
-        response = self.client.get(reverse('home', 
+        response = self.client.get(reverse('home',
                                            args=[self.redirect.guid,
                                                  self.view_source.pk]))
         content = json.loads(response.content)
@@ -120,9 +120,6 @@ class ViewSourceViewTests(TestCase):
         self.assertEqual(content['url'], test_url)
         # Redirect used in seo
         # self.assertRedirects(resp,target,status_code=301)
-
-    def test_passthrough_redirect(self):
-        pass
 
     def test_amptoamp_redirect(self):
         """

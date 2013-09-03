@@ -52,4 +52,3 @@ class RedirectActionFactory(factory.Factory):
     buid = 0
     view_source_id = 0    
     action = models.RedirectAction.SOURCECODETAG_ACTION
-    

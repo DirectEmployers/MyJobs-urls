@@ -70,20 +70,22 @@ class RedirectAction(models.Model):
     Determines what transformation(s) should take place based on the provided
     parameters
     """
-    (SOURCECODETAG_ACTION, MICROSITE_ACTION, MICROSITETAG_ACTION,
-        PASSTHROUGH_ACTION) = range(4)
+
+    # Too manual? To add another action, add it to this list and
+    # increment the value in the call to range, then add it to the
+    # ACTION_CHOICES tuple
+    (SOURCECODETAG_ACTION, MICROSITE_ACTION, MICROSITETAG_ACTION) = range(3)
 
     ACTION_CHOICES = (
         (SOURCECODETAG_ACTION, 'sourcecodetag'),
         (MICROSITE_ACTION, 'microsite'),
         (MICROSITETAG_ACTION, 'micrositetag'),
-        (PASSTHROUGH_ACTION, 'passthrough'),
     )
 
     buid = models.IntegerField(default=0)
     view_source = models.ForeignKey('ViewSource')
     action = models.IntegerField(choices=ACTION_CHOICES,
-                                 default=PASSTHROUGH_ACTION)
+                                 default=SOURCECODETAG_ACTION)
 
     class Meta:
         unique_together = ('buid', 'view_source', 'action')
