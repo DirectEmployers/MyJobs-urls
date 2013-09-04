@@ -70,9 +70,22 @@ class RedirectAction(models.Model):
     Determines what transformation(s) should take place based on the provided
     parameters
     """
+
+    # Too manual? To add another action, add it to this list and
+    # increment the value in the call to range, then add it to the
+    # ACTION_CHOICES tuple
+    (SOURCECODETAG_ACTION, MICROSITE_ACTION, MICROSITETAG_ACTION) = range(3)
+
+    ACTION_CHOICES = (
+        (SOURCECODETAG_ACTION, 'sourcecodetag'),
+        (MICROSITE_ACTION, 'microsite'),
+        (MICROSITETAG_ACTION, 'micrositetag'),
+    )
+
     buid = models.IntegerField(default=0)
     view_source = models.ForeignKey('ViewSource')
-    action = models.CharField(max_length=255)
+    action = models.IntegerField(choices=ACTION_CHOICES,
+                                 default=SOURCECODETAG_ACTION)
 
     class Meta:
         unique_together = ('buid', 'view_source', 'action')
@@ -81,6 +94,9 @@ class RedirectAction(models.Model):
     def __unicode__(self):
         return '%s for buid %d, view source %d' % \
             (self.action, self.buid, self.view_source_id)
+
+    def get_method_name(self):
+        return self.ACTION_CHOICES[self.action][1]
 
 
 class ViewSource(models.Model):
@@ -97,7 +113,7 @@ class ViewSource(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.view_source_id:
-            # if viewsource_id was not provided, set it to the next
+            # if view_source_id was not provided, set it to the next
             # available value
             try:
                 latest = ViewSource.objects.values_list('view_source_id',
