@@ -60,12 +60,6 @@ class Migration(SchemaMigration):
             'Meta': {'unique_together': "(('buid', 'view_source', 'action'),)", 'object_name': 'RedirectAction'},
             'action': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'buid': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
-            'custom_field_1': ('django.db.models.fields.TextField', [], {}),
-            'custom_field_2': ('django.db.models.fields.TextField', [], {}),
-            'custom_field_3': ('django.db.models.fields.TextField', [], {}),
-            'custom_field_4': ('django.db.models.fields.TextField', [], {}),
-            'custom_field_5': ('django.db.models.fields.TextField', [], {}),
-            'custom_field_6': ('django.db.models.fields.TextField', [], {}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'view_source': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['redirect.ViewSource']"})
         },
