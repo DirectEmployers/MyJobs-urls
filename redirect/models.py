@@ -8,6 +8,22 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 
+class Destination_Manipulation(models.Model):
+    """
+    Represents the original DestinationManipulation table
+    """
+    ActionType = models.IntegerField()
+    BUID = models.IntegerField()
+    ViewSourceID = models.IntegerField()
+    Action = models.CharField(max_length=255)
+    Value1 = models.CharField(max_length=255)
+    Value2 = models.CharField(max_length=255)
+
+    class Meta:
+        unique_together = ('ActionType', 'BUID', 'ViewSourceID', 'Action',
+                           'Value1', 'Value2')
+
+
 class Redirect(models.Model):
     """
     Contains most of the information required to determine how a url
