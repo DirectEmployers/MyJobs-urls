@@ -48,8 +48,8 @@ class ATSSourceCode(models.Model):
     parameter_value = models.CharField(max_length=255)
 
     class Meta:
-        unique_together = (('ats_name', 'parameter_name', 'parameter_value'),
-                           ('buid', 'view_source'))
+        unique_together = ('ats_name', 'parameter_name', 'parameter_value',
+                           'buid', 'view_source')
 
     def __unicode__(self):
         return u'buid %d, view source %d' % \
