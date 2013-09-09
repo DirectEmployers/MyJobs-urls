@@ -1,3 +1,5 @@
+import sys
+
 from redirect.models import *
 
 
@@ -20,7 +22,7 @@ def add_query(url, name, value):
     return url
 
 
-def micrositetag(redirect_obj, view_source):
+def micrositetag(redirect_obj, manipulation_obj):
     """
     Redirects to the given job's entry on the company's microsite,
     or jobs.jobs if one does not exist
@@ -29,28 +31,22 @@ def micrositetag(redirect_obj, view_source):
         cm = CanonicalMicrosite.objects.get(buid=redirect_obj.buid)
         microsite_url = cm.canonical_microsite_url
     except CanonicalMicrosite.DoesNotExist:
-        microsite_url = 'jobs.jobs/%s/job'
-    return microsite_url % redirect_obj.uid
+        microsite_url = 'jobs.jobs/[blank_MS1]/job'
+    return microsite_url.replace('[blank_MS1]', str(redirect_obj.uid))
 
 
-def microsite(redirect_obj, view_source):
+def microsite(redirect_obj, manipulation_obj):
     """
     micrositetag redirect with an additional view source parameter in its
     query string
     """
-    url = micrositetag(redirect_obj, view_source)
-    url = add_query(url, 'vs', view_source.pk)
+    url = micrositetag(redirect_obj, manipulation_obj)
+    url = url.replace('[Unique_ID]', str(redirect_obj.uid))
+    url = add_query(url, 'vs', manipulation_obj.ViewSourceID)
     return url
 
 
-def sourcecodetag(redirect_obj, view_source):
+def sourcecodetag(redirect_obj, manipulation_obj):
     url = redirect_obj.url
-    try:
-        source_code = ATSSourceCode.objects.get(buid=redirect_obj.buid,
-                                                view_source=view_source)
-        url = add_query(url,
-                        source_code.parameter_name,
-                        source_code.parameter_value)
-    except ATSSourceCode.DoesNotExist:
-        pass
+    url += '%s' % manipulation_obj.Value1
     return url

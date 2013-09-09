@@ -10,7 +10,7 @@ class CanonicalMicrositeFactory(factory.Factory):
     FACTORY_FOR = models.CanonicalMicrosite
 
     buid = 0
-    canonical_microsite_url = 'jobs.jobs/%s/job'
+    canonical_microsite_url = 'jobs.jobs/[Unique_ID]/job'
 
 
 class RedirectFactory(factory.Factory):
@@ -34,21 +34,32 @@ class ViewSourceFactory(factory.Factory):
     view_source_id = 0
     name = 'View Source'
     microsite = True
-    
+
 
 class ATSSourceCodeFactory(factory.Factory):
     FACTORY_FOR = models.ATSSourceCode
-    
+
     buid = 0
     view_source_id = 0
     ats_name = 'Indeed Test'
     parameter_name = 'src'
-    parameter_value = 'indeed_test'   
-    
+    parameter_value = 'indeed_test'
+
 
 class RedirectActionFactory(factory.Factory):
     FACTORY_FOR = models.RedirectAction
-    
+
     buid = 0
-    view_source_id = 0    
+    view_source_id = 0
     action = models.RedirectAction.SOURCECODETAG_ACTION
+
+
+class Destination_ManipulationFactory(factory.Factory):
+    FACTORY_FOR = models.Destination_Manipulation
+
+    ActionType = 1
+    Action = 'sourcecodetag'
+    BUID = 0
+    ViewSourceID = 0
+    Value1 = '&codes=DEjn'
+    Value2 = '&codes=ArmyRES'
