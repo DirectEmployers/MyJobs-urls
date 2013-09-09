@@ -1,4 +1,3 @@
-import sys
 import urllib
 
 from redirect.models import *
@@ -91,7 +90,6 @@ def sourceurlwrapappend(redirect_obj, manipulation_obj):
 def sourceurlwrapunencoded(redirect_obj, manipulation_obj, value1=None):
     value1 = value1 or manipulation_obj.Value1
     return value1 + redirect_obj.url
-    return manipulation_obj.Value1 + redirect_obj.url
 
 
 def sourceurlwrapunencodedappend(redirect_obj, manipulation_obj):
