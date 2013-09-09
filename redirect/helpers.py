@@ -48,7 +48,7 @@ def microsite(redirect_obj, manipulation_obj):
 
 def sourcecodetag(redirect_obj, manipulation_obj):
     url = redirect_obj.url
-    url += '%s' % manipulation_obj.Value1
+    url += manipulation_obj.Value1
     return url
 
 
@@ -58,7 +58,7 @@ def doubleclickwrap(redirect_obj, manipulation_obj):
 
 def doubleclickunwind(redirect_obj, manipulation_obj):
     url = redirect_obj.url.split('?')
-    return url[0]
+    return url[-1]
 
 
 def anchorredirectissue(redirect_obj, manipulation_obj):
@@ -105,7 +105,7 @@ def urlswap(redirect_obj, manipulation_obj):
 
 def amptoamp(redirect_obj, manipulation_obj):
     url = redirect_obj.url.split('&')
-    return redirect_obj.Value1 + url[0] + redirect_obj.Value2
+    return redirect_obj.Value1 + url[1] + redirect_obj.Value2
 
 
 def switchlastinstance(redirect_obj, manipulation_obj, old=None, new=None):
