@@ -13,6 +13,7 @@ class ViewSourceAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Redirect)
+admin.site.register(DestinationManipulation)
 admin.site.register(ATSSourceCode)
 admin.site.register(ViewSource, ViewSourceAdmin)
 admin.site.register(RedirectAction)

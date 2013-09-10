@@ -1,7 +1,7 @@
 import json
 import uuid
 
-from django.http import HttpResponse
+from django.http import HttpResponse,HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 
 from redirect import models
@@ -16,16 +16,16 @@ def home(request, guid, vsid='0'):
             'url': guid_redirect.url}
 
     try:
-        manipulation = models.Destination_Manipulation.objects.get(
-            BUID=guid_redirect.buid, ViewSourceID=vsid, ActionType=1)
-    except models.Destination_Manipulation.DoesNotExist:
+        manipulation = models.DestinationManipulation.objects.get(
+            buid=guid_redirect.buid, view_source=vsid, action_type=1)
+    except models.DestinationManipulation.DoesNotExist:
         try:
-            manipulation = models.Destination_Manipulation.objects.get(
-                BUID=guid_redirect.buid, ViewSourceID=0, ActionType=1)
-        except models.Destination_Manipulation.DoesNotExist:
+            manipulation = models.DestinationManipulation.objects.get(
+                buid=guid_redirect.buid, view_source=0, action_type=1)
+        except models.DestinationManipulation.DoesNotExist:
             raise Http404
 
-    method_name = manipulation.Action
+    method_name = manipulation.action
 
     try:
         redirect_method = getattr(helpers, method_name)
@@ -36,4 +36,5 @@ def home(request, guid, vsid='0'):
     redirect_url = redirect_method(guid_redirect, manipulation)
     data['url'] = redirect_url
 
-    return HttpResponse(json.dumps(data))
+    #return HttpResponse(json.dumps(data))
+    return HttpResponseRedirect("http://"+redirect_url)

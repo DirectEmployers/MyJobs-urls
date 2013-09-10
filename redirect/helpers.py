@@ -42,7 +42,7 @@ def microsite(redirect_obj, manipulation_obj):
     """
     url = micrositetag(redirect_obj, manipulation_obj)
     url = url.replace('[Unique_ID]', str(redirect_obj.uid))
-    url = add_query(url, 'vs', manipulation_obj.ViewSourceID)
+    url = add_query(url, 'vs', manipulation_obj.view_source)
     return url
 
 
