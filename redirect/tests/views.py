@@ -110,46 +110,70 @@ class ViewSourceViewTests(TestCase):
         """
         Information about test
         """
+        self.manipulation.action = 'amptoamp'
+        self.manipulation.save()
+        
         pass 
     
     def test_cframe_redirect(self):
         """
         Information about test
         """
+        self.manipulation.action = 'cframe'
+        self.manipulation.save()
+        
         pass
 
     def test_sourceurlwrapappend_redirect(self):
         """
         Information about test
         """
+        self.manipulation.action = 'sourceurlwrapappend'
+        self.manipulation.save()
+        
         pass
 
     def test_anchorredirectissue_redirect(self):
         """
         Information about test
         """
+        self.manipulation.action = 'anchorredirectissue'
+        self.manipulation.save()
+        
         pass
     
     def test_replacethenaddpre_redirect(self):
         """
         Information about test
         """
+        self.manipulation.action = 'replacethenaddpre'
+        self.manipulation.save()
+        
         pass
     
     def test_sourcecodeinsertion_redirect(self):
         """
         Information about test
         """
+        self.manipulation.action = 'sourcecodeinsertion'
+        self.manipulation.save()
+        
         pass
     
     def test_sourceurlwrapunencodedappend_redirect(self):
         """
         Information about test
         """
+        self.manipulation.action = 'sourceurlwrapunencodedappend'
+        self.manipulation.save()
+        
         pass
     
     def test_sourceurlwrapunencoded_redirect(self):
         """
         Information about test
         """
+        self.manipulation.action = 'sourceurlwrapunencoded'
+        self.manipulation.save()
+        
         pass 
