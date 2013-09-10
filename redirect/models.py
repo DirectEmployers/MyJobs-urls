@@ -8,20 +8,20 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 
-class Destination_Manipulation(models.Model):
+class DestinationManipulation(models.Model):
     """
     Represents the original DestinationManipulation table
     """
-    ActionType = models.IntegerField()
-    BUID = models.IntegerField()
-    ViewSourceID = models.IntegerField()
-    Action = models.CharField(max_length=255)
-    Value1 = models.CharField(max_length=255)
-    Value2 = models.CharField(max_length=255)
+    action_type = models.IntegerField()
+    buid = models.IntegerField()
+    view_source = models.IntegerField()
+    action = models.CharField(max_length=255, null=True, default="")
+    value_1 = models.CharField(max_length=255, null=True, default="")
+    value_2 = models.CharField(max_length=255, null=True, default="")
 
     class Meta:
-        unique_together = ('ActionType', 'BUID', 'ViewSourceID', 'Action',
-                           'Value1', 'Value2')
+        unique_together = ('action_type', 'buid', 'view_source', 'action',
+                           'value_1', 'value_2')
 
 
 class Redirect(models.Model):
@@ -38,7 +38,7 @@ class Redirect(models.Model):
     uid = models.IntegerField(unique=True,
                               help_text=_("Unique id on partner's ATS or "
                                           "other job repository"))
-    url = models.URLField(help_text=_('URL being manipulated'))
+    url = models.TextField(help_text=_('URL being manipulated'))
     new_date = models.DateTimeField(help_text=_('Date that this job was '
                                                 'added'))
     expired_date = models.DateTimeField(blank=True, null=True,
