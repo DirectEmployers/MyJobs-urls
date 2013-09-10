@@ -6,6 +6,7 @@ from django.test import TestCase
 from django.test.client import Client
 from django.core.urlresolvers import reverse, NoReverseMatch
 
+from redirect import helpers
 from redirect.models import *
 from redirect.tests.factories import *
 
@@ -14,26 +15,17 @@ class ViewSourceViewTests(TestCase):
     def setUp(self):
         self.client = Client()
         self.redirect = RedirectFactory()
-        self.view_source = ViewSourceFactory(view_source_id=0)
         self.microsite = CanonicalMicrositeFactory()
-        self.redirect_action = RedirectActionFactory(
-            buid=self.redirect.buid,
-            view_source_id=self.view_source.pk,
-            action=RedirectAction.SOURCECODETAG_ACTION)
+        self.manipulation = Destination_ManipulationFactory()
 
     def test_get_with_no_vsid(self):
         """
         If no view source id is provided, default to 0
         """
-        ats_source = ATSSourceCodeFactory(parameter_name='src',
-                                          parameter_value='val')
         response = self.client.get(reverse('home', args=[self.redirect.guid]))
         content = json.loads(response.content)
-        self.assertEqual(content['type'],
-                         self.redirect_action.get_method_name())
         # In this case, view source id 0 is a sourcecodetag redirect
-        test_url = self.redirect.url + u'?%s=%s' % \
-            (ats_source.parameter_name, ats_source.parameter_value)
+        test_url = self.redirect.url + self.manipulation.Value1
         self.assertEqual(content['url'], test_url)
 
     def test_get_with_nonexistent_vsid(self):
@@ -44,8 +36,9 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(reverse('home',
                                            args=[self.redirect.guid, 5]))
         content = json.loads(response.content)
-        self.assertEqual(content['type'], 'no_vsid')
-        self.assertEqual(content['url'], self.redirect.url)
+        self.assertEqual(content['url'],
+                         helpers.sourcecodetag(self.redirect,
+                                               self.manipulation))
 
     def test_get_with_malformed_guid(self):
         """
@@ -59,21 +52,16 @@ class ViewSourceViewTests(TestCase):
 
     def test_sourcecodetag_redirect(self):
         """
-        Check view that manipulates a url with the sourcecodetag action creates
-        the correct redirect url which will have a sourcecode tag on the end
+        Check view that manipulates a url with the sourcecodetag action
+        creates the correct redirect url which will have a sourcecode tag on
+        the end
         examples: &Codes=DE-DEA, &src=JB-11380, &src=indeed_test
         """
-        ats_source = ATSSourceCodeFactory(parameter_name='src',
-                                          parameter_value='indeed_test')
-
-        response = self.client.get(reverse('home',
-                                           args=[self.redirect.guid,
-                                                 self.view_source.pk]))
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.ViewSourceID]))
         content = json.loads(response.content)
-        self.assertEqual(content['type'],
-                         self.redirect_action.get_method_name())
-        test_url = self.redirect.url + u'?%s=%s' % \
-            (ats_source.parameter_name, ats_source.parameter_value)
+        test_url = self.redirect.url + self.manipulation.Value1
         self.assertEqual(content['url'], test_url)
         # Redirect used in seo
         # self.assertRedirects(resp,target,status_code=301)
@@ -84,16 +72,15 @@ class ViewSourceViewTests(TestCase):
         the correct redirect url which should be to the microsite with the
         unique ID
         """
-        self.redirect_action.action = RedirectAction.MICROSITETAG_ACTION
-        self.redirect_action.save()
+        self.manipulation.Action = 'micrositetag'
+        self.manipulation.save()
 
-        response = self.client.get(reverse('home',
-                                           args=[self.redirect.guid,
-                                                 self.view_source.pk]))
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.ViewSourceID]))
         content = json.loads(response.content)
-        self.assertEqual(content['type'],
-                         self.redirect_action.get_method_name())
-        test_url = self.microsite.canonical_microsite_url % self.redirect.uid
+        test_url = self.microsite.canonical_microsite_url.replace(
+            '[blank_MS1]', str(self.redirect.uid))
         self.assertEqual(content['url'], test_url)
         # Redirect used in seo
         # self.assertRedirects(resp,target,status_code=301)
@@ -105,18 +92,16 @@ class ViewSourceViewTests(TestCase):
         the end
         example: http://cadence.jobs/noida-ind/smcs/37945336/job/?vs=274
         """
-        self.redirect_action.action = RedirectAction.MICROSITE_ACTION
-        self.redirect_action.save()
-        ATSSourceCodeFactory()
+        self.manipulation.Action = 'microsite'
+        self.manipulation.save()
 
-        response = self.client.get(reverse('home',
-                                           args=[self.redirect.guid,
-                                                 self.view_source.pk]))
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.ViewSourceID]))
         content = json.loads(response.content)
-        self.assertEqual(content['type'],
-                         self.redirect_action.get_method_name())
-        test_url = (self.microsite.canonical_microsite_url + '?vs=%s') % \
-            (self.redirect.uid, str(self.view_source.pk))
+        test_url = self.microsite.canonical_microsite_url.replace(
+            '[Unique_ID]', str(self.redirect.uid))
+        test_url += '?vs=%s' % self.manipulation.ViewSourceID
         self.assertEqual(content['url'], test_url)
         # Redirect used in seo
         # self.assertRedirects(resp,target,status_code=301)

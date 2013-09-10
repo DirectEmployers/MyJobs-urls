@@ -14,20 +14,18 @@ def home(request, guid, vsid='0'):
             'vsid': vsid,
             'type': '',
             'url': guid_redirect.url}
-    try:
-        viewsource = models.ViewSource.objects.get(view_source_id=vsid)
-    except models.ViewSource.DoesNotExist:
-        data['type'] = 'no_vsid'
-        return HttpResponse(json.dumps(data))
 
     try:
-        ra = models.RedirectAction.objects.get(buid=guid_redirect.buid,
-                                               view_source=viewsource)
-    except models.RedirectAction.DoesNotExist:
-        data['type'] = 'no_redirect_action'
-        return HttpResponse(json.dumps(data))
+        manipulation = models.Destination_Manipulation.objects.get(
+            BUID=guid_redirect.buid, ViewSourceID=vsid, ActionType=1)
+    except models.Destination_Manipulation.DoesNotExist:
+        try:
+            manipulation = models.Destination_Manipulation.objects.get(
+                BUID=guid_redirect.buid, ViewSourceID=0, ActionType=1)
+        except models.Destination_Manipulation.DoesNotExist:
+            raise Http404
 
-    method_name = ra.get_method_name()
+    method_name = manipulation.Action
 
     try:
         redirect_method = getattr(helpers, method_name)
@@ -35,7 +33,7 @@ def home(request, guid, vsid='0'):
     except AttributeError:
         data['type'] = 'method_not_defined'
 
-    redirect_url = redirect_method(guid_redirect, viewsource)
+    redirect_url = redirect_method(guid_redirect, manipulation)
     data['url'] = redirect_url
 
     return HttpResponse(json.dumps(data))
