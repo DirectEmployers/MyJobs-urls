@@ -90,12 +90,29 @@ class RedirectAction(models.Model):
     # Too manual? To add another action, add it to this list and
     # increment the value in the call to range, then add it to the
     # ACTION_CHOICES tuple
-    (SOURCECODETAG_ACTION, MICROSITE_ACTION, MICROSITETAG_ACTION) = range(3)
+    (SOURCECODETAG_ACTION, MICROSITE_ACTION, MICROSITETAG_ACTION,
+        AMPTOAMP_ACTION, CFRAME_ACTION, ANCHORREDIRECTISSUE_ACTION,
+        URLSWAP_ACTION, REPLACETHENADD_ACTION, REPLACETHENADDPRE_ACTION,
+        SOURCEURLWRAPAPPEND_ACTION, SOURCECODEINSERTION_ACTION,
+        SOURCEURLWRAPUNENCODED_ACTION, SOURCEURLWRAPUNENCODEDAPPEND_ACTION,
+        SWITCHLASTINSTANCE_ACTION, SWITCHLASTTHENADD_ACTION) = range(15)
 
     ACTION_CHOICES = (
         (SOURCECODETAG_ACTION, 'sourcecodetag'),
         (MICROSITE_ACTION, 'microsite'),
         (MICROSITETAG_ACTION, 'micrositetag'),
+        (AMPTOAMP_ACTION, 'amptoamp'),
+        (CFRAME_ACTION, 'cframe'),
+        (ANCHORREDIRECTISSUE_ACTION, 'anchorredirectissue'),
+        (URLSWAP_ACTION, 'urlswap'),
+        (REPLACETHENADD_ACTION, 'replacethenadd'),
+        (REPLACETHENADDPRE_ACTION, 'replacethenaddpre'),
+        (SOURCEURLWRAPAPPEND_ACTION, 'sourceurlwrapappend'),
+        (SOURCECODEINSERTION_ACTION, 'sourcecodeinsertion'),
+        (SOURCEURLWRAPUNENCODED_ACTION, 'sourceurlwrapunencoded'),
+        (SOURCEURLWRAPUNENCODEDAPPEND_ACTION, 'sourceurlwrapunencodedappend'),
+        (SWITCHLASTINSTANCE_ACTION, 'switchlastinstance'),
+        (SWITCHLASTTHENADD_ACTION, 'switchlastthenadd'),        
     )
 
     buid = models.IntegerField(default=0)
