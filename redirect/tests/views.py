@@ -92,7 +92,7 @@ class ViewSourceViewTests(TestCase):
         the end
         example: http://cadence.jobs/noida-ind/smcs/37945336/job/?vs=274
         """
-        self.manipulation.Action = 'microsite'
+        self.manipulation.action = 'microsite'
         self.manipulation.save()
 
         response = self.client.get(
@@ -102,7 +102,6 @@ class ViewSourceViewTests(TestCase):
         test_url = self.microsite.canonical_microsite_url.replace(
             '[Unique_ID]', str(self.redirect.uid))
         test_url += '?vs=%s' % self.manipulation.view_source
-        print content
         self.assertEqual(content['url'], test_url)
         # Redirect used in seo
         # self.assertRedirects(resp,target,status_code=301)
