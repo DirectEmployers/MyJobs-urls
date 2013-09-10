@@ -38,7 +38,7 @@ class Redirect(models.Model):
     uid = models.IntegerField(unique=True,
                               help_text=_("Unique id on partner's ATS or "
                                           "other job repository"))
-    url = models.URLField(help_text=_('URL being manipulated'))
+    url = models.TextField(help_text=_('URL being manipulated'))
     new_date = models.DateTimeField(help_text=_('Date that this job was '
                                                 'added'))
     expired_date = models.DateTimeField(blank=True, null=True,
