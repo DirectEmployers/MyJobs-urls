@@ -36,5 +36,5 @@ def home(request, guid, vsid='0'):
     redirect_url = redirect_method(guid_redirect, manipulation)
     data['url'] = redirect_url
 
-    #return HttpResponse(json.dumps(data))
-    return HttpResponseRedirect("http://"+redirect_url)
+    return HttpResponse(json.dumps(data))
+    #return HttpResponseRedirect("http://"+redirect_url)

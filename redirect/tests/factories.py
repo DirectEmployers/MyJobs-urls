@@ -54,12 +54,12 @@ class RedirectActionFactory(factory.Factory):
     action = models.RedirectAction.SOURCECODETAG_ACTION
 
 
-class Destination_ManipulationFactory(factory.Factory):
-    FACTORY_FOR = models.Destination_Manipulation
+class DestinationManipulationFactory(factory.Factory):
+    FACTORY_FOR = models.DestinationManipulation
 
-    ActionType = 1
-    Action = 'sourcecodetag'
-    BUID = 0
-    ViewSourceID = 0
-    Value1 = '&codes=DEjn'
-    Value2 = '&codes=ArmyRES'
+    action_type = 1
+    action = 'sourcecodetag'
+    buid = 0
+    view_source = 0
+    value_1 = '&codes=DEjn'
+    value_2 = '&codes=ArmyRES'
