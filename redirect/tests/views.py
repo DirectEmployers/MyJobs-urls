@@ -190,14 +190,20 @@ class ViewSourceViewTests(TestCase):
         Information about test
         """
         self.manipulation.action = 'sourcecodeinsertion'
+        self.manipulation.value_1 = '&src=de'
         self.manipulation.save()
+        
+        self.redirect.url = 'directemployers.org/#directemployers/'
+        self.redirect.save()
         
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
                                   self.manipulation.view_source]))
         content = json.loads(response.content)
+        url = self.redirect.url.split('#')
+        test_url = ('%s#' % self.manipulation.value_1).join(url)
+        self.assertEqual(content['url'], test_url)
         
-        pass
     
     def test_sourceurlwrapunencodedappend_redirect(self):
         """
