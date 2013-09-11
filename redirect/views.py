@@ -1,7 +1,7 @@
 import json
 import uuid
 
-from django.http import HttpResponse,HttpResponseRedirect
+from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 
 from redirect import models
@@ -35,6 +35,7 @@ def home(request, guid, vsid='0'):
 
     redirect_url = redirect_method(guid_redirect, manipulation)
     data['url'] = redirect_url
-
-    return HttpResponse(json.dumps(data))
-    #return HttpResponseRedirect("http://"+redirect_url)
+    
+    #return HttpResponse(redirect_url)
+    #return HttpResponse(json.dumps(data))
+    return HttpResponseRedirect(redirect_url)
