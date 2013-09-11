@@ -111,17 +111,11 @@ class ViewSourceViewTests(TestCase):
         """
         Check method that manipulates a url with the amptoamp action
         """
-        self.manipulation.action = 'amptoamp'
-        #self.manipulation.view_source = 0
+        self.manipulation.action = 'amptoamp'        
         self.manipulation.value_1 = 'http://ad.doubleclick.net/clk;2526;8138?'
         self.manipulation.value_2 = '&functionName=viewFromLink&locale=en-us'
         self.manipulation.save()
-        
-        #response = self.client.get(
-            #reverse('home', args=[self.redirect.guid,
-                                  #self.manipulation.view_source]))
-        #content = json.loads(response.content)
-        
+                
         pass
     
     
@@ -191,6 +185,27 @@ class ViewSourceViewTests(TestCase):
         content = json.loads(response.content)        
         url = self.redirect.url.split('#')
         test_url = url[0] + self.manipulation.value_1
+        self.assertEqual(content['url'], test_url)  
+    
+    
+    def test_replacethenadd_redirect(self):
+        """
+        Check method that manipulates a url with the replacethenadd action
+        """
+        self.manipulation.action = 'replacethenadd'
+        self.manipulation.value_1 = 'jobdetail.ftl!!!!jobapply.ftl'
+        self.manipulation.value_2 = '&src=CWS-12480'
+        self.manipulation.save()
+        
+        self.redirect.url = 'directemployers.org/'
+        self.redirect.save()
+        
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.view_source]))
+        content = json.loads(response.content)
+        old, new = self.manipulation.value_1.split('!!!!')
+        test_url = self.redirect.url + self.manipulation.value_2        
         self.assertEqual(content['url'], test_url)
             
     
@@ -200,15 +215,11 @@ class ViewSourceViewTests(TestCase):
         """
         self.manipulation.action = 'replacethenaddpre'
         self.manipulation.value_1 = '?ss=paid!!!!?apstr=src%3DJB-10600'
+        self.manipulation.value_2 = 'http://ad.doubleclick.net/clk;2613;950;s?'
         self.manipulation.save()
-        
-        response = self.client.get(
-            reverse('home', args=[self.redirect.guid,
-                                  self.manipulation.view_source]))
-        content = json.loads(response.content)
-        
+                
         pass
-    
+            
     
     def test_sourcecodeinsertion_redirect(self):
         """
@@ -322,7 +333,7 @@ class ViewSourceViewTests(TestCase):
                                   self.manipulation.view_source]))
         content = json.loads(response.content)
         old, new = self.manipulation.value_1.split('!!!!')        
-        new_url = test_url = new.join(self.redirect.url.rsplit(old, 1))        
+        new_url = new.join(self.redirect.url.rsplit(old, 1))        
         test_url = new_url + self.manipulation.value_2       
         self.assertEqual(content['url'], test_url)
         
