@@ -218,14 +218,17 @@ class ViewSourceViewTests(TestCase):
         Information about test
         """
         self.manipulation.action = 'sourceurlwrapunencoded'
+        self.manipulation.value_1 = 'http://ad.doubleclick.net/clk;346;154;h?'
         self.manipulation.save()
         
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
                                   self.manipulation.view_source]))
-        content = json.loads(response.content)
+        content = json.loads(response.content)        
+        test_url = self.manipulation.value_1 + self.redirect.url        
+        self.assertEqual(content['url'], test_url)
+        print test_url
         
-        pass
     
     def test_sourceurlwrap_redirect(self):
         """
