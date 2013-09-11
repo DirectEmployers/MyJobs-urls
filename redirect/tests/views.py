@@ -122,8 +122,25 @@ class ViewSourceViewTests(TestCase):
                                   #self.manipulation.view_source]))
         #content = json.loads(response.content)
         
-        pass 
+        pass
     
+    
+    def test_urlswap_redirect(self):
+        """
+        Check method that manipulates a url with the cframe action
+        """
+        self.manipulation.action = 'urlswap'
+        self.manipulation.value_1 = 'https://careers.nscorp.com/?sap-client=100'
+        self.manipulation.save()
+        
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.view_source]))
+        content = json.loads(response.content)
+        test_url = self.manipulation.value_1
+        self.assertEqual(content['url'], test_url)
+        
+        
     def test_cframe_redirect(self):
         """
         Check method that manipulates a url with the cframe action
