@@ -297,5 +297,28 @@ class ViewSourceViewTests(TestCase):
         old = self.manipulation.value_1
         new = self.manipulation.value_2
         test_url = new.join(self.redirect.url.rsplit(old, 1))        
-        self.assertEqual(content['url'], test_url)        
+        self.assertEqual(content['url'], test_url)
+
+
+    def test_switchlastthenadd_redirect(self):
+        """
+        Check method that manipulates a url with the switchlastthenadd action
+        """
+        self.manipulation.action = 'switchlastthenadd'
+        self.manipulation.value_1 = '/job!!!!/login'
+        self.manipulation.value_2 = '?iis=CareerSiteSEO'
+        self.manipulation.save()
+        
+        self.redirect.url = 'directemployers.org/job'
+        self.redirect.save()
+        
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.view_source]))
+        content = json.loads(response.content)
+        old, new = self.manipulation.value_1.split('!!!!')        
+        new_url = test_url = new.join(self.redirect.url.rsplit(old, 1))        
+        test_url = new_url + self.manipulation.value_2       
+        self.assertEqual(content['url'], test_url)
+        
         
