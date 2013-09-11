@@ -109,7 +109,7 @@ class ViewSourceViewTests(TestCase):
 
     def test_amptoamp_redirect(self):
         """
-        Information about test
+        Check method that manipulates a url with the amptoamp action
         """
         self.manipulation.action = 'amptoamp'
         #self.manipulation.view_source = 0
@@ -126,7 +126,7 @@ class ViewSourceViewTests(TestCase):
     
     def test_cframe_redirect(self):
         """
-        Information about test
+        Check method that manipulates a url with the cframe action
         """
         self.manipulation.action = 'cframe'
         self.manipulation.value_1 = 'fedex.asp'
@@ -144,7 +144,7 @@ class ViewSourceViewTests(TestCase):
 
     def test_sourceurlwrapappend_redirect(self):
         """
-        Information about test
+        Check method that manipulates a url with the sourceurlwrapappend action
         """
         self.manipulation.action = 'sourceurlwrapappend'
         self.manipulation.save()
@@ -158,7 +158,7 @@ class ViewSourceViewTests(TestCase):
 
     def test_anchorredirectissue_redirect(self):
         """
-        Information about test
+        Check method that manipulates a url with the anchorredirectissue action
         """
         self.manipulation.action = 'anchorredirectissue'
         self.manipulation.save()
@@ -172,7 +172,7 @@ class ViewSourceViewTests(TestCase):
     
     def test_replacethenaddpre_redirect(self):
         """
-        Information about test
+        Check method that manipulates a url with the replacethenaddpre action
         """
         self.manipulation.action = 'replacethenaddpre'
         self.manipulation.value_1 = '?ss=paid!!!!?apstr=src%3DJB-10600'
@@ -187,7 +187,7 @@ class ViewSourceViewTests(TestCase):
     
     def test_sourcecodeinsertion_redirect(self):
         """
-        Information about test
+        Check method that manipulates a url with the sourcecodeinsertion action
         """
         self.manipulation.action = 'sourcecodeinsertion'
         self.manipulation.value_1 = '&src=de'
@@ -207,7 +207,8 @@ class ViewSourceViewTests(TestCase):
     
     def test_sourceurlwrapunencodedappend_redirect(self):
         """
-        Information about test
+        Check method that manipulates a url with the 
+        sourceurlwrapunencodedappend action
         """
         self.manipulation.action = 'sourceurlwrapunencodedappend'
         self.manipulation.value_1 = 'http://ad.doubleclick.net/clk;2593;886;r?'
@@ -225,7 +226,8 @@ class ViewSourceViewTests(TestCase):
     
     def test_sourceurlwrapunencoded_redirect(self):
         """
-        Information about test
+        Check method that manipulates a url with the sourceurlwrapunencoded 
+        action
         """
         self.manipulation.action = 'sourceurlwrapunencoded'
         self.manipulation.value_1 = 'http://ad.doubleclick.net/clk;346;154;h?'
@@ -241,7 +243,7 @@ class ViewSourceViewTests(TestCase):
     
     def test_sourceurlwrap_redirect(self):
         """
-        Information about test
+        Check method that manipulates a url with the sourceurlwrap action
         """
         self.manipulation.action = 'sourceurlwrap'
         self.manipulation.value_1 = 'http://bs.serving-sys.com/?cn=t&rtu=$$'
