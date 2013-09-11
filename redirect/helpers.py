@@ -104,7 +104,9 @@ def sourceurlwrap(redirect_obj, manipulation_obj):
     """
     Encodes the url and prepends value_1 onto it
     """
-    url = urllib.urlencode(redirect_obj.url)
+    print redirect_obj.url
+    url = urllib.quote(redirect_obj.url)
+    #url = redirect_obj.url
     return manipulation_obj.value_1 + url
 
 
