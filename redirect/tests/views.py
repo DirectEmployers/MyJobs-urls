@@ -120,9 +120,7 @@ class ViewSourceViewTests(TestCase):
         #response = self.client.get(
             #reverse('home', args=[self.redirect.guid,
                                   #self.manipulation.view_source]))
-        
         #content = json.loads(response.content)
-        #print content['url']
         
         pass 
     
@@ -146,6 +144,11 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.action = 'sourceurlwrapappend'
         self.manipulation.save()
         
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.view_source]))
+        content = json.loads(response.content)
+        
         pass
 
     def test_anchorredirectissue_redirect(self):
@@ -155,6 +158,11 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.action = 'anchorredirectissue'
         self.manipulation.save()
         
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.view_source]))
+        content = json.loads(response.content)
+        
         pass
     
     def test_replacethenaddpre_redirect(self):
@@ -162,7 +170,13 @@ class ViewSourceViewTests(TestCase):
         Information about test
         """
         self.manipulation.action = 'replacethenaddpre'
+        self.manipulation.value_1 = '?ss=paid!!!!?apstr=src%3DJB-10600'
         self.manipulation.save()
+        
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.view_source]))
+        content = json.loads(response.content)
         
         pass
     
@@ -173,6 +187,11 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.action = 'sourcecodeinsertion'
         self.manipulation.save()
         
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.view_source]))
+        content = json.loads(response.content)
+        
         pass
     
     def test_sourceurlwrapunencodedappend_redirect(self):
@@ -182,6 +201,11 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.action = 'sourceurlwrapunencodedappend'
         self.manipulation.save()
         
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.view_source]))
+        content = json.loads(response.content)
+        
         pass
     
     def test_sourceurlwrapunencoded_redirect(self):
@@ -190,6 +214,11 @@ class ViewSourceViewTests(TestCase):
         """
         self.manipulation.action = 'sourceurlwrapunencoded'
         self.manipulation.save()
+        
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.view_source]))
+        content = json.loads(response.content)
         
         pass
     
