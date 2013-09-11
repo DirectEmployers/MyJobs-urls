@@ -179,15 +179,20 @@ class ViewSourceViewTests(TestCase):
         Check method that manipulates a url with the anchorredirectissue action
         """
         self.manipulation.action = 'anchorredirectissue'
+        self.manipulation.value_1 = '&deaanchor='
         self.manipulation.save()
+        
+        self.redirect.url = 'directemployers.org/#directemployers#105/'
+        self.redirect.save()
         
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
                                   self.manipulation.view_source]))
-        content = json.loads(response.content)
-        
-        pass
-    
+        content = json.loads(response.content)        
+        url = self.redirect.url.split('#')
+        test_url = url[0] + self.manipulation.value_1
+        self.assertEqual(content['url'], test_url)
+            
     
     def test_replacethenaddpre_redirect(self):
         """
