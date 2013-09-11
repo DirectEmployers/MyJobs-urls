@@ -113,8 +113,8 @@ class ViewSourceViewTests(TestCase):
         """
         self.manipulation.action = 'amptoamp'
         #self.manipulation.view_source = 0
-        #self.manipulation.value_1 = 'http://ad.doubleclick.net/clk;257760126;81677138?'
-        #self.manipulation.value_2 = '&functionName=viewFromLink&locale=en-us'
+        self.manipulation.value_1 = 'http://ad.doubleclick.net/clk;2526;8138?'
+        self.manipulation.value_2 = '&functionName=viewFromLink&locale=en-us'
         self.manipulation.save()
         
         #response = self.client.get(
@@ -172,6 +172,7 @@ class ViewSourceViewTests(TestCase):
         content = json.loads(response.content)
         
         pass
+    
 
     def test_anchorredirectissue_redirect(self):
         """
@@ -187,6 +188,7 @@ class ViewSourceViewTests(TestCase):
         
         pass
     
+    
     def test_replacethenaddpre_redirect(self):
         """
         Check method that manipulates a url with the replacethenaddpre action
@@ -201,6 +203,7 @@ class ViewSourceViewTests(TestCase):
         content = json.loads(response.content)
         
         pass
+    
     
     def test_sourcecodeinsertion_redirect(self):
         """
@@ -273,4 +276,26 @@ class ViewSourceViewTests(TestCase):
         url = urllib.quote(self.redirect.url)
         test_url = self.manipulation.value_1 + url
         self.assertEqual(content['url'], test_url)
+        
+        
+    def test_switchlastinstance_redirect(self):
+        """
+        Check method that manipulates a url with the switchlastinstance action
+        """
+        self.manipulation.action = 'switchlastinstance'
+        self.manipulation.value_1 = '/job'
+        self.manipulation.value_2 = '/login'
+        self.manipulation.save()
+        
+        self.redirect.url = 'directemployers.org/job'
+        self.redirect.save()
+        
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.view_source]))
+        content = json.loads(response.content)
+        old = self.manipulation.value_1
+        new = self.manipulation.value_2
+        test_url = new.join(self.redirect.url.rsplit(old, 1))        
+        self.assertEqual(content['url'], test_url)        
         

@@ -157,8 +157,8 @@ def switchlastinstance(redirect_obj, manipulation_obj, old=None, new=None):
     If called on its own, replaces value_1 with value_2; otherwise replaces
     old with new
     """
-    old = value1 or manipulation_obj.value_1
-    new = value2 or manipulation_obj.value_2
+    old = old or manipulation_obj.value_1
+    new = new or manipulation_obj.value_2
     return new.join(redirect_obj.url.rsplit(old, 1))
 
 
