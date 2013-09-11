@@ -111,7 +111,17 @@ class ViewSourceViewTests(TestCase):
         Information about test
         """
         self.manipulation.action = 'amptoamp'
+        #self.manipulation.view_source = 0
+        #self.manipulation.value_1 = 'http://ad.doubleclick.net/clk;257760126;81677138?'
+        #self.manipulation.value_2 = '&functionName=viewFromLink&locale=en-us'
         self.manipulation.save()
+        
+        #response = self.client.get(
+            #reverse('home', args=[self.redirect.guid,
+                                  #self.manipulation.view_source]))
+        
+        #content = json.loads(response.content)
+        #print content['url']
         
         pass 
     
@@ -121,6 +131,10 @@ class ViewSourceViewTests(TestCase):
         """
         self.manipulation.action = 'cframe'
         self.manipulation.save()
+        
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.view_source]))
         
         pass
 
@@ -175,5 +189,18 @@ class ViewSourceViewTests(TestCase):
         """
         self.manipulation.action = 'sourceurlwrapunencoded'
         self.manipulation.save()
+        
+        pass
+    
+    def test_sourceurlwrap_redirect(self):
+        """
+        Information about test
+        """
+        self.manipulation.action = 'sourceurlwrap'
+        self.manipulation.save()
+        
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.view_source]))
         
         pass 

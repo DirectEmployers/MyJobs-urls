@@ -104,7 +104,7 @@ def sourceurlwrap(redirect_obj, manipulation_obj):
     """
     Encodes the url and prepends value_1 onto it
     """
-    url = urllib.urlencode(redirect_obj.url)
+    url = urllib.quote(redirect_obj.url)
     return manipulation_obj.value_1 + url
 
 
@@ -205,6 +205,6 @@ def cframe(redirect_obj, manipulation_obj):
     Redirects to the company frame denoted by value_1, appending the job url
     as the url query parameter
     """
-    url = urllib.urlencode(redirect_obj.url)
+    url = urllib.quote(redirect_obj.url)
     url = '%s?url=%s' % (manipulation_obj.value_1, url)
     return 'http://directemployers.us.jobs/companyframe/' + url
