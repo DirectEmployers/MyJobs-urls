@@ -1,6 +1,7 @@
 import json
 import uuid
 import unittest
+import urllib
 
 from django.test import TestCase
 from django.test.client import Client
@@ -197,10 +198,14 @@ class ViewSourceViewTests(TestCase):
         Information about test
         """
         self.manipulation.action = 'sourceurlwrap'
+        self.manipulation.value_1 = 'http://bs.serving-sys.com/?cn=t&c=20&rtu=$$'
         self.manipulation.save()
         
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
                                   self.manipulation.view_source]))
+        content = json.loads(response.content)
+        url = urllib.quote(self.redirect.url)
+        test_url = self.manipulation.value_1 + url
+        self.assertEqual(content['url'], test_url)
         
-        pass 
