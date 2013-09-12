@@ -1,4 +1,6 @@
 import csv
+from datetime import datetime, time
+import json
 import sys
 import urllib2 as url
 from redirect.models import Redirect
@@ -117,5 +119,8 @@ def compare(count=0):
         "error": mismatch,
         "all": total
         }
+    results_file = "comparison_log/sidebyside%s.json" % datetime.now().time()
+    log = open(results_file,'w')
+    log.write(json.dumps(result))
     return result
         
