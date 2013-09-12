@@ -150,22 +150,7 @@ class ViewSourceViewTests(TestCase):
         url = urllib.quote(self.redirect.url)
         url = '%s?url=%s' % (self.manipulation.value_1, url)        
         test_url = 'http://directemployers.us.jobs/companyframe/' + url
-        self.assertEqual(content['url'], test_url)
-        
-
-    def test_sourceurlwrapappend_redirect(self):
-        """
-        Check method that manipulates a url with the sourceurlwrapappend action
-        """
-        self.manipulation.action = 'sourceurlwrapappend'
-        self.manipulation.save()
-        
-        response = self.client.get(
-            reverse('home', args=[self.redirect.guid,
-                                  self.manipulation.view_source]))
-        content = json.loads(response.content)
-        
-        pass
+        self.assertEqual(content['url'], test_url)    
     
 
     def test_anchorredirectissue_redirect(self):
@@ -239,7 +224,25 @@ class ViewSourceViewTests(TestCase):
         url = self.redirect.url.split('#')
         test_url = ('%s#' % self.manipulation.value_1).join(url)
         self.assertEqual(content['url'], test_url)
+    
+
+    def test_sourceurlwrapappend_redirect(self):
+        """
+        Check method that manipulates a url with the sourceurlwrapappend action
+        """
+        self.manipulation.action = 'sourceurlwrapappend'
+        self.manipulation.value_1 = 'http://bs.serving-sys.com/server.bs?u=$$'
+        self.manipulation.value_2 = '$$'        
+        self.manipulation.save()
         
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.view_source]))
+        content = json.loads(response.content)
+        url = urllib.quote(self.redirect.url)
+        test_url = self.manipulation.value_1 + url + self.manipulation.value_2
+        self.assertEqual(content['url'], test_url)        
+    
     
     def test_sourceurlwrapunencodedappend_redirect(self):
         """
