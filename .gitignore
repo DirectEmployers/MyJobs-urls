@@ -22,6 +22,7 @@ secrets*
 # Log Files
 *.log
 logfile
+comparison_log/*.json
 
 # OS generated
 .DS_Store*
