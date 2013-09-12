@@ -28,11 +28,24 @@ def micrositetag(redirect_obj, manipulation_obj):
     or jobs.jobs if one does not exist
     """
     try:
-        cm = CanonicalMicrosite.objects.get(buid=redirect_obj.buid)
-        microsite_url = cm.canonical_microsite_url
-    except CanonicalMicrosite.DoesNotExist:
-        microsite_url = 'jobs.jobs/[blank_MS1]/job'
-    return microsite_url.replace('[blank_MS1]', str(redirect_obj.uid))
+        vsid = ViewSource.objects.get(view_source_id=manipulation_obj.view_source)
+        redirect_to_microsite = vsid.microsite
+    except ViewSource.DoesNotExist:
+        redirect_to_microsite=1
+    
+    if redirect_to_microsite:
+        try:
+            cm = CanonicalMicrosite.objects.get(buid=redirect_obj.buid)
+            microsite_url = cm.canonical_microsite_url
+        except CanonicalMicrosite.DoesNotExist:
+            # figure out the pass
+            #microsite_url = 'jobs.jobs/[blank_MS1]/job'
+            return redirect_obj.url
+        #print redirect_obj.uid
+        #return microsite_url.replace('[blank_MS1]', str(redirect_obj.uid))
+        return "%s%s/job/" % (microsite_url,redirect_obj.uid)
+    else:
+        return redirect_obj.url
 
 
 def microsite(redirect_obj, manipulation_obj):
@@ -41,8 +54,10 @@ def microsite(redirect_obj, manipulation_obj):
     query string
     """
     url = micrositetag(redirect_obj, manipulation_obj)
+    print url
     url = url.replace('[Unique_ID]', str(redirect_obj.uid))
     url = add_query(url, 'vs', manipulation_obj.view_source)
+    print manipulation_obj
     return url
 
 

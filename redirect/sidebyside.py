@@ -47,7 +47,8 @@ def compare(count=0):
             redirect_url = guid['guid']
         redirects.append({
             "path":redirect_url,
-            "guid":guid['guid']
+            "guid":guid['guid'],
+            "vsid":guid['vsid']
             })
 
     
@@ -67,15 +68,17 @@ def compare(count=0):
             print "%s percent done" % int((float(record)/float(count))*100)
         jcnlx_url = ""
         myjobs_url = ""
+        myjobs_info = ""
         report = {
             "jcnlx_url":"",
             "myjobs_url":"",
             "status":"",
             "guid":"",
             "path":"",
+            "vsid":""
             }
         jcnlx_url_src="http://jcnlx.com/%s"%r['path']
-        myjobs_url_src = "http://r.my.jobs:8002/%s"%r['path']
+        myjobs_url_src = "http://localhost:8000/%s"%r['path']
         try:
             jcnlx_url = url.urlopen(jcnlx_url_src)
         except:
@@ -89,13 +92,16 @@ def compare(count=0):
             jcnlx_url = jcnlx_url.geturl()
         
         if myjobs_url:
-            myjobs_url = myjobs_url.geturl()
+            myjobs_headers = myjobs_url.info().headers
+            myjobs_url = myjobs_url.geturl()            
         
-        report["jcnlx_url_src"]=jcnlx_url_src
-        report["myjobs_url_src"]=myjobs_url_src
-        report["jcnlx_url"]=jcnlx_url
-        report["myjobs_url"]=myjobs_url
         report["guid"]=r['guid']
+        report["vsid"]=r['vsid']
+        report["jcnlx_url_src"]=jcnlx_url_src
+        report["jcnlx_url"]=jcnlx_url
+        report["myjobs_url_src"]=myjobs_url_src
+        report["myjobs_url"]=myjobs_url
+        report["x_headers"]=myjobs_headers
         report["path"]=r['path']
         if myjobs_url and jcnlx_url:
             if myjobs_url != jcnlx_url:

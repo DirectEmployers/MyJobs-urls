@@ -1,7 +1,7 @@
 import json
 import uuid
 
-from django.http import Http404, HttpResponse, HttpResponseRedirect
+from django.http import Http404, HttpResponse, HttpResponseRedirect,HttpResponsePermanentRedirect
 from django.shortcuts import get_object_or_404, redirect
 
 from redirect import models
@@ -17,7 +17,7 @@ def home(request, guid, vsid='0'):
 
     try:
         manipulation = models.DestinationManipulation.objects.get(
-            buid=guid_redirect.buid, view_source=vsid, action_type=1)
+            buid=guid_redirect.buid, view_source=vsid, action_type=1)        
     except models.DestinationManipulation.DoesNotExist:
         try:
             manipulation = models.DestinationManipulation.objects.get(
@@ -33,9 +33,11 @@ def home(request, guid, vsid='0'):
     except AttributeError:
         data['type'] = 'method_not_defined'
 
+    print guid
+    print vsid    
     redirect_url = redirect_method(guid_redirect, manipulation)
     data['url'] = redirect_url
     
     #return HttpResponse(redirect_url)
     #return HttpResponse(json.dumps(data))
-    return HttpResponseRedirect(redirect_url)
+    return HttpResponsePermanentRedirect(redirect_url)
