@@ -4,15 +4,23 @@ import json
 import sys
 import urllib2 as url
 from redirect.models import Redirect
-def compare(count=0):
+def compare(start=0, count=0, guid="", vsid=""):
     """
     Comparison method for looking a the redirects generated from jcnlx and
     r.my.jobs and comparing the end result. This method is designed to be run
     from the command line only.
     
     Inputs:
+    :start: The location in the test file to start. Defaults to 0.
+    
     :count: The number of redirects to process. Primarily passed for testing
             purposes only. Default to 0, which the method interprets as all
+            
+    :guid:  The specific guid to process. If passed without the vsid parameter,
+            then all view sources for the buid will be checked.
+            
+    :vsid:  View source to test. If passed without a guid parameter, it 
+            processes all entries with a view source
     
     Returns:
     :result:    A multilevel dictionary split into the following keys:
@@ -38,6 +46,20 @@ def compare(count=0):
                     'guid':row[2]
                 })
         del guids[0]
+        
+    if guid: # trim down to specified guid
+        guid_guid = []
+        for g in guids:
+            if g['guid'] == guid:
+                guid_guid.append(g)
+        guids=guid_guid
+                
+    if vsid: # trim down to specifed view source
+        vsid_guid = []
+        for g in guids:
+            if g['vsid'] == str(vsid):
+                vsid_guid.append(g)
+        guids=vsid_guid
     
     redirects = []
     for guid in guids:
@@ -51,7 +73,6 @@ def compare(count=0):
             "vsid":guid['vsid']
             })
 
-    
     total = [] # track all processed records
     match = [] # track only matched records
     mismatch = [] #track only error records
@@ -59,16 +80,31 @@ def compare(count=0):
     if not count: #control whether we do a partial or full test
         count = len(guids)
     
-    print "Processing %s records" % count
+    do_process = True
+    if count>10:
+        ask_user = raw_input("There are %s records. Continue (y/n)?" % count)
+        if ask_user != "y":
+            do_process = False
+    
+    if not do_process:
+        return "Processing cancelled"
+    
+    end = count+start #prevent index errors if count+start is > length of list
+    if end > len(redirects):
+        end = len(redirects)
+        
+    print "Processing %s records" % (end-start) #report correct record total
+    # present whole number percentages ~ at the quartiles.
     status_update = [int(count*.01),int(count*.25),int(count*.5),int(count*.75)]
     record = 0    
-    for r in redirects[0:count]:
+        
+    for r in redirects[start:end]:
         record=record+1
         if record in status_update:
             print "%s percent done" % int((float(record)/float(count))*100)
         jcnlx_url = ""
         myjobs_url = ""
-        myjobs_info = ""
+        myjobs_headers = ""
         report = {
             "jcnlx_url":"",
             "myjobs_url":"",
@@ -129,4 +165,3 @@ def compare(count=0):
     log = open(results_file,'w')
     log.write(json.dumps(result))
     return result
-        
