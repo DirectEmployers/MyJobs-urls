@@ -24,10 +24,8 @@ def add_query(url, name, value):
 
 def micrositetag(redirect_obj, manipulation_obj):
     """
+    Redirects to the url from redirect_obj.url with source codes appended.
     """
-    manipulation1 = DestinationManipulation.objects.get(buid=manipulation_obj.buid,
-                                                        view_source=0,
-                                                        action_type=1)
     url = redirect_obj.url.replace('[Unique_ID]', str(redirect_obj.uid))
     try:
         manipulation2 = DestinationManipulation.objects.get(buid=manipulation_obj.buid,
@@ -42,6 +40,8 @@ def micrositetag(redirect_obj, manipulation_obj):
 
 def microsite(redirect_obj, manipulation_obj):
     """
+    Redirects to the url from manipulation_obj.value_1 with a 'vs=' source code
+    appended
     """
     url = manipulation_obj.value_1
     url = url.replace('[Unique_ID]', str(redirect_obj.uid))
