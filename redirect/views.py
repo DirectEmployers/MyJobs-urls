@@ -1,4 +1,5 @@
 import json
+import urllib
 import uuid
 
 from django.http import Http404, HttpResponse, HttpResponseRedirect,HttpResponsePermanentRedirect
@@ -30,7 +31,7 @@ def home(request, guid, vsid='0'):
         redirect_url = 'http://us.jobs/msccn-referral.asp?gi=%s%s&cp=%s&u=%s' % \
                        (guid_redirect.guid,
                        manipulation.view_source,
-                       guid_redirect.company_name,
+                       urllib.quote(guid_redirect.company_name),
                        guid_redirect.uid)
         print redirect_url
     elif manipulation.view_source == 294:
