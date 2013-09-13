@@ -25,19 +25,33 @@ def home(request, guid, vsid='0'):
         except models.DestinationManipulation.DoesNotExist:
             raise Http404
 
-    method_name = manipulation.action
+    if manipulation.view_source == 1604:
+        print 'msccn redirect'
+        redirect_url = 'http://us.jobs/msccn-referral.asp?gi=%s%s&cp=%s&u=%s' % \
+                       (guid_redirect.guid,
+                       manipulation.view_source,
+                       guid_redirect.company_name,
+                       guid_redirect.uid)
+        print redirect_url
+    elif manipulation.view_source == 294:
+        print 'facebook redirect'
+        redirect_url = 'http://apps.facebook.com/us-jobs/?jvid=%s%s' % \
+            (guid_redirect.guid, manipulation.view_source)
+        print redirect_url
+    else:
+        method_name = manipulation.action
 
-    try:
-        redirect_method = getattr(helpers, method_name)
-        data['type'] = method_name
-    except AttributeError:
-        data['type'] = 'method_not_defined'
+        try:
+            redirect_method = getattr(helpers, method_name)
+            data['type'] = method_name
+        except AttributeError:
+            data['type'] = 'method_not_defined'
 
-    print guid
-    print vsid    
-    redirect_url = redirect_method(guid_redirect, manipulation)
-    data['url'] = redirect_url
-    
-    #return HttpResponse(redirect_url)
-    #return HttpResponse(json.dumps(data))
+        print guid
+        print vsid
+        redirect_url = redirect_method(guid_redirect, manipulation)
+        data['url'] = redirect_url
+
+        #return HttpResponse(redirect_url)
+        #return HttpResponse(json.dumps(data))
     return HttpResponsePermanentRedirect(redirect_url)
