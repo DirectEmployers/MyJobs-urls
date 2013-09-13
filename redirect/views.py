@@ -22,7 +22,7 @@ def home(request, guid, vsid='0'):
     except models.DestinationManipulation.DoesNotExist:
         try:
             manipulation = models.DestinationManipulation.objects.get(
-                buid=guid_redirect.buid, view_source=0, action_type=1)
+                buid=guid_redirect.buid, view_source=vsid)
         except models.DestinationManipulation.DoesNotExist:
             raise Http404
 

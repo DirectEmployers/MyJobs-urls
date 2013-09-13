@@ -58,7 +58,7 @@ def microsite(redirect_obj, manipulation_obj):
     micrositetag redirect with an additional view source parameter in its
     query string
     """
-    url = micrositetag(redirect_obj, manipulation_obj)
+    url = manipulation_obj.value_1
     print url
     url = url.replace('[Unique_ID]', str(redirect_obj.uid))
     url = add_query(url, 'vs', manipulation_obj.view_source)
@@ -125,7 +125,7 @@ def sourceurlwrap(redirect_obj, manipulation_obj):
     Encodes the url and prepends value_1 onto it
     """
     print redirect_obj.url
-    url = urllib.quote(redirect_obj.url)
+    url = urllib.quote(redirect_obj.url, safe='')
     #url = redirect_obj.url
     return manipulation_obj.value_1 + url
 
@@ -227,6 +227,7 @@ def cframe(redirect_obj, manipulation_obj):
     Redirects to the company frame denoted by value_1, appending the job url
     as the url query parameter
     """
-    url = urllib.quote(redirect_obj.url)
+    url = urllib.quote(redirect_obj.url, safe='')
+    url = url.replace('.', '%2E')
     url = '%s?url=%s' % (manipulation_obj.value_1, url)
     return 'http://directemployers.us.jobs/companyframe/' + url
