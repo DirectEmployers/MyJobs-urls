@@ -44,8 +44,13 @@ def micrositetag(redirect_obj, manipulation_obj):
         #print redirect_obj.uid
         #return microsite_url.replace('[blank_MS1]', str(redirect_obj.uid))
         return "%s%s/job/" % (microsite_url,redirect_obj.uid)
-    else:
-        return redirect_obj.url
+    else:        
+        try:
+            ats = ATSSourceCode.objects.get(view_source=manipulation_obj.view_source, buid=redirect_obj.buid)
+            ats_tag = '&' + ats.parameter_name + '=' + ats.parameter_value
+            return redirect_obj.url + str(ats_tag)
+        except ATSSourceCode.DoesNotExist:
+            return redirect_obj.url
 
 
 def microsite(redirect_obj, manipulation_obj):
