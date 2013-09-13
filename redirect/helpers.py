@@ -24,45 +24,28 @@ def add_query(url, name, value):
 
 def micrositetag(redirect_obj, manipulation_obj):
     """
-    Redirects to the given job's entry on the company's microsite,
-    or jobs.jobs if one does not exist
     """
+    manipulation1 = DestinationManipulation.objects.get(buid=manipulation_obj.buid,
+                                                        view_source=0,
+                                                        action_type=1)
+    url = redirect_obj.url.replace('[Unique_ID]', str(redirect_obj.uid))
     try:
-        vsid = ViewSource.objects.get(view_source_id=manipulation_obj.view_source)
-        redirect_to_microsite = vsid.microsite
-    except ViewSource.DoesNotExist:
-        redirect_to_microsite=1
-    
-    if redirect_to_microsite:
-        try:
-            cm = CanonicalMicrosite.objects.get(buid=redirect_obj.buid)
-            microsite_url = cm.canonical_microsite_url
-        except CanonicalMicrosite.DoesNotExist:
-            # figure out the pass
-            #microsite_url = 'jobs.jobs/[blank_MS1]/job'
-            return redirect_obj.url
-        #print redirect_obj.uid
-        #return microsite_url.replace('[blank_MS1]', str(redirect_obj.uid))
-        return "%s%s/job/" % (microsite_url,redirect_obj.uid)
-    else:        
-        try:
-            ats = ATSSourceCode.objects.get(view_source=manipulation_obj.view_source, buid=redirect_obj.buid)
-            ats_tag = '&' + ats.parameter_name + '=' + ats.parameter_value
-            return redirect_obj.url + str(ats_tag)
-        except ATSSourceCode.DoesNotExist:
-            return redirect_obj.url
+        manipulation2 = DestinationManipulation.objects.get(buid=manipulation_obj.buid,
+                                                            view_source=0,
+                                                            action_type=2)
+        redirect_obj.url = url
+        url = sourcecodetag(redirect_obj, manipulation2)
+    except DestinationManipulation.DoesNotExist:
+        pass
+    return url
 
 
 def microsite(redirect_obj, manipulation_obj):
     """
-    micrositetag redirect with an additional view source parameter in its
-    query string
     """
     url = manipulation_obj.value_1
-    print url
     url = url.replace('[Unique_ID]', str(redirect_obj.uid))
     url = add_query(url, 'vs', manipulation_obj.view_source)
-    print manipulation_obj
     return url
 
 
@@ -124,7 +107,6 @@ def sourceurlwrap(redirect_obj, manipulation_obj):
     """
     Encodes the url and prepends value_1 onto it
     """
-    print redirect_obj.url
     url = urllib.quote(redirect_obj.url, safe='')
     #url = redirect_obj.url
     return manipulation_obj.value_1 + url

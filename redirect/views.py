@@ -27,18 +27,16 @@ def home(request, guid, vsid='0'):
             raise Http404
 
     if manipulation.view_source == 1604:
-        print 'msccn redirect'
+        # msccn redirect
         redirect_url = 'http://us.jobs/msccn-referral.asp?gi=%s%s&cp=%s&u=%s' % \
                        (guid_redirect.guid,
                        manipulation.view_source,
                        urllib.quote(guid_redirect.company_name),
                        guid_redirect.uid)
-        print redirect_url
     elif manipulation.view_source == 294:
-        print 'facebook redirect'
+        # facebook redirect
         redirect_url = 'http://apps.facebook.com/us-jobs/?jvid=%s%s' % \
             (guid_redirect.guid, manipulation.view_source)
-        print redirect_url
     else:
         method_name = manipulation.action
 
