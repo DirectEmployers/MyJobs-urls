@@ -174,8 +174,8 @@ def switchlastinstance(redirect_obj, manipulation_obj, old=None, new=None):
     If called on its own, replaces value_1 with value_2; otherwise replaces
     old with new
     """
-    old = value1 or manipulation_obj.value_1
-    new = value2 or manipulation_obj.value_2
+    old = old or manipulation_obj.value_1
+    new = new or manipulation_obj.value_2
     return new.join(redirect_obj.url.rsplit(old, 1))
 
 
@@ -222,6 +222,6 @@ def cframe(redirect_obj, manipulation_obj):
     Redirects to the company frame denoted by value_1, appending the job url
     as the url query parameter
     """
-    url = urllib.urlencode(redirect_obj.url)
+    url = urllib.quote(redirect_obj.url)
     url = '%s?url=%s' % (manipulation_obj.value_1, url)
     return 'http://directemployers.us.jobs/companyframe/' + url
