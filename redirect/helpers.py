@@ -32,7 +32,8 @@ def micrositetag(redirect_obj, manipulation_obj):
                                                             view_source=0,
                                                             action_type=2)
         redirect_obj.url = url
-        url = sourcecodetag(redirect_obj, manipulation2)
+        method = globals()[manipulation2.action]
+        url = method(redirect_obj, manipulation2)
     except DestinationManipulation.DoesNotExist:
         pass
     return url
