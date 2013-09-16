@@ -142,14 +142,14 @@ def compare(start=0, count=0, guid="", vsid=""):
             "vsid":""
             }
 
-        report["guid"]=r['guid']
-        report["vsid"]=r['vsid']
+        report["guid"]=path[:32]
+        report["vsid"]=path[32:]
         report["jcnlx_url_src"]=jcnlx_url_src
         report["jcnlx_url"]=jcnlx_url
         report["myjobs_url_src"]=myjobs_url_src
         report["myjobs_url"]=myjobs_url
         report["x_headers"]=myjobs_headers
-        report["path"]=r['path']
+        report["path"]=path
         if myjobs_url and jcnlx_url:
             if myjobs_url != jcnlx_url:
                 report["status"] = "URL Mismatch"
