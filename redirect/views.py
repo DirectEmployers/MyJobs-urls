@@ -28,10 +28,12 @@ def home(request, guid, vsid='0'):
 
     if manipulation.view_source == 1604:
         # msccn redirect
+        company_name = guid_redirect.company_name
+        company_name = company_name.replace(" ", "+")
         redirect_url = 'http://us.jobs/msccn-referral.asp?gi=%s%s&cp=%s&u=%s' % \
                        (guid_redirect.guid,
                        manipulation.view_source,
-                       urllib.quote(guid_redirect.company_name),
+                       company_name,
                        guid_redirect.uid)
     elif manipulation.view_source == 294:
         # facebook redirect
