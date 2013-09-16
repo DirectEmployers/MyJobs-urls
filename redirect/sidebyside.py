@@ -117,22 +117,13 @@ def compare(start=0, count=0, guid="", vsid=""):
         try:
             results[r['path']]['jcnlx'] = requests.head(jcnlx_url_src)
         except:
-            pass
+            results[r['path']]['jcnlx'] = jcnlx_url_src
         try:
             results[r['path']]['myjobs'] = requests.head(myjobs_url_src)
         except:
-            pass
+            results[r['path']]['myjobs'] = myjobs_url_src
 
     for path in results.keys():
-            
-        if results[path]['jcnlx']:
-            jcnlx_url = results[path]['jcnlx'].headers.get('location')
-        
-        if results[path]['myjobs']:
-            mj_result = results[path]['myjobs']
-            myjobs_url = mj_result.headers.get('location')
-            myjobs_headers = dict(mj_result.headers)
-
         report = {
             "jcnlx_url":"",
             "myjobs_url":"",
@@ -141,14 +132,35 @@ def compare(start=0, count=0, guid="", vsid=""):
             "path":"",
             "vsid":""
             }
+        if results[path]['jcnlx']:
+            jc_result = results[path]['jcnlx']
+            try:
+                jcnlx_url = jc_result.headers.get('location')
+                jcnlx_url_src = jc_result.url
+            except AttributeError:
+                jcnlx_url = ''
+                jcnlx_url_src = jc_result
+
+            report["jcnlx_url_src"]=jcnlx_url_src
+            report["jcnlx_url"]=jcnlx_url
+
+        if results[path]['myjobs']:
+            mj_result = results[path]['myjobs']
+            try:
+                myjobs_url = mj_result.headers.get('location')
+                myjobs_url_src = mj_result.url
+                myjobs_headers = dict(mj_result.headers)
+            except AttributeError:
+                myjobx_url = ''
+                myjobs_url_src = mj_result
+                myjobs_headers = {}
+
+            report["myjobs_url_src"]=myjobs_url_src
+            report["myjobs_url"]=myjobs_url
+            report["x_headers"]=myjobs_headers
 
         report["guid"]=path[:32]
         report["vsid"]=path[32:]
-        report["jcnlx_url_src"]=jcnlx_url_src
-        report["jcnlx_url"]=jcnlx_url
-        report["myjobs_url_src"]=myjobs_url_src
-        report["myjobs_url"]=myjobs_url
-        report["x_headers"]=myjobs_headers
         report["path"]=path
         if myjobs_url and jcnlx_url:
             if myjobs_url != jcnlx_url:
