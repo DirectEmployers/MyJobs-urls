@@ -1,11 +1,14 @@
-import csv
 from collections import defaultdict
+import csv
 from datetime import datetime, time
 import json
 import sys
-import urllib2 as url
+
 import requests
+
 from redirect.models import Redirect
+
+
 def compare(start=0, count=0, guid="", vsid=""):
     """
     Comparison method for looking a the redirects generated from jcnlx and
@@ -109,14 +112,6 @@ def compare(start=0, count=0, guid="", vsid=""):
         jcnlx_url = ""
         myjobs_url = ""
         myjobs_headers = ""
-        report = {
-            "jcnlx_url":"",
-            "myjobs_url":"",
-            "status":"",
-            "guid":"",
-            "path":"",
-            "vsid":""
-            }
         jcnlx_url_src="http://jcnlx.com/%s"%r['path']
         myjobs_url_src = "http://localhost:8000/%s"%r['path']
         try:
@@ -137,6 +132,15 @@ def compare(start=0, count=0, guid="", vsid=""):
             mj_result = results[path]['myjobs']
             myjobs_url = mj_result.headers.get('location')
             myjobs_headers = dict(mj_result.headers)
+
+        report = {
+            "jcnlx_url":"",
+            "myjobs_url":"",
+            "status":"",
+            "guid":"",
+            "path":"",
+            "vsid":""
+            }
 
         report["guid"]=r['guid']
         report["vsid"]=r['vsid']
