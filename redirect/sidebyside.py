@@ -1,8 +1,10 @@
 import csv
+from collections import defaultdict
 from datetime import datetime, time
 import json
 import sys
 import urllib2 as url
+import requests
 from redirect.models import Redirect
 def compare(start=0, count=0, guid="", vsid=""):
     """
@@ -97,7 +99,9 @@ def compare(start=0, count=0, guid="", vsid=""):
     # present whole number percentages ~ at the quartiles.
     status_update = [int(count*.01),int(count*.25),int(count*.5),int(count*.75)]
     record = 0    
-        
+
+    results = defaultdict(lambda: defaultdict(list))
+
     for r in redirects[start:end]:
         record=record+1
         if record in status_update:
@@ -116,21 +120,24 @@ def compare(start=0, count=0, guid="", vsid=""):
         jcnlx_url_src="http://jcnlx.com/%s"%r['path']
         myjobs_url_src = "http://localhost:8000/%s"%r['path']
         try:
-            jcnlx_url = url.urlopen(jcnlx_url_src)
-        except:
-            pass            
-        try:
-            myjobs_url = url.urlopen(myjobs_url_src)
+            results[r['path']]['jcnlx'] = requests.head(jcnlx_url_src)
         except:
             pass
+        try:
+            results[r['path']]['myjobs'] = requests.head(myjobs_url_src)
+        except:
+            pass
+
+    for path in results.keys():
             
-        if jcnlx_url:
-            jcnlx_url = jcnlx_url.geturl()
+        if results[path]['jcnlx']:
+            jcnlx_url = results[path]['jcnlx'].headers.get('location')
         
-        if myjobs_url:
-            myjobs_headers = myjobs_url.info().headers
-            myjobs_url = myjobs_url.geturl()            
-        
+        if results[path]['myjobs']:
+            mj_result = results[path]['myjobs']
+            myjobs_url = mj_result.headers.get('location')
+            myjobs_headers = dict(mj_result.headers)
+
         report["guid"]=r['guid']
         report["vsid"]=r['vsid']
         report["jcnlx_url_src"]=jcnlx_url_src
