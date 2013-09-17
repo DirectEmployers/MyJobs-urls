@@ -75,13 +75,17 @@ class ViewSourceViewTests(TestCase):
         """
         self.manipulation.action = 'micrositetag'
         self.manipulation.save()
+        
+        self.redirect.uid = '37945336'
+        self.redirect.save()
 
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
                                   self.manipulation.view_source]))
         #content = json.loads(response.content)
+        #url = redirect_obj.url.replace('[Unique_ID]', str(redirect_obj.uid))
         test_url = self.microsite.canonical_microsite_url.replace(
-            '[blank_MS1]', str(self.redirect.uid))
+            '[Unique_ID]', str(self.redirect.uid))
         self.assertEqual(response['Location'], test_url)
         # Redirect used in seo
         # self.assertRedirects(resp,target,status_code=301)
@@ -129,8 +133,7 @@ class ViewSourceViewTests(TestCase):
         
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
-                                  self.manipulation.view_source]))
-        #content = json.loads(response.content)
+                                  self.manipulation.view_source]))        
         test_url = self.manipulation.value_1
         self.assertEqual(response['Location'], test_url)
         
