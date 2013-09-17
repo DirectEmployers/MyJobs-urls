@@ -11,10 +11,6 @@ from redirect import helpers
 
 def home(request, guid, vsid='0'):
     guid_redirect = get_object_or_404(models.Redirect, guid=guid)
-    data = {'guid': guid_redirect.guid,
-            'vsid': vsid,
-            'type': '',
-            'url': guid_redirect.url}
 
     try:
         manipulation = models.DestinationManipulation.objects.get(
@@ -29,7 +25,7 @@ def home(request, guid, vsid='0'):
     if manipulation.view_source == 1604:
         # msccn redirect
         company_name = guid_redirect.company_name
-        company_name = company_name.replace(" ", "+")
+        company_name = helpers.quote_string(company_name)
         redirect_url = 'http://us.jobs/msccn-referral.asp?gi=%s%s&cp=%s&u=%s' % \
                        (guid_redirect.guid,
                        manipulation.view_source,
@@ -44,15 +40,11 @@ def home(request, guid, vsid='0'):
 
         try:
             redirect_method = getattr(helpers, method_name)
-            data['type'] = method_name
         except AttributeError:
-            data['type'] = 'method_not_defined'
+            pass
 
         print guid
         print vsid
         redirect_url = redirect_method(guid_redirect, manipulation)
-        data['url'] = redirect_url
 
-        #return HttpResponse(redirect_url)
-        #return HttpResponse(json.dumps(data))
     return HttpResponsePermanentRedirect(redirect_url)

@@ -1,4 +1,4 @@
-import urllib
+from django.utils.http import urlquote_plus
 
 from redirect.models import *
 
@@ -22,20 +22,58 @@ def add_query(url, name, value):
     return url
 
 
+def quote_string(value):
+    """
+    Due to differences between VBScript and Python %% encoding, certain
+    substitutions must be done manually. These are required in multiple
+    circumstances.
+
+    TODO: Do these encoding issues actually harm anything? Can we get away
+    with not manually replacing punctuation that is perfectly valid?
+
+    Inputs:
+    :value: String to be quoted
+
+    :value: Quoted string
+    """
+    value = urlquote_plus(value, safe='')
+    value = value.replace('.', '%2E')
+    value = value.replace('-', '%2D')
+    value = value.replace('_', '%5F')
+    return value
+
+
 def micrositetag(redirect_obj, manipulation_obj):
     """
     Redirects to the url from redirect_obj.url with source codes appended.
     """
     url = redirect_obj.url.replace('[Unique_ID]', str(redirect_obj.uid))
+
+    # There is often (always?) a second action that needs to take place
+    # to achieve the correct manipulated result.
     try:
-        manipulation2 = DestinationManipulation.objects.get(buid=manipulation_obj.buid,
-                                                            view_source=0,
-                                                            action_type=2)
-        redirect_obj.url = url
-        method = globals()[manipulation2.action]
-        url = method(redirect_obj, manipulation2)
+        # Try to retrieve a DestinationManipulation object for the current
+        # buid and view_source, but for action_type 2
+        manipulation_2 = DestinationManipulation.objects.get(
+            buid=manipulation_obj.buid,
+            view_source=manipulation_obj.view_source,
+            action_type=2)
     except DestinationManipulation.DoesNotExist:
-        pass
+        try:
+            # If the previous does not exist, check view_source 0
+            manipulation_2 = DestinationManipulation.objects.get(
+                buid=redirect_obj.buid, view_source=0, action_type=2)
+        except DestinationManipulation.DoesNotExist:
+            manipulation_2 = None
+
+    if manipulation_2 and (manipulation_2.value_1 != '[blank]'):
+        # A manipulation exists. Retrieve the method corresponding to its
+        # action, call that method, and return the result
+        method_name = manipulation_2.action
+        method = globals()[method_name]
+        redirect_obj.url = url
+        url = method(redirect_obj, manipulation_2)
+
     return url
 
 
@@ -108,8 +146,7 @@ def sourceurlwrap(redirect_obj, manipulation_obj):
     """
     Encodes the url and prepends value_1 onto it
     """
-    url = urllib.quote(redirect_obj.url, safe='')
-    #url = redirect_obj.url
+    url = quote_string(redirect_obj.url)
     return manipulation_obj.value_1 + url
 
 
@@ -210,7 +247,6 @@ def cframe(redirect_obj, manipulation_obj):
     Redirects to the company frame denoted by value_1, appending the job url
     as the url query parameter
     """
-    url = urllib.quote(redirect_obj.url, safe='')
-    url = url.replace('.', '%2E')
+    url = quote_string(redirect_obj.url)
     url = '%s?url=%s' % (manipulation_obj.value_1, url)
     return 'http://directemployers.us.jobs/companyframe/' + url

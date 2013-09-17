@@ -80,6 +80,7 @@ def compare(start=0, count=0, guid="", vsid=""):
 
     total = [] # track all processed records
     match = [] # track only matched records
+    old = [] # track jobs no longer on jcnlx
     mismatch = [] #track only error records
         
     if not count: #control whether we do a partial or full test
@@ -114,14 +115,9 @@ def compare(start=0, count=0, guid="", vsid=""):
         myjobs_headers = ""
         jcnlx_url_src="http://jcnlx.com/%s"%r['path']
         myjobs_url_src = "http://localhost:8000/%s"%r['path']
-        try:
-            results[r['path']]['jcnlx'] = requests.head(jcnlx_url_src)
-        except:
-            results[r['path']]['jcnlx'] = jcnlx_url_src
-        try:
-            results[r['path']]['myjobs'] = requests.head(myjobs_url_src)
-        except:
-            results[r['path']]['myjobs'] = myjobs_url_src
+
+        results[r['path']]['jcnlx'] = requests.head(jcnlx_url_src)
+        results[r['path']]['myjobs'] = requests.head(myjobs_url_src)
 
     for path in results.keys():
         report = {
@@ -132,32 +128,21 @@ def compare(start=0, count=0, guid="", vsid=""):
             "path":"",
             "vsid":""
             }
-        if results[path]['jcnlx']:
-            jc_result = results[path]['jcnlx']
-            try:
-                jcnlx_url = jc_result.headers.get('location')
-                jcnlx_url_src = jc_result.url
-            except AttributeError:
-                jcnlx_url = ''
-                jcnlx_url_src = jc_result
+        jc_result = results[path]['jcnlx']
+        jcnlx_url = jc_result.headers.get('location')
+        jcnlx_url_src = jc_result.url
 
-            report["jcnlx_url_src"]=jcnlx_url_src
-            report["jcnlx_url"]=jcnlx_url
+        report["jcnlx_url"]=jcnlx_url
+        report['jcnlx_url_src'] = jcnlx_url_src
 
-        if results[path]['myjobs']:
-            mj_result = results[path]['myjobs']
-            try:
-                myjobs_url = mj_result.headers.get('location')
-                myjobs_url_src = mj_result.url
-                myjobs_headers = dict(mj_result.headers)
-            except AttributeError:
-                myjobx_url = ''
-                myjobs_url_src = mj_result
-                myjobs_headers = {}
+        mj_result = results[path]['myjobs']
+        myjobs_url = mj_result.headers.get('location')
+        myjobs_url_src = mj_result.url
+        myjobs_headers = dict(mj_result.headers)
 
-            report["myjobs_url_src"]=myjobs_url_src
-            report["myjobs_url"]=myjobs_url
-            report["x_headers"]=myjobs_headers
+        report["myjobs_url"]=myjobs_url
+        report["myjobs_url_src"]=myjobs_url_src
+        report["x_headers"]=myjobs_headers
 
         report["guid"]=path[:32]
         report["vsid"]=path[32:]
@@ -170,17 +155,23 @@ def compare(start=0, count=0, guid="", vsid=""):
                 report["status"] = "OK"
                 match.append(report)                
         else:
-            report["status"] = "URL Error"
-            mismatch.append(report)
+            if jcnlx_url:
+                print jcnlx_url
+                report["status"] = "URL Error"
+                mismatch.append(report)
+            else:
+                report["status"] = "Old Job"
+                old.append(report)
             
         total.append(report)
         
-    print "%s OK | %s mismatch | %s total" % (
-        len(match),len(mismatch),len(total)
+    print "%s OK | %s mismatch | %s old | %s total" % (
+        len(match),len(mismatch),len(old),len(total)
         )
     
     result = {
         "ok": match,
+        "old": old,
         "error": mismatch,
         "all": total
         }
