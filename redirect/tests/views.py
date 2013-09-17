@@ -146,8 +146,10 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
                                   self.manipulation.view_source]))
-        #content = json.loads(response.content)
-        url = urllib.quote(self.redirect.url)
+        url = urlquote_plus(self.redirect.url, safe='')
+        url = url.replace('.', '%2E')
+        url = url.replace('-', '%2D')
+        url = url.replace('_', '%5F')
         url = '%s?url=%s' % (self.manipulation.value_1, url)        
         test_url = 'http://directemployers.us.jobs/companyframe/' + url
         self.assertEqual(response['Location'], test_url)    
