@@ -77,15 +77,14 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.save()
         
         self.redirect.uid = '37945336'
+        self.redirect.url = 'jobs.jobs/[Unique_ID]/job'
         self.redirect.save()
 
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
-                                  self.manipulation.view_source]))
-        #content = json.loads(response.content)
-        #url = redirect_obj.url.replace('[Unique_ID]', str(redirect_obj.uid))
-        test_url = self.microsite.canonical_microsite_url.replace(
-            '[Unique_ID]', str(self.redirect.uid))
+                                  self.manipulation.view_source]))        
+        test_url = 'http://testserver/' + self.microsite.canonical_microsite_url.replace(
+            '[Unique_ID]', str(self.redirect.uid))        
         self.assertEqual(response['Location'], test_url)
         # Redirect used in seo
         # self.assertRedirects(resp,target,status_code=301)
@@ -98,18 +97,22 @@ class ViewSourceViewTests(TestCase):
         example: http://cadence.jobs/noida-ind/smcs/37945336/job/?vs=274
         """
         self.manipulation.action = 'microsite'
+        self.manipulation.value_1 = 'jobsearch.lilly.com/[Unique_ID]/job/'
         self.manipulation.save()
-
+        
+        self.redirect.url = 'jobsearch.lilly.com/[Unique_ID]/job/'
+        self.redirect.save()
+        
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
-                                  self.manipulation.view_source]))
-        #content = json.loads(response.content)
-        test_url = self.microsite.canonical_microsite_url.replace(
-            '[Unique_ID]', str(self.redirect.uid))
-        test_url += '?vs=%s' % self.manipulation.view_source
+                                  self.manipulation.view_source]))       
+        test_url = 'http://testserver/' + self.manipulation.value_1        
+        test_url = test_url.replace('[Unique_ID]', str(self.redirect.uid))
+        test_url += '?vs=%s' % self.manipulation.view_source        
         self.assertEqual(response['Location'], test_url)
         # Redirect used in seo
         # self.assertRedirects(resp,target,status_code=301)
+        
 
     def test_amptoamp_redirect(self):
         """
