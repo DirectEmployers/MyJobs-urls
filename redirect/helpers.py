@@ -189,7 +189,7 @@ def amptoamp(redirect_obj, manipulation_obj):
     after the second ampersand with value_2
     """
     url = redirect_obj.url.split('&')
-    return redirect_obj.value_1 + url[1] + redirect_obj.value_2
+    return manipulation_obj.value_1 + url[1] + manipulation_obj.value_2
 
 
 def switchlastinstance(redirect_obj, manipulation_obj, old=None, new=None):

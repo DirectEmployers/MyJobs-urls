@@ -125,8 +125,16 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.value_1 = 'http://ad.doubleclick.net/clk;2526;8138?'
         self.manipulation.value_2 = '&functionName=viewFromLink&locale=en-us'
         self.manipulation.save()
-                
-        pass
+        
+        self.redirect.url = 'jobsearch.lilly.com/ddddddd/job/&8888888&vs=43'
+        self.redirect.save()
+        
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.view_source]))
+        url = self.redirect.url.split('&')
+        test_url = self.manipulation.value_1 + url[1] + self.manipulation.value_2         
+        self.assertEqual(response['Location'], test_url)
     
     
     def test_urlswap_redirect(self):
