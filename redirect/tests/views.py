@@ -19,6 +19,7 @@ class ViewSourceViewTests(TestCase):
         self.redirect = RedirectFactory()
         self.microsite = CanonicalMicrositeFactory()
         self.manipulation = DestinationManipulationFactory()
+        
 
     def test_get_with_no_vsid(self):
         """
@@ -28,6 +29,7 @@ class ViewSourceViewTests(TestCase):
         # In this case, view source id 0 is a sourcecodetag redirect
         test_url = 'http://testserver/' + self.redirect.url + self.manipulation.value_1
         self.assertEqual(response['Location'], test_url)
+        
 
     def test_get_with_nonexistent_vsid(self):
         """
@@ -48,6 +50,7 @@ class ViewSourceViewTests(TestCase):
                                               'hex characters']:
             with self.assertRaises(NoReverseMatch):
                 self.client.get(reverse('home', args=[guid]))
+                
 
     def test_sourcecodetag_redirect(self):
         """
@@ -64,6 +67,7 @@ class ViewSourceViewTests(TestCase):
         self.assertEqual(response['Location'], test_url)
         # Redirect used in seo
         # self.assertRedirects(resp,target,status_code=301)
+        
 
     def test_micrositetag_redirect(self):
         """
@@ -86,6 +90,7 @@ class ViewSourceViewTests(TestCase):
         self.assertEqual(response['Location'], test_url)
         # Redirect used in seo
         # self.assertRedirects(resp,target,status_code=301)
+        
 
     def test_microsite_redirect(self):
         """
