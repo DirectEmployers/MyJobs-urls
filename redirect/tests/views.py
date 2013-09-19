@@ -35,11 +35,9 @@ class ViewSourceViewTests(TestCase):
         redirect to the job url with no manipulation
         """
         response = self.client.get(reverse('home',
-                                           args=[self.redirect.guid, 5]))
-        print response.content
-        self.assertEqual(response,
-                         helpers.sourcecodetag(self.redirect,
-                                               self.manipulation))
+                                           args=[self.redirect.guid, 5]))        
+        self.assertEqual(response.status_code, 404)
+        
 
     def test_get_with_malformed_guid(self):
         """
