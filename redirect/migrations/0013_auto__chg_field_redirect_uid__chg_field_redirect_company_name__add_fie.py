@@ -9,6 +9,9 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
 
+        # Changing field 'Redirect.uid'
+        db.alter_column(u'redirect_redirect', 'uid', self.gf('django.db.models.fields.IntegerField')(unique=True, null=True))
+
         # Changing field 'Redirect.company_name'
         db.alter_column(u'redirect_redirect', 'company_name', self.gf('django.db.models.fields.TextField')())
         # Adding field 'ViewSource.friendly_name'
@@ -18,12 +21,15 @@ class Migration(SchemaMigration):
 
 
         # Changing field 'DestinationManipulation.value_1'
-        db.alter_column(u'redirect_destinationmanipulation', 'value_1', self.gf('django.db.models.fields.TextField')(null=True))
+        db.alter_column(u'redirect_destinationmanipulation', 'value_1', self.gf('django.db.models.fields.TextField')())
 
         # Changing field 'DestinationManipulation.value_2'
-        db.alter_column(u'redirect_destinationmanipulation', 'value_2', self.gf('django.db.models.fields.TextField')(null=True))
+        db.alter_column(u'redirect_destinationmanipulation', 'value_2', self.gf('django.db.models.fields.TextField')())
 
     def backwards(self, orm):
+
+        # User chose to not deal with backwards NULL issues for 'Redirect.uid'
+        raise RuntimeError("Cannot reverse this migration. 'Redirect.uid' and its values cannot be restored.")
 
         # Changing field 'Redirect.company_name'
         db.alter_column(u'redirect_redirect', 'company_name', self.gf('django.db.models.fields.CharField')(max_length=255))
@@ -58,8 +64,8 @@ class Migration(SchemaMigration):
             'action_type': ('django.db.models.fields.IntegerField', [], {}),
             'buid': ('django.db.models.fields.IntegerField', [], {}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'value_1': ('django.db.models.fields.TextField', [], {'default': "''", 'null': 'True'}),
-            'value_2': ('django.db.models.fields.TextField', [], {'default': "''", 'null': 'True'}),
+            'value_1': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
+            'value_2': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
             'view_source': ('django.db.models.fields.IntegerField', [], {})
         },
         u'redirect.redirect': {
@@ -71,7 +77,7 @@ class Migration(SchemaMigration):
             'job_location': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
             'job_title': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
             'new_date': ('django.db.models.fields.DateTimeField', [], {}),
-            'uid': ('django.db.models.fields.IntegerField', [], {'unique': 'True'}),
+            'uid': ('django.db.models.fields.IntegerField', [], {'unique': 'True', 'null': 'True', 'blank': 'True'}),
             'url': ('django.db.models.fields.TextField', [], {})
         },
         u'redirect.redirectaction': {
@@ -85,7 +91,7 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'ViewSource'},
             'friendly_name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
             'microsite': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
             'view_source_id': ('django.db.models.fields.IntegerField', [], {'default': 'None', 'primary_key': 'True'})
         }
     }

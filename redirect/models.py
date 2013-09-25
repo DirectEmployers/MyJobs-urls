@@ -16,8 +16,8 @@ class DestinationManipulation(models.Model):
     buid = models.IntegerField()
     view_source = models.IntegerField()
     action = models.CharField(max_length=255, null=True, default="")
-    value_1 = models.TextField(null=True, default="")
-    value_2 = models.TextField(null=True, default="")
+    value_1 = models.TextField(blank=True, default="")
+    value_2 = models.TextField(blank=True, default="")
 
     class Meta:
         unique_together = ('action_type', 'buid', 'view_source', 'action',
@@ -35,7 +35,7 @@ class Redirect(models.Model):
                                help_text=_('Used in conjunction with'
                                            'viewsource_id to index into the '
                                            'RedirectAction table'))
-    uid = models.IntegerField(unique=True,
+    uid = models.IntegerField(unique=True, blank=True, null=True,
                               help_text=_("Unique id on partner's ATS or "
                                           "other job repository"))
     url = models.TextField(help_text=_('URL being manipulated'))
@@ -135,7 +135,7 @@ class RedirectAction(models.Model):
 class ViewSource(models.Model):
     view_source_id = models.IntegerField(primary_key=True, blank=True,
                                          default=None)
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, blank=True)
     friendly_name = models.CharField(max_length=255, blank=True)
     microsite = models.BooleanField(help_text=_('View source is a microsite'))
 
