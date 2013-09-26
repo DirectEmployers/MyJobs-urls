@@ -2,7 +2,7 @@ import json
 import urllib
 import uuid
 
-from django.http import Http404, HttpResponse, HttpResponseRedirect,HttpResponsePermanentRedirect
+from django.http import Http404, HttpResponsePermanentRedirect
 from django.shortcuts import get_object_or_404, redirect
 
 from redirect import models
