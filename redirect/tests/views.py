@@ -6,6 +6,7 @@ import urllib
 from django.test import TestCase
 from django.test.client import Client
 from django.core.urlresolvers import reverse, NoReverseMatch
+from django.utils.http import urlquote_plus
 
 from redirect import helpers
 from redirect.models import *
@@ -18,16 +19,17 @@ class ViewSourceViewTests(TestCase):
         self.redirect = RedirectFactory()
         self.microsite = CanonicalMicrositeFactory()
         self.manipulation = DestinationManipulationFactory()
+        
 
     def test_get_with_no_vsid(self):
         """
         If no view source id is provided, default to 0
         """
-        response = self.client.get(reverse('home', args=[self.redirect.guid]))
-        content = json.loads(response.content)
+        response = self.client.get(reverse('home', args=[self.redirect.guid]))        
         # In this case, view source id 0 is a sourcecodetag redirect
-        test_url = self.redirect.url + self.manipulation.value_1
-        self.assertEqual(content['url'], test_url)
+        test_url = 'http://testserver/' + self.redirect.url + self.manipulation.value_1
+        self.assertEqual(response['Location'], test_url)
+        
 
     def test_get_with_nonexistent_vsid(self):
         """
@@ -35,11 +37,9 @@ class ViewSourceViewTests(TestCase):
         redirect to the job url with no manipulation
         """
         response = self.client.get(reverse('home',
-                                           args=[self.redirect.guid, 5]))
-        content = json.loads(response.content)
-        self.assertEqual(content['url'],
-                         helpers.sourcecodetag(self.redirect,
-                                               self.manipulation))
+                                           args=[self.redirect.guid, 5]))        
+        self.assertEqual(response.status_code, 404)
+        
 
     def test_get_with_malformed_guid(self):
         """
@@ -50,6 +50,7 @@ class ViewSourceViewTests(TestCase):
                                               'hex characters']:
             with self.assertRaises(NoReverseMatch):
                 self.client.get(reverse('home', args=[guid]))
+                
 
     def test_sourcecodetag_redirect(self):
         """
@@ -61,11 +62,12 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
                                   self.manipulation.view_source]))
-        content = json.loads(response.content)
-        test_url = self.redirect.url + self.manipulation.value_1
-        self.assertEqual(content['url'], test_url)
+        #content = json.loads(response.content)
+        test_url = 'http://testserver/' + self.redirect.url + self.manipulation.value_1
+        self.assertEqual(response['Location'], test_url)
         # Redirect used in seo
         # self.assertRedirects(resp,target,status_code=301)
+        
 
     def test_micrositetag_redirect(self):
         """
@@ -75,16 +77,20 @@ class ViewSourceViewTests(TestCase):
         """
         self.manipulation.action = 'micrositetag'
         self.manipulation.save()
+        
+        self.redirect.uid = '37945336'
+        self.redirect.url = 'jobs.jobs/[Unique_ID]/job'
+        self.redirect.save()
 
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
-                                  self.manipulation.view_source]))
-        content = json.loads(response.content)
-        test_url = self.microsite.canonical_microsite_url.replace(
-            '[blank_MS1]', str(self.redirect.uid))
-        self.assertEqual(content['url'], test_url)
+                                  self.manipulation.view_source]))        
+        test_url = 'http://testserver/' + self.microsite.canonical_microsite_url.replace(
+            '[Unique_ID]', str(self.redirect.uid))        
+        self.assertEqual(response['Location'], test_url)
         # Redirect used in seo
         # self.assertRedirects(resp,target,status_code=301)
+        
 
     def test_microsite_redirect(self):
         """
@@ -94,18 +100,22 @@ class ViewSourceViewTests(TestCase):
         example: http://cadence.jobs/noida-ind/smcs/37945336/job/?vs=274
         """
         self.manipulation.action = 'microsite'
+        self.manipulation.value_1 = 'jobsearch.lilly.com/[Unique_ID]/job/'
         self.manipulation.save()
-
+        
+        self.redirect.url = 'jobsearch.lilly.com/[Unique_ID]/job/'
+        self.redirect.save()
+        
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
-                                  self.manipulation.view_source]))
-        content = json.loads(response.content)
-        test_url = self.microsite.canonical_microsite_url.replace(
-            '[Unique_ID]', str(self.redirect.uid))
-        test_url += '?vs=%s' % self.manipulation.view_source
-        self.assertEqual(content['url'], test_url)
+                                  self.manipulation.view_source]))       
+        test_url = 'http://testserver/' + self.manipulation.value_1        
+        test_url = test_url.replace('[Unique_ID]', str(self.redirect.uid))
+        test_url += '?vs=%s' % self.manipulation.view_source        
+        self.assertEqual(response['Location'], test_url)
         # Redirect used in seo
         # self.assertRedirects(resp,target,status_code=301)
+        
 
     def test_amptoamp_redirect(self):
         """
@@ -115,8 +125,16 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.value_1 = 'http://ad.doubleclick.net/clk;2526;8138?'
         self.manipulation.value_2 = '&functionName=viewFromLink&locale=en-us'
         self.manipulation.save()
-                
-        pass
+        
+        self.redirect.url = 'jobsearch.lilly.com/ddddddd/job/&8888888&vs=43'
+        self.redirect.save()
+        
+        response = self.client.get(
+            reverse('home', args=[self.redirect.guid,
+                                  self.manipulation.view_source]))
+        url = self.redirect.url.split('&')
+        test_url = self.manipulation.value_1 + url[1] + self.manipulation.value_2         
+        self.assertEqual(response['Location'], test_url)
     
     
     def test_urlswap_redirect(self):
@@ -129,10 +147,9 @@ class ViewSourceViewTests(TestCase):
         
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
-                                  self.manipulation.view_source]))
-        content = json.loads(response.content)
+                                  self.manipulation.view_source]))        
         test_url = self.manipulation.value_1
-        self.assertEqual(content['url'], test_url)
+        self.assertEqual(response['Location'], test_url)
         
         
     def test_cframe_redirect(self):
@@ -146,11 +163,13 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
                                   self.manipulation.view_source]))
-        content = json.loads(response.content)
-        url = urllib.quote(self.redirect.url)
+        url = urlquote_plus(self.redirect.url, safe='')
+        url = url.replace('.', '%2E')
+        url = url.replace('-', '%2D')
+        url = url.replace('_', '%5F')
         url = '%s?url=%s' % (self.manipulation.value_1, url)        
         test_url = 'http://directemployers.us.jobs/companyframe/' + url
-        self.assertEqual(content['url'], test_url)    
+        self.assertEqual(response['Location'], test_url)    
     
 
     def test_anchorredirectissue_redirect(self):
@@ -166,11 +185,10 @@ class ViewSourceViewTests(TestCase):
         
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
-                                  self.manipulation.view_source]))
-        content = json.loads(response.content)        
+                                  self.manipulation.view_source]))              
         url = self.redirect.url.split('#')
-        test_url = url[0] + self.manipulation.value_1
-        self.assertEqual(content['url'], test_url)  
+        test_url = 'http://testserver/' + url[0] + self.manipulation.value_1
+        self.assertEqual(response['Location'], test_url)  
     
     
     def test_replacethenadd_redirect(self):
@@ -187,11 +205,10 @@ class ViewSourceViewTests(TestCase):
         
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
-                                  self.manipulation.view_source]))
-        content = json.loads(response.content)
+                                  self.manipulation.view_source]))        
         old, new = self.manipulation.value_1.split('!!!!')
-        test_url = self.redirect.url + self.manipulation.value_2        
-        self.assertEqual(content['url'], test_url)
+        test_url = 'http://testserver/' + self.redirect.url + self.manipulation.value_2        
+        self.assertEqual(response['Location'], test_url)
             
     
     def test_replacethenaddpre_redirect(self):
@@ -219,11 +236,10 @@ class ViewSourceViewTests(TestCase):
         
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
-                                  self.manipulation.view_source]))
-        content = json.loads(response.content)
+                                  self.manipulation.view_source]))        
         url = self.redirect.url.split('#')
-        test_url = ('%s#' % self.manipulation.value_1).join(url)
-        self.assertEqual(content['url'], test_url)
+        test_url = 'http://testserver/' + ('%s#' % self.manipulation.value_1).join(url)
+        self.assertEqual(response['Location'], test_url)
     
 
     def test_sourceurlwrapappend_redirect(self):
@@ -237,11 +253,13 @@ class ViewSourceViewTests(TestCase):
         
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
-                                  self.manipulation.view_source]))
-        content = json.loads(response.content)
-        url = urllib.quote(self.redirect.url)
+                                  self.manipulation.view_source]))        
+        url = urlquote_plus(self.redirect.url, safe='')
+        url = url.replace('.', '%2E')
+        url = url.replace('-', '%2D')
+        url = url.replace('_', '%5F')        
         test_url = self.manipulation.value_1 + url + self.manipulation.value_2
-        self.assertEqual(content['url'], test_url)        
+        self.assertEqual(response['Location'], test_url)        
     
     
     def test_sourceurlwrapunencodedappend_redirect(self):
@@ -257,10 +275,10 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
                                   self.manipulation.view_source]))
-        content = json.loads(response.content)
+        #content = json.loads(response.content)
         url = self.manipulation.value_1 + self.redirect.url
         test_url = url + self.manipulation.value_2
-        self.assertEqual(content['url'], test_url)
+        self.assertEqual(response['Location'], test_url)
         
     
     def test_sourceurlwrapunencoded_redirect(self):
@@ -275,9 +293,9 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
                                   self.manipulation.view_source]))
-        content = json.loads(response.content)        
+        #content = json.loads(response.content)        
         test_url = self.manipulation.value_1 + self.redirect.url        
-        self.assertEqual(content['url'], test_url)
+        self.assertEqual(response['Location'], test_url)
                 
     
     def test_sourceurlwrap_redirect(self):
@@ -291,10 +309,12 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
                                   self.manipulation.view_source]))
-        content = json.loads(response.content)
-        url = urllib.quote(self.redirect.url)
+        url = urlquote_plus(self.redirect.url, safe='')
+        url = url.replace('.', '%2E')
+        url = url.replace('-', '%2D')
+        url = url.replace('_', '%5F')
         test_url = self.manipulation.value_1 + url
-        self.assertEqual(content['url'], test_url)
+        self.assertEqual(response['Location'], test_url)
         
         
     def test_switchlastinstance_redirect(self):
@@ -311,12 +331,11 @@ class ViewSourceViewTests(TestCase):
         
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
-                                  self.manipulation.view_source]))
-        content = json.loads(response.content)
+                                  self.manipulation.view_source]))        
         old = self.manipulation.value_1
         new = self.manipulation.value_2
-        test_url = new.join(self.redirect.url.rsplit(old, 1))        
-        self.assertEqual(content['url'], test_url)
+        test_url = 'http://testserver/' + new.join(self.redirect.url.rsplit(old, 1))        
+        self.assertEqual(response['Location'], test_url)
 
 
     def test_switchlastthenadd_redirect(self):
@@ -333,11 +352,10 @@ class ViewSourceViewTests(TestCase):
         
         response = self.client.get(
             reverse('home', args=[self.redirect.guid,
-                                  self.manipulation.view_source]))
-        content = json.loads(response.content)
+                                  self.manipulation.view_source]))        
         old, new = self.manipulation.value_1.split('!!!!')        
         new_url = new.join(self.redirect.url.rsplit(old, 1))        
-        test_url = new_url + self.manipulation.value_2       
-        self.assertEqual(content['url'], test_url)
+        test_url = 'http://testserver/' + new_url + self.manipulation.value_2       
+        self.assertEqual(response['Location'], test_url)
         
         

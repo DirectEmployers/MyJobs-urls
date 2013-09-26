@@ -1,4 +1,4 @@
-import urllib
+from django.utils.http import urlquote_plus
 
 from redirect.models import *
 
@@ -22,25 +22,67 @@ def add_query(url, name, value):
     return url
 
 
+def quote_string(value):
+    """
+    Due to differences between VBScript and Python %% encoding, certain
+    substitutions must be done manually. These are required in multiple
+    circumstances.
+
+    TODO: Do these encoding issues actually harm anything? Can we get away
+    with not manually replacing punctuation that is perfectly valid?
+
+    Inputs:
+    :value: String to be quoted
+
+    :value: Quoted string
+    """
+    value = urlquote_plus(value, safe='')
+    value = value.replace('.', '%2E')
+    value = value.replace('-', '%2D')
+    value = value.replace('_', '%5F')
+    return value
+
+
 def micrositetag(redirect_obj, manipulation_obj):
     """
-    Redirects to the given job's entry on the company's microsite,
-    or jobs.jobs if one does not exist
+    Redirects to the url from redirect_obj.url with source codes appended.
     """
+    url = redirect_obj.url.replace('[Unique_ID]', str(redirect_obj.uid))
+
+    # There is often (always?) a second action that needs to take place
+    # to achieve the correct manipulated result.
     try:
-        cm = CanonicalMicrosite.objects.get(buid=redirect_obj.buid)
-        microsite_url = cm.canonical_microsite_url
-    except CanonicalMicrosite.DoesNotExist:
-        microsite_url = 'jobs.jobs/[blank_MS1]/job'
-    return microsite_url.replace('[blank_MS1]', str(redirect_obj.uid))
+        # Try to retrieve a DestinationManipulation object for the current
+        # buid and view_source, but for action_type 2
+        manipulation_2 = DestinationManipulation.objects.get(
+            buid=manipulation_obj.buid,
+            view_source=manipulation_obj.view_source,
+            action_type=2)
+    except DestinationManipulation.DoesNotExist:
+        try:
+            # If the previous does not exist, check view_source 0
+            manipulation_2 = DestinationManipulation.objects.get(
+                buid=redirect_obj.buid, view_source=0, action_type=2)
+        except DestinationManipulation.DoesNotExist:
+            manipulation_2 = None
+
+    if manipulation_2 and (manipulation_2.value_1 != '[blank]'):
+        # A manipulation exists. Retrieve the method corresponding to its
+        # action, call that method, and return the result
+        method_name = manipulation_2.action
+        method = globals()[method_name]
+        redirect_obj.url = url
+        url = method(redirect_obj, manipulation_2)
+
+    return url
 
 
 def microsite(redirect_obj, manipulation_obj):
     """
-    micrositetag redirect with an additional view source parameter in its
-    query string
+    Redirects to the url from manipulation_obj.value_1 with a 'vs=' source code
+    appended
     """
-    url = micrositetag(redirect_obj, manipulation_obj)
+    url = manipulation_obj.value_1
     url = url.replace('[Unique_ID]', str(redirect_obj.uid))
     url = add_query(url, 'vs', manipulation_obj.view_source)
     return url
@@ -104,7 +146,7 @@ def sourceurlwrap(redirect_obj, manipulation_obj):
     """
     Encodes the url and prepends value_1 onto it
     """
-    url = urllib.quote(redirect_obj.url)
+    url = quote_string(redirect_obj.url)
     return manipulation_obj.value_1 + url
 
 
@@ -147,7 +189,7 @@ def amptoamp(redirect_obj, manipulation_obj):
     after the second ampersand with value_2
     """
     url = redirect_obj.url.split('&')
-    return redirect_obj.value_1 + url[1] + redirect_obj.value_2
+    return manipulation_obj.value_1 + url[1] + manipulation_obj.value_2
 
 
 def switchlastinstance(redirect_obj, manipulation_obj, old=None, new=None):
@@ -205,6 +247,6 @@ def cframe(redirect_obj, manipulation_obj):
     Redirects to the company frame denoted by value_1, appending the job url
     as the url query parameter
     """
-    url = urllib.quote(redirect_obj.url)
+    url = quote_string(redirect_obj.url)
     url = '%s?url=%s' % (manipulation_obj.value_1, url)
     return 'http://directemployers.us.jobs/companyframe/' + url

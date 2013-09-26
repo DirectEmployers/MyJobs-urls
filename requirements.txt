@@ -11,3 +11,4 @@ newrelic==1.11.0.55
 testfixtures==3.0.0
 git+http://degit.directemployers.org/jira/jira-tools.git@57cfb93a7676ca739ce7c839038b8142a0e8a7de
 pytz==2013b
+requests==1.2.3
