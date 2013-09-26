@@ -15,13 +15,12 @@ class DestinationManipulation(models.Model):
     action_type = models.IntegerField()
     buid = models.IntegerField()
     view_source = models.IntegerField()
-    action = models.CharField(max_length=255, null=True, default="")
-    value_1 = models.TextField(blank=True, default="")
-    value_2 = models.TextField(blank=True, default="")
+    action = models.CharField(max_length=255, blank=True, null=True, default="")
+    value_1 = models.TextField(blank=True)
+    value_2 = models.TextField(blank=True)
 
     class Meta:
-        unique_together = ('action_type', 'buid', 'view_source', 'action',
-                           'value_1', 'value_2')
+        unique_together = ('action_type', 'buid', 'view_source')
 
 
 class Redirect(models.Model):

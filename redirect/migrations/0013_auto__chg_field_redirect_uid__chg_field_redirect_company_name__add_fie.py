@@ -8,6 +8,9 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
+        # Removing unique constraint on 'DestinationManipulation', fields ['action_type', 'value_1', 'value_2', 'buid', 'view_source', 'action']
+        db.delete_unique(u'redirect_destinationmanipulation', ['action_type', 'value_1', 'value_2', 'buid', 'view_source', 'action'])
+
 
         # Changing field 'Redirect.uid'
         db.alter_column(u'redirect_redirect', 'uid', self.gf('django.db.models.fields.IntegerField')(unique=True, null=True))
@@ -21,12 +24,18 @@ class Migration(SchemaMigration):
 
 
         # Changing field 'DestinationManipulation.value_1'
-        db.alter_column(u'redirect_destinationmanipulation', 'value_1', self.gf('django.db.models.fields.TextField')())
+        db.alter_column(u'redirect_destinationmanipulation', 'value_1', self.gf('django.db.models.fields.TextField')(default=''))
 
         # Changing field 'DestinationManipulation.value_2'
-        db.alter_column(u'redirect_destinationmanipulation', 'value_2', self.gf('django.db.models.fields.TextField')())
+        db.alter_column(u'redirect_destinationmanipulation', 'value_2', self.gf('django.db.models.fields.TextField')(default=''))
+        # Adding unique constraint on 'DestinationManipulation', fields ['buid', 'view_source', 'action_type']
+        db.create_unique(u'redirect_destinationmanipulation', ['buid', 'view_source', 'action_type'])
+
 
     def backwards(self, orm):
+        # Removing unique constraint on 'DestinationManipulation', fields ['buid', 'view_source', 'action_type']
+        db.delete_unique(u'redirect_destinationmanipulation', ['buid', 'view_source', 'action_type'])
+
 
         # User chose to not deal with backwards NULL issues for 'Redirect.uid'
         raise RuntimeError("Cannot reverse this migration. 'Redirect.uid' and its values cannot be restored.")
@@ -42,6 +51,9 @@ class Migration(SchemaMigration):
 
         # Changing field 'DestinationManipulation.value_2'
         db.alter_column(u'redirect_destinationmanipulation', 'value_2', self.gf('django.db.models.fields.CharField')(max_length=255, null=True))
+        # Adding unique constraint on 'DestinationManipulation', fields ['action_type', 'value_1', 'value_2', 'buid', 'view_source', 'action']
+        db.create_unique(u'redirect_destinationmanipulation', ['action_type', 'value_1', 'value_2', 'buid', 'view_source', 'action'])
+
 
     models = {
         u'redirect.atssourcecode': {
@@ -59,13 +71,13 @@ class Migration(SchemaMigration):
             'canonical_microsite_url': ('django.db.models.fields.URLField', [], {'max_length': '200'})
         },
         u'redirect.destinationmanipulation': {
-            'Meta': {'unique_together': "(('action_type', 'buid', 'view_source', 'action', 'value_1', 'value_2'),)", 'object_name': 'DestinationManipulation'},
-            'action': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'null': 'True'}),
+            'Meta': {'unique_together': "(('action_type', 'buid', 'view_source'),)", 'object_name': 'DestinationManipulation'},
+            'action': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'action_type': ('django.db.models.fields.IntegerField', [], {}),
             'buid': ('django.db.models.fields.IntegerField', [], {}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'value_1': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
-            'value_2': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
+            'value_1': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
+            'value_2': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
             'view_source': ('django.db.models.fields.IntegerField', [], {})
         },
         u'redirect.redirect': {
@@ -77,7 +89,7 @@ class Migration(SchemaMigration):
             'job_location': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
             'job_title': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
             'new_date': ('django.db.models.fields.DateTimeField', [], {}),
-            'uid': ('django.db.models.fields.IntegerField', [], {'unique': 'True', 'null': 'True', 'blank': 'True'}),
+            'uid': ('django.db.models.fields.IntegerField', [], {'default': '0', 'unique': 'True', 'null': 'True', 'blank': 'True'}),
             'url': ('django.db.models.fields.TextField', [], {})
         },
         u'redirect.redirectaction': {
