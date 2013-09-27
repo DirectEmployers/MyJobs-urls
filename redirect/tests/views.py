@@ -25,7 +25,7 @@ class ViewSourceViewTests(TestCase):
         """
         If no view source id is provided, default to 0
         """
-        response = self.client.get(reverse('home', args=[self.redirect.guid]))        
+        response = self.client.get(reverse('home', args=[self.redirect.guid.replace('-','')]))
         # In this case, view source id 0 is a sourcecodetag redirect
         test_url = 'http://testserver/' + self.redirect.url + self.manipulation.value_1
         self.assertEqual(response['Location'], test_url)
@@ -37,7 +37,7 @@ class ViewSourceViewTests(TestCase):
         redirect to the job url with no manipulation
         """
         response = self.client.get(reverse('home',
-                                           args=[self.redirect.guid, 5]))        
+                                           args=[self.redirect.guid.replace('-',''), 5]))
         self.assertEqual(response.status_code, 404)
         
 
@@ -46,7 +46,7 @@ class ViewSourceViewTests(TestCase):
         Navigating to a url with a malformed guid or a guid that contains
         non-hex characters should display a 404 page
         """
-        for guid in [self.redirect.guid[:16], 'guid should be 32 '
+        for guid in [self.redirect.guid.replace('-','')[:16], 'guid should be 32 '
                                               'hex characters']:
             with self.assertRaises(NoReverseMatch):
                 self.client.get(reverse('home', args=[guid]))
@@ -60,7 +60,7 @@ class ViewSourceViewTests(TestCase):
         examples: &Codes=DE-DEA, &src=JB-11380, &src=indeed_test
         """
         response = self.client.get(
-            reverse('home', args=[self.redirect.guid,
+            reverse('home', args=[self.redirect.guid.replace('-',''),
                                   self.manipulation.view_source]))
         #content = json.loads(response.content)
         test_url = 'http://testserver/' + self.redirect.url + self.manipulation.value_1
@@ -83,7 +83,7 @@ class ViewSourceViewTests(TestCase):
         self.redirect.save()
 
         response = self.client.get(
-            reverse('home', args=[self.redirect.guid,
+            reverse('home', args=[self.redirect.guid.replace('-',''),
                                   self.manipulation.view_source]))        
         test_url = 'http://testserver/' + self.microsite.canonical_microsite_url.replace(
             '[Unique_ID]', str(self.redirect.uid))        
@@ -107,7 +107,7 @@ class ViewSourceViewTests(TestCase):
         self.redirect.save()
         
         response = self.client.get(
-            reverse('home', args=[self.redirect.guid,
+            reverse('home', args=[self.redirect.guid.replace('-',''),
                                   self.manipulation.view_source]))       
         test_url = 'http://testserver/' + self.manipulation.value_1        
         test_url = test_url.replace('[Unique_ID]', str(self.redirect.uid))
@@ -130,7 +130,7 @@ class ViewSourceViewTests(TestCase):
         self.redirect.save()
         
         response = self.client.get(
-            reverse('home', args=[self.redirect.guid,
+            reverse('home', args=[self.redirect.guid.replace('-',''),
                                   self.manipulation.view_source]))
         url = self.redirect.url.split('&')
         test_url = self.manipulation.value_1 + url[1] + self.manipulation.value_2         
@@ -146,7 +146,7 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.save()
         
         response = self.client.get(
-            reverse('home', args=[self.redirect.guid,
+            reverse('home', args=[self.redirect.guid.replace('-',''),
                                   self.manipulation.view_source]))        
         test_url = self.manipulation.value_1
         self.assertEqual(response['Location'], test_url)
@@ -161,7 +161,7 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.save()
         
         response = self.client.get(
-            reverse('home', args=[self.redirect.guid,
+            reverse('home', args=[self.redirect.guid.replace('-',''),
                                   self.manipulation.view_source]))
         url = urlquote_plus(self.redirect.url, safe='')
         url = url.replace('.', '%2E')
@@ -184,7 +184,7 @@ class ViewSourceViewTests(TestCase):
         self.redirect.save()
         
         response = self.client.get(
-            reverse('home', args=[self.redirect.guid,
+            reverse('home', args=[self.redirect.guid.replace('-',''),
                                   self.manipulation.view_source]))              
         url = self.redirect.url.split('#')
         test_url = 'http://testserver/' + url[0] + self.manipulation.value_1
@@ -204,7 +204,7 @@ class ViewSourceViewTests(TestCase):
         self.redirect.save()
         
         response = self.client.get(
-            reverse('home', args=[self.redirect.guid,
+            reverse('home', args=[self.redirect.guid.replace('-',''),
                                   self.manipulation.view_source]))        
         old, new = self.manipulation.value_1.split('!!!!')
         test_url = 'http://testserver/' + self.redirect.url + self.manipulation.value_2        
@@ -235,7 +235,7 @@ class ViewSourceViewTests(TestCase):
         self.redirect.save()
         
         response = self.client.get(
-            reverse('home', args=[self.redirect.guid,
+            reverse('home', args=[self.redirect.guid.replace('-',''),
                                   self.manipulation.view_source]))        
         url = self.redirect.url.split('#')
         test_url = 'http://testserver/' + ('%s#' % self.manipulation.value_1).join(url)
@@ -252,7 +252,7 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.save()
         
         response = self.client.get(
-            reverse('home', args=[self.redirect.guid,
+            reverse('home', args=[self.redirect.guid.replace('-',''),
                                   self.manipulation.view_source]))        
         url = urlquote_plus(self.redirect.url, safe='')
         url = url.replace('.', '%2E')
@@ -273,7 +273,7 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.save()
         
         response = self.client.get(
-            reverse('home', args=[self.redirect.guid,
+            reverse('home', args=[self.redirect.guid.replace('-',''),
                                   self.manipulation.view_source]))
         #content = json.loads(response.content)
         url = self.manipulation.value_1 + self.redirect.url
@@ -291,7 +291,7 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.save()
         
         response = self.client.get(
-            reverse('home', args=[self.redirect.guid,
+            reverse('home', args=[self.redirect.guid.replace('-',''),
                                   self.manipulation.view_source]))
         #content = json.loads(response.content)        
         test_url = self.manipulation.value_1 + self.redirect.url        
@@ -307,7 +307,7 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.save()
         
         response = self.client.get(
-            reverse('home', args=[self.redirect.guid,
+            reverse('home', args=[self.redirect.guid.replace('-',''),
                                   self.manipulation.view_source]))
         url = urlquote_plus(self.redirect.url, safe='')
         url = url.replace('.', '%2E')
@@ -330,7 +330,7 @@ class ViewSourceViewTests(TestCase):
         self.redirect.save()
         
         response = self.client.get(
-            reverse('home', args=[self.redirect.guid,
+            reverse('home', args=[self.redirect.guid.replace('-',''),
                                   self.manipulation.view_source]))        
         old = self.manipulation.value_1
         new = self.manipulation.value_2
@@ -351,7 +351,7 @@ class ViewSourceViewTests(TestCase):
         self.redirect.save()
         
         response = self.client.get(
-            reverse('home', args=[self.redirect.guid,
+            reverse('home', args=[self.redirect.guid.replace('-',''),
                                   self.manipulation.view_source]))        
         old, new = self.manipulation.value_1.split('!!!!')        
         new_url = new.join(self.redirect.url.rsplit(old, 1))        
