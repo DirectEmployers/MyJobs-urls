@@ -307,7 +307,7 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.save()
         
         response = self.client.get(
-            reverse('home', args=[self.redirect.guid.replace('-','').replace('-','').replace('-','').replace('-','').replace('-','').replace('-','').replace('-','').replace('-',''),
+            reverse('home', args=[self.redirect.guid.replace('-',''),
                                   self.manipulation.view_source]))
         url = urlquote_plus(self.redirect.url, safe='')
         url = url.replace('.', '%2E')
