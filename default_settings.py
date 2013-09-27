@@ -113,11 +113,25 @@ LOGGING = {
             '()': 'django.utils.log.RequireDebugFalse'
         }
     },
+    'formatters': {
+        'redirect_formatter': {
+            'format': '%(asctime)s ',
+            'datefmt': '%s/%b/%Y %H:%M:%S',
+        },
+    },
     'handlers': {
         'mail_admins': {
             'level': 'ERROR',
             'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler'
+        },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'when': 'D',
+            'interval': 1,
+            'formatter': 'redirect_formatter',
+            'filename': '/home/web/myjobslogs/redirectlogfile',
         }
     },
     'loggers': {
@@ -125,6 +139,10 @@ LOGGING = {
             'handlers': ['mail_admins'],
             'level': 'ERROR',
             'propagate': True,
+        },
+        'redirect': {
+            'handlers': ['file'],
+            'level': 'INFO',
         },
     }
 }

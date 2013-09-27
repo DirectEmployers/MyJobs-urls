@@ -16,7 +16,7 @@ class CanonicalMicrositeFactory(factory.Factory):
 class RedirectFactory(factory.Factory):
     FACTORY_FOR = models.Redirect
 
-    guid = '1234567890abcdef1234567890abcdef'
+    guid = '12345678-90ab-cdef-1234-567890abcdef'
     buid = 0
     uid = 0
     url = 'directemployers.org'
