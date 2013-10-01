@@ -13,7 +13,7 @@ def home(request, guid, vsid='0'):
 
     try:
         manipulation = models.DestinationManipulation.objects.get(
-            buid=guid_redirect.buid, view_source=vsid, action_type=1)        
+            buid=guid_redirect.buid, view_source=vsid, action_type=1)
     except models.DestinationManipulation.DoesNotExist:
         try:
             manipulation = models.DestinationManipulation.objects.get(
@@ -46,7 +46,14 @@ def home(request, guid, vsid='0'):
 
     aguid = helpers.quote_string('{%s}' % str(uuid.uuid4()))
     response = HttpResponsePermanentRedirect(redirect_url)
-    response['X-REDIRECT'] = 'jcnlx.ref=&jcnlx.url=%s&jcnlx.buid=%s&jcnlx.vsid=%s&jcnlx.aguid=%s' % \
-        (helpers.quote_string(redirect_url), guid_redirect.buid, vsid, aguid)
-    response.set_cookie('aguid', aguid, expires=365*24*60*60, domain='.my.jobs')
+    qs = 'jcnlx.ref=%s&jcnlx.url=%s&jcnlx.buid=%s&jcnlx.vsid=%s&jcnlx.aguid=%s'
+    qs %= (helpers.quote_string(request.META.get('HTTP_REFERER')),
+           helpers.quote_string(redirect_url),
+           guid_redirect.buid,
+           vsid,
+           aguid)
+    response['X-REDIRECT'] = qs
+    response.set_cookie('aguid', aguid,
+                        expires=365*24*60*60,
+                        domain='.my.jobs')
     return response
