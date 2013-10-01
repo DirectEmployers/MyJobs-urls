@@ -44,7 +44,8 @@ def home(request, guid, vsid='0'):
 
         redirect_url = redirect_method(guid_redirect, manipulation)
 
-    aguid = helpers.quote_string('{%s}' % str(uuid.uuid4()))
+    aguid = request.COOKIES.get('aguid') or \
+            helpers.quote_string('{%s}' % str(uuid.uuid4()))
     response = HttpResponsePermanentRedirect(redirect_url)
     qs = 'jcnlx.ref=%s&jcnlx.url=%s&jcnlx.buid=%s&jcnlx.vsid=%s&jcnlx.aguid=%s'
     qs %= (helpers.quote_string(request.META.get('HTTP_REFERER')),
