@@ -10,7 +10,7 @@ from redirect import helpers
 
 
 def home(request, guid, vsid='0'):
-    guid_redirect = get_object_or_404(models.Redirect, guid=uuid.UUID(guid))
+    guid_redirect = get_object_or_404(models.Redirect, guid='{%s}' % uuid.UUID(guid))
 
     try:
         manipulation = models.DestinationManipulation.objects.get(
