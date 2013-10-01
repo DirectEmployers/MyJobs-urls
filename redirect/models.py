@@ -28,7 +28,7 @@ class Redirect(models.Model):
     Contains most of the information required to determine how a url
     is to be transformed
     """
-    guid = models.CharField(max_length=36, primary_key=True,
+    guid = models.CharField(max_length=38, primary_key=True,
                             help_text=_('36-character hex string'))
     buid = models.IntegerField(default=0,
                                help_text=_('Used in conjunction with'
