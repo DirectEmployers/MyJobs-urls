@@ -1,9 +1,8 @@
-import json
-import urllib
+from datetime import datetime, timedelta
 import uuid
 
 from django.http import Http404, HttpResponsePermanentRedirect
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 
 from redirect import models
 from redirect import helpers
@@ -14,7 +13,7 @@ def home(request, guid, vsid='0'):
 
     try:
         manipulation = models.DestinationManipulation.objects.get(
-            buid=guid_redirect.buid, view_source=vsid, action_type=1)        
+            buid=guid_redirect.buid, view_source=vsid, action_type=1)
     except models.DestinationManipulation.DoesNotExist:
         try:
             manipulation = models.DestinationManipulation.objects.get(
@@ -43,8 +42,19 @@ def home(request, guid, vsid='0'):
         except AttributeError:
             pass
 
-        print guid
-        print vsid
         redirect_url = redirect_method(guid_redirect, manipulation)
 
-    return HttpResponsePermanentRedirect(redirect_url)
+    aguid = request.COOKIES.get('aguid') or \
+            helpers.quote_string('{%s}' % str(uuid.uuid4()))
+    response = HttpResponsePermanentRedirect(redirect_url)
+    qs = 'jcnlx.ref=%s&jcnlx.url=%s&jcnlx.buid=%s&jcnlx.vsid=%s&jcnlx.aguid=%s'
+    qs %= (helpers.quote_string(request.META.get('HTTP_REFERER')),
+           helpers.quote_string(redirect_url),
+           guid_redirect.buid,
+           vsid,
+           aguid)
+    response['X-REDIRECT'] = qs
+    response.set_cookie('aguid', aguid,
+                        expires=365*24*60*60,
+                        domain='.my.jobs')
+    return response
