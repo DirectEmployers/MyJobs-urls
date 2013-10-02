@@ -3,7 +3,7 @@ from datetime import timedelta
 from secrets import *
 
 
-# Django settings for MyURLs project.
+# Django settings for MyJobs-urls project.
 
 TIME_ZONE = 'America/New_York'
 
@@ -128,3 +128,5 @@ LOGGING = {
         },
     }
 }
+
+NEW_RELIC_TRACKING = False
