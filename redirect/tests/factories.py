@@ -23,9 +23,9 @@ class RedirectFactory(factory.Factory):
     new_date = datetime.now(tz=pytz.utc)
     # Unused for current testing but may be useful later
     expired_date = None
-    job_location = ''
-    job_title = ''
-    company_name = ''
+    job_location = 'Indianapolis'
+    job_title = 'Programmer'
+    company_name = 'DirectEmployers'
 
 
 class ViewSourceFactory(factory.Factory):
