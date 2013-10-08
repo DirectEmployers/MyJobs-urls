@@ -1,7 +1,7 @@
 import os, sys
 
 import newrelic.agent
-newrelic.agent.initialize('/home/web/MyJobs/MyJobs-urls/newrelic.ini')
+newrelic.agent.initialize('/home/django/MyJobs-urls/newrelic.ini')
 
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'MyJobs-urls.settings'
