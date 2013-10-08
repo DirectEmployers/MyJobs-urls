@@ -15,6 +15,7 @@ content_226
 .coverage
 *.swp
 dev_setting*
+.idea
 
 # Secret Stuff
 secrets*

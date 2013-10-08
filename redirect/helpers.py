@@ -183,6 +183,15 @@ def urlswap(redirect_obj, manipulation_obj):
     return manipulation_obj.value_1
 
 
+def fixurl(redirect_obj, manipulation_obj):
+    """
+    Replaces value 1 with value 2
+    """
+    url = redirect_obj.url.replace(manipulation_obj.value_1,
+                                   manipulation_obj.value_2)
+    return url
+
+
 def amptoamp(redirect_obj, manipulation_obj):
     """
     Replaces the value before the first ampersand with value_1 and the value

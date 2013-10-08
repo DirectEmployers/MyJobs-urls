@@ -1,5 +1,9 @@
 import os, sys
 
+import newrelic.agent
+newrelic.agent.initialize('/home/django/MyJobs-urls/newrelic.ini')
+
+
 os.environ['DJANGO_SETTINGS_MODULE'] = 'MyJobs-urls.settings'
 
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -12,3 +16,4 @@ if PARENT_DIR not in sys.path:
 
 import django.core.handlers.wsgi
 application = django.core.handlers.wsgi.WSGIHandler()
+application = newrelic.agent.wsgi_application()(application)

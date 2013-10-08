@@ -1,9 +1,12 @@
 from datetime import timedelta
+from os.path import abspath, dirname, join
 
 from secrets import *
 
 
-# Django settings for MyURLs project.
+# Django settings for MyJobs-urls project.
+
+ROOT_PATH = abspath(dirname(__file__))
 
 TIME_ZONE = 'America/New_York'
 
@@ -77,9 +80,7 @@ ROOT_URLCONF = 'urls'
 WSGI_APPLICATION = 'wsgi.application'
 
 TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
+    join(ROOT_PATH, 'templates')
 )
 
 INSTALLED_APPS = (
@@ -128,3 +129,5 @@ LOGGING = {
         },
     }
 }
+
+NEW_RELIC_TRACKING = False

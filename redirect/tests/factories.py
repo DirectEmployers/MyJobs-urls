@@ -16,16 +16,16 @@ class CanonicalMicrositeFactory(factory.Factory):
 class RedirectFactory(factory.Factory):
     FACTORY_FOR = models.Redirect
 
-    guid = '12345678-90ab-cdef-1234-567890abcdef'
+    guid = '{12345678-90ab-cdef-1234-567890abcdef}'
     buid = 0
     uid = 0
     url = 'directemployers.org'
     new_date = datetime.now(tz=pytz.utc)
     # Unused for current testing but may be useful later
     expired_date = None
-    job_location = ''
-    job_title = ''
-    company_name = ''
+    job_location = 'Indianapolis'
+    job_title = 'Programmer'
+    company_name = 'DirectEmployers'
 
 
 class ViewSourceFactory(factory.Factory):

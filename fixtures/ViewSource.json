@@ -184,7 +184,7 @@
         "pk": null,
         "fields": {
             "view_source_id": 78,
-            "name": "TalentCircles",
+            "name": "TalentCircles.com",
             "microsite": 0
         }
     },
@@ -193,7 +193,7 @@
         "pk": null,
         "fields": {
             "view_source_id": 79,
-            "name": "Findly",
+            "name": "Findly.com",
             "microsite": 1
         }
     },
@@ -1841,7 +1841,7 @@
         "fields": {
             "view_source_id": 307,
             "name": "GI.jobs",
-            "microsite": 0
+            "microsite": 1
         }
     },
     {
@@ -1866,8 +1866,17 @@
         "model": "redirect.ViewSource",
         "pk": null,
         "fields": {
+            "view_source_id": 357,
+            "name": "Veterans Job Bank",
+            "microsite": 1
+        }
+    },
+    {
+        "model": "redirect.ViewSource",
+        "pk": null,
+        "fields": {
             "view_source_id": 398,
-            "name": "CN.jobs API",
+            "name": "CN.jobs",
             "microsite": 1
         }
     },
@@ -1876,7 +1885,7 @@
         "pk": null,
         "fields": {
             "view_source_id": 399,
-            "name": "API",
+            "name": "American Petroleum Institute",
             "microsite": 1
         }
     },
@@ -1885,7 +1894,16 @@
         "pk": null,
         "fields": {
             "view_source_id": 400,
-            "name": "Talent Circles",
+            "name": "TalentCircles.com",
+            "microsite": 1
+        }
+    },
+    {
+        "model": "redirect.ViewSource",
+        "pk": null,
+        "fields": {
+            "view_source_id": 401,
+            "name": "Collegefeed",
             "microsite": 1
         }
     },
@@ -6069,6 +6087,24 @@
         "model": "redirect.ViewSource",
         "pk": null,
         "fields": {
+            "view_source_id": 1497,
+            "name": "JobThread.com",
+            "microsite": 1
+        }
+    },
+    {
+        "model": "redirect.ViewSource",
+        "pk": null,
+        "fields": {
+            "view_source_id": 1498,
+            "name": "CollegeRecruiter.com",
+            "microsite": 1
+        }
+    },
+    {
+        "model": "redirect.ViewSource",
+        "pk": null,
+        "fields": {
             "view_source_id": 1499,
             "name": "Priority.jobs",
             "microsite": 1
@@ -7114,7 +7150,7 @@
         "pk": null,
         "fields": {
             "view_source_id": 1615,
-            "name": "itjobs247.com",
+            "name": "ITJobs247.com",
             "microsite": 1
         }
     },

@@ -1,9 +1,3 @@
-from datetime import datetime
-import re
-
-import pytz
-
-from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
@@ -28,7 +22,7 @@ class Redirect(models.Model):
     Contains most of the information required to determine how a url
     is to be transformed
     """
-    guid = models.CharField(max_length=36, primary_key=True,
+    guid = models.CharField(max_length=38, primary_key=True,
                             help_text=_('36-character hex string'))
     buid = models.IntegerField(default=0,
                                help_text=_('Used in conjunction with'
@@ -94,7 +88,9 @@ class RedirectAction(models.Model):
         URLSWAP_ACTION, REPLACETHENADD_ACTION, REPLACETHENADDPRE_ACTION,
         SOURCEURLWRAPAPPEND_ACTION, SOURCECODEINSERTION_ACTION,
         SOURCEURLWRAPUNENCODED_ACTION, SOURCEURLWRAPUNENCODEDAPPEND_ACTION,
-        SWITCHLASTINSTANCE_ACTION, SWITCHLASTTHENADD_ACTION) = range(15)
+        SWITCHLASTINSTANCE_ACTION, SWITCHLASTTHENADD_ACTION,
+        SOURCECODESWITCH_ACTION, DOUBLECLICKUNWIND_ACTION, FIXURL_ACTION,
+        SWITCHLASTTENADD_ACTION) = range(19)
 
     ACTION_CHOICES = (
         (SOURCECODETAG_ACTION, 'sourcecodetag'),
@@ -111,7 +107,11 @@ class RedirectAction(models.Model):
         (SOURCEURLWRAPUNENCODED_ACTION, 'sourceurlwrapunencoded'),
         (SOURCEURLWRAPUNENCODEDAPPEND_ACTION, 'sourceurlwrapunencodedappend'),
         (SWITCHLASTINSTANCE_ACTION, 'switchlastinstance'),
-        (SWITCHLASTTHENADD_ACTION, 'switchlastthenadd'),        
+        (SWITCHLASTTHENADD_ACTION, 'switchlastthenadd'),
+        (SOURCECODESWITCH_ACTION, 'sourcecodeswitch'),
+        (DOUBLECLICKUNWIND_ACTION, 'doubleclickunwind'),
+        (FIXURL_ACTION, 'fixurl'),
+        (SWITCHLASTTENADD_ACTION, 'switchlastthenadd'),
     )
 
     buid = models.IntegerField(default=0)
