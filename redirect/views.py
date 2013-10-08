@@ -26,6 +26,9 @@ def home(request, guid, vsid='0'):
     expired = False
     facebook = False
 
+    clean_guid = guid_redirect.guid.replace("{","")
+    clean_guid = clean_guid.replace("}","")
+    clean_guid = clean_guid.replace("-","")
     if manipulation.view_source == 1604:
         # msccn redirect
         if guid_redirect.expired_date:
@@ -35,7 +38,7 @@ def home(request, guid, vsid='0'):
         company_name = helpers.quote_string(company_name)
         redirect_url = ('http://us.jobs/msccn-referral.asp?gi='
                         '%s%s&cp=%s&u=%s' %
-                        (guid_redirect.guid,
+                        (clean_guid,
                          manipulation.view_source,
                          company_name,
                          guid_redirect.uid))
@@ -47,7 +50,7 @@ def home(request, guid, vsid='0'):
             expired = True
 
         redirect_url = 'http://apps.facebook.com/us-jobs/?jvid=%s%s' % \
-            (guid_redirect.guid, manipulation.view_source)
+            (clean_guid, manipulation.view_source)
     else:
         if guid_redirect.expired_date:
             expired = True
