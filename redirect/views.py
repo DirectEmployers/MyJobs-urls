@@ -83,7 +83,7 @@ def home(request, guid, vsid='0'):
                        'false;">close this window</a> and continue with '
                        'your job search, or visit the National Labor '
                        'Exchange to view all current jobs for <a href="'
-                       '"http://us.jobs/results.asp?bu=%s">%s</a>.' %
+                       'http://us.jobs/results.asp?bu=%s">%s</a>.' %
                        (guid_redirect.buid, guid_redirect.company_name))
         response = render_to_response('redirect/expired.html',
                                       {'url': redirect_url,
