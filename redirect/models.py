@@ -94,7 +94,9 @@ class RedirectAction(models.Model):
         URLSWAP_ACTION, REPLACETHENADD_ACTION, REPLACETHENADDPRE_ACTION,
         SOURCEURLWRAPAPPEND_ACTION, SOURCECODEINSERTION_ACTION,
         SOURCEURLWRAPUNENCODED_ACTION, SOURCEURLWRAPUNENCODEDAPPEND_ACTION,
-        SWITCHLASTINSTANCE_ACTION, SWITCHLASTTHENADD_ACTION) = range(15)
+        SWITCHLASTINSTANCE_ACTION, SWITCHLASTTHENADD_ACTION,
+        SOURCECODESWITCH_ACTION, DOUBLECLICKUNWIND_ACTION, FIXURL_ACTION,
+        SWITCHLASTTENADD_ACTION) = range(19)
 
     ACTION_CHOICES = (
         (SOURCECODETAG_ACTION, 'sourcecodetag'),
@@ -111,7 +113,11 @@ class RedirectAction(models.Model):
         (SOURCEURLWRAPUNENCODED_ACTION, 'sourceurlwrapunencoded'),
         (SOURCEURLWRAPUNENCODEDAPPEND_ACTION, 'sourceurlwrapunencodedappend'),
         (SWITCHLASTINSTANCE_ACTION, 'switchlastinstance'),
-        (SWITCHLASTTHENADD_ACTION, 'switchlastthenadd'),        
+        (SWITCHLASTTHENADD_ACTION, 'switchlastthenadd'),
+        (SOURCECODESWITCH_ACTION, 'sourcecodeswitch'),
+        (DOUBLECLICKUNWIND_ACTION, 'doubleclickunwind'),
+        (FIXURL_ACTION, 'fixurl'),
+        (SWITCHLASTTENADD_ACTION, 'switchlastthenadd'),
     )
 
     buid = models.IntegerField(default=0)
