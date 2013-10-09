@@ -67,7 +67,7 @@ def home(request, guid, vsid='0'):
         html += ("<meta property='og:title' content='US.jobs - %s - %s' />" 
                  % (guid_redirect.job_title, company_name))
         html += "<meta property='og:type' content='article' />"
-        html += ("<meta property='og:url' content='http://r.my.jobs/%s%s' />" 
+        html += ("<meta property='og:url' content='http://jcnlx.com/%s%s' />" 
                  % (clean_guid, user_agent_vs))
         html += "</head>"
         html += "</html>"        
