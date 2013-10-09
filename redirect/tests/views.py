@@ -49,7 +49,17 @@ class ViewSourceViewTests(TestCase):
                                               'hex characters']:
             with self.assertRaises(NoReverseMatch):
                 self.client.get(reverse('home', args=[guid]))
-
+    
+    def test_open_graph_redirect(self):
+        """
+        Check social bot open graph response
+        """
+        response = self.client.get(
+            reverse('home', args=[self.redirect_guid,
+                                  self.manipulation.view_source]),
+                                  HTTP_USER_AGENT='facebookexternalhit')        
+        self.assertContains(response, 'US.jobs - Programmer - DirectEmployers')
+        
     def test_sourcecodetag_redirect(self):
         """
         Check view that manipulates a url with the sourcecodetag action
