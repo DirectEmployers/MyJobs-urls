@@ -31,8 +31,6 @@ def home(request, guid, vsid='0'):
     clean_guid = clean_guid.replace("-","")
     if manipulation.view_source == 1604:
         # msccn redirect
-        if guid_redirect.expired_date:
-            expired = True
 
         company_name = guid_redirect.company_name
         company_name = helpers.quote_string(company_name)
