@@ -1,1 +1,1 @@
-/usr/sbin/logrotate /etc/logrotate.hourly.conf
+/usr/sbin/logrotate -f /etc/logrotate.hourly.conf
