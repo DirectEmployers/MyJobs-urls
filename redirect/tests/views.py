@@ -21,25 +21,19 @@ class ViewSourceViewTests(TestCase):
         self.manipulation = DestinationManipulationFactory()
         self.redirect_guid = self.guid_re.sub('', self.redirect.guid)
 
-    def test_get_with_no_vsid(self):
+    def test_get_with_bad_vsid(self):
         """
-        If no view source id is provided, default to 0
+        If no view source id is provided or the given view source id does not
+        resolve to a DestinationManipulation instance, default to 0
         """
-        response = self.client.get(reverse('home', args=[self.redirect_guid]))
-        # In this case, view source id 0 is a sourcecodetag redirect
-        test_url = 'http://testserver/%s%s' % \
-            (self.redirect.url, self.manipulation.value_1)
-        self.assertEqual(response['Location'], test_url)
+        for vsid in ['', '1']:
+            response = self.client.get(reverse('home', args=[self.redirect_guid,
+                                                             vsid]))
+            # In this case, view source id 0 is a sourcecodetag redirect
+            test_url = 'http://testserver/%s%s' % \
+                (self.redirect.url, self.manipulation.value_1)
+            self.assertEqual(response['Location'], test_url)
 
-    def test_get_with_nonexistent_vsid(self):
-        """
-        If a view source does not exist for the given view source id,
-        redirect to the job url with no manipulation
-        """
-        response = self.client.get(reverse('home',
-                                           args=[self.redirect_guid, 5]))
-        self.assertTrue(response['Location'].endswith(self.redirect.url))
-        self.assertEqual(response.status_code, 301)
 
     def test_get_with_malformed_guid(self):
         """

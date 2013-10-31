@@ -22,7 +22,11 @@ def home(request, guid, vsid='0'):
             manipulation = models.DestinationManipulation.objects.get(
                 buid=guid_redirect.buid, view_source=vsid)
         except models.DestinationManipulation.DoesNotExist:
-            pass
+            try:
+                manipulation = models.DestinationManipulation.objects.get(
+                    buid=guid_redirect.buid, view_source=0)
+            except models.DestinationManipulation.DoesNotExist:
+                pass
 
     expired = False
     facebook = False
