@@ -38,7 +38,9 @@ class ViewSourceViewTests(TestCase):
         """
         response = self.client.get(reverse('home',
                                            args=[self.redirect_guid, 5]))
-        self.assertTrue(response['Location'].endswith(self.redirect.url))
+        test_url = self.manipulation.value_1.replace('[Unique_ID]',
+                                                      str(self.redirect.uid))
+        self.assertTrue(response['Location'].endswith(test_url))
         self.assertEqual(response.status_code, 301)
 
     def test_get_with_malformed_guid(self):
