@@ -141,6 +141,7 @@ def home(request, guid, vsid='0'):
                            'Exchange to view all current jobs for <a href="'
                            'http://us.jobs/results.asp?bu=%s">%s</a>.' %
                            (guid_redirect.buid, guid_redirect.company_name))
+                redirect_url = guid_redirect.url
             response = render_to_response('redirect/expired.html',
                                           {'url': redirect_url,
                                            'location': guid_redirect.job_location,
