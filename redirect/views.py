@@ -77,7 +77,7 @@ def home(request, guid, vsid='0'):
         html += "</head>"
         html += "</html>"        
         response = HttpResponse(content=html, mimetype='text/html')
-    else:    
+    else:
         if vsid == '1604':
             # msccn redirect
     
@@ -113,7 +113,10 @@ def home(request, guid, vsid='0'):
                 redirect_url = redirect_method(guid_redirect, manipulation)
             else:
                 redirect_url = guid_redirect.url
-    
+
+        redirect_url = helpers.get_hosted_state_url(guid_redirect,
+                                                    redirect_url)
+
         aguid = request.COOKIES.get('aguid') or \
             helpers.quote_string('{%s}' % str(uuid.uuid4()))
         if expired:
@@ -139,17 +142,18 @@ def home(request, guid, vsid='0'):
                            'http://us.jobs/results.asp?bu=%s">%s</a>.' %
                            (guid_redirect.buid, guid_redirect.company_name))
             response = render_to_response('redirect/expired.html',
-                                          {'url': guid_redirect.url,
+                                          {'url': redirect_url,
                                            'location': guid_redirect.job_location,
                                            'title': guid_redirect.job_title,
                                            'expired': expired})
         else:
             response = HttpResponsePermanentRedirect(redirect_url)
-    
+
+        buid = helpers.get_Post_a_Job_buid(guid_redirect)
         qs = 'jcnlx.ref=%s&jcnlx.url=%s&jcnlx.buid=%s&jcnlx.vsid=%s&jcnlx.aguid=%s'
-        qs %= (helpers.quote_string(request.META.get('HTTP_REFERER')),
+        qs %= (helpers.quote_string(request.META.get('HTTP_REFERER', '')),
                helpers.quote_string(redirect_url),
-               guid_redirect.buid,
+               buid,
                vsid,
                aguid)
         if expired:
