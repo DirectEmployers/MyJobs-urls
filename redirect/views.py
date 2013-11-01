@@ -31,35 +31,35 @@ def home(request, guid, vsid='0'):
     expired = False
     facebook = False
 
-    clean_guid = guid_redirect.guid.replace("{","")
-    clean_guid = clean_guid.replace("}","")
-    clean_guid = clean_guid.replace("-","")
-    
+    clean_guid = guid_redirect.guid.replace("{", "")
+    clean_guid = clean_guid.replace("}", "")
+    clean_guid = clean_guid.replace("-", "")
+
     redirect_user_agent = False
-    
+
     user_agent = request.META.get('HTTP_USER_AGENT')
-    
+
     # open graph bot redirect
     if 'facebookexternalhit' in str(user_agent):
         user_agent_vs = '1593'
         redirect_user_agent = True
-    
+
     if 'twitterbot' in str(user_agent):
         user_agent_vs = '1596'
         redirect_user_agent = True
-        
+
     if 'linkedinbot' in str(user_agent):
         user_agent_vs = '1548'
         redirect_user_agent = True
-    
+
     if redirect_user_agent:
         company_name = guid_redirect.company_name
         company_name = helpers.quote_string(company_name)
-        
+
         html = "<html>"
         html += ("<head prefix='og: http://ogp.me/ns# fb: http://ogp.me/ns/fb#"
                  " website: http://ogp.me/ns/website#'>")
-        html += "<title>US.jobs - %s - %s</title>" % (guid_redirect.job_title, 
+        html += "<title>US.jobs - %s - %s</title>" % (guid_redirect.job_title,
                                                       company_name)
         html += ("<meta property='og:description' content='The US.jobs National"
                  " Labor Exchange is a free job search service of "
@@ -69,18 +69,18 @@ def home(request, guid, vsid='0'):
                  "96096_n.jpg' />")
         html += "<meta property='og:locale' content='en_US' />"
         html += "<meta property='og:site_name' content='US.jobs' />"
-        html += ("<meta property='og:title' content='US.jobs - %s - %s' />" 
+        html += ("<meta property='og:title' content='US.jobs - %s - %s' />"
                  % (guid_redirect.job_title, company_name))
         html += "<meta property='og:type' content='article' />"
-        html += ("<meta property='og:url' content='http://jcnlx.com/%s%s' />" 
+        html += ("<meta property='og:url' content='http://jcnlx.com/%s%s' />"
                  % (clean_guid, user_agent_vs))
         html += "</head>"
-        html += "</html>"        
+        html += "</html>"
         response = HttpResponse(content=html, mimetype='text/html')
-    else:    
+    else:
         if vsid == '1604':
             # msccn redirect
-    
+
             company_name = guid_redirect.company_name
             company_name = helpers.quote_string(company_name)
             redirect_url = ('http://us.jobs/msccn-referral.asp?gi='
@@ -92,10 +92,10 @@ def home(request, guid, vsid='0'):
         elif vsid == '294':
             # facebook redirect
             facebook = True
-    
+
             if guid_redirect.expired_date:
                 expired = True
-    
+
             redirect_url = 'http://apps.facebook.com/us-jobs/?jvid=%s%s' % \
                 (clean_guid, vsid)
         else:
@@ -109,11 +109,14 @@ def home(request, guid, vsid='0'):
                     redirect_method = getattr(helpers, method_name)
                 except AttributeError:
                     pass
-    
+
                 redirect_url = redirect_method(guid_redirect, manipulation)
             else:
                 redirect_url = guid_redirect.url
-    
+
+        redirect_url = helpers.get_hosted_state_url(guid_redirect,
+                                                    redirect_url)
+
         aguid = request.COOKIES.get('aguid') or \
             helpers.quote_string('{%s}' % str(uuid.uuid4()))
         if expired:
@@ -138,6 +141,7 @@ def home(request, guid, vsid='0'):
                            'Exchange to view all current jobs for <a href="'
                            'http://us.jobs/results.asp?bu=%s">%s</a>.' %
                            (guid_redirect.buid, guid_redirect.company_name))
+                redirect_url = guid_redirect.url
             response = render_to_response('redirect/expired.html',
                                           {'url': redirect_url,
                                            'location': guid_redirect.job_location,
@@ -145,19 +149,21 @@ def home(request, guid, vsid='0'):
                                            'expired': expired})
         else:
             response = HttpResponsePermanentRedirect(redirect_url)
-    
+
+        buid = helpers.get_Post_a_Job_buid(guid_redirect)
         qs = 'jcnlx.ref=%s&jcnlx.url=%s&jcnlx.buid=%s&jcnlx.vsid=%s&jcnlx.aguid=%s'
-        qs %= (helpers.quote_string(request.META.get('HTTP_REFERER')),
+        qs %= (helpers.quote_string(request.META.get('HTTP_REFERER', '')),
                helpers.quote_string(redirect_url),
-               guid_redirect.buid,
+               buid,
                vsid,
                aguid)
         if expired:
             now = datetime.now(tz=timezone.utc)
-            d_hours = int((now - guid_redirect.expired_date).total_seconds() / 60 / 60)
+            d_seconds = (now - guid_redirect.expired_date).total_seconds()
+            d_hours = int(d_seconds / 60 / 60)
             qs += '%s&jcnlx.xhr=%s' % (err, d_hours)
         response['X-REDIRECT'] = qs
         response.set_cookie('aguid', aguid,
-                            expires=365*24*60*60,
+                            expires=365 * 24 * 60 * 60,
                             domain='.my.jobs')
     return response

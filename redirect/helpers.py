@@ -3,6 +3,30 @@ from django.utils.http import urlquote_plus
 from redirect.models import *
 
 
+"""
+
+Utility methods and constants
+
+"""
+
+STATE_MAP = {
+    'ct-': {'buid': 2656,
+            'site': 'connecticut.us.jobs'},
+    'ms-': {'buid': 2674,
+            'site': 'mississippi.us.jobs'},
+    'nj-': {'buid': 2680,
+            'site': 'newjersey.us.jobs'},
+    'nv-': {'buid': 2678,
+            'site': 'nevada.us.jobs'},
+    'ny-': {'buid': 2682,
+            'site': 'newyork.us.jobs'},
+    'pr-': {'buid': 2701,
+            'site': 'puertorico.us.jobs'},
+    'gu-': {'buid': 2703,
+            'site': 'guam.us.jobs'},
+}
+
+
 def add_query(url, name, value):
     """
     Adds field/value pair to the provided url as a query string
@@ -20,6 +44,42 @@ def add_query(url, name, value):
     url += '&' if url.find('?') >= 0 else '?'
     url += '%s=%s' % (name, value)
     return url
+
+
+def get_hosted_state_url(redirect, url):
+    """
+    Transforms us.jobs links into branded us.jobs links, if branding exists
+    for the provided job's location.
+
+    Inputs:
+    :redirect: Redirect instance dictated by the guid used in the initial
+        request
+    :url: URL to be transformed
+    """
+    if redirect.buid == 1228:
+        state_str = redirect.job_location[:3].lower()
+        new_ms = STATE_MAP.get(state_str, {}).get('site', 'us.jobs')
+        url = url.replace('us.jobs', new_ms)
+    return url
+
+
+def get_Post_a_Job_buid(redirect):
+    """
+    Returns the state-specific buid for a given job's location, if one exists.
+
+    Used during logging only.
+
+    Inputs:
+    :redirect: Redirect object associated with a given guid
+
+    Outputs:
+    :buid: State-specific buid, if one exists
+    """
+    buid = redirect.buid
+    if buid == 1228:
+        state_str = redirect.job_location[:3].lower()
+        buid = STATE_MAP.get(state_str, {}).get('buid', buid)
+    return buid
 
 
 def quote_string(value):
@@ -41,6 +101,13 @@ def quote_string(value):
     value = value.replace('-', '%2D')
     value = value.replace('_', '%5F')
     return value
+
+
+"""
+
+URL manipulation methods
+
+"""
 
 
 def micrositetag(redirect_obj, manipulation_obj):
@@ -250,6 +317,7 @@ def replacethenaddpre(redirect_obj, manipulation_obj):
     """
     url = replace(redirect_obj, manipulation_obj)
     return manipulation_obj.value_2 + url
+
 
 def cframe(redirect_obj, manipulation_obj):
     """
