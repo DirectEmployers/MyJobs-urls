@@ -139,7 +139,7 @@ def home(request, guid, vsid='0'):
                            'http://us.jobs/results.asp?bu=%s">%s</a>.' %
                            (guid_redirect.buid, guid_redirect.company_name))
             response = render_to_response('redirect/expired.html',
-                                          {'url': redirect_url,
+                                          {'url': guid_redirect.url,
                                            'location': guid_redirect.job_location,
                                            'title': guid_redirect.job_title,
                                            'expired': expired})

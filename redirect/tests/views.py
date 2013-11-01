@@ -358,6 +358,7 @@ class ViewSourceViewTests(TestCase):
         self.assertTrue('%s (%s)' %
                         (self.redirect.job_title, self.redirect.job_location)
                         in response.content)
+        self.assertTrue(self.redirect.url in response.content)
         self.assertFalse('National Labor Exchange' in response.content)
 
     def test_expired_state_job(self):
@@ -374,6 +375,7 @@ class ViewSourceViewTests(TestCase):
         self.assertTrue('%s (%s)' %
                         (self.redirect.job_title, self.redirect.job_location)
                         in response.content)
+        self.assertTrue(self.redirect.url in response.content)
         self.assertFalse('National Labor Exchange' in response.content)
 
     def test_expired_other_job(self):
@@ -388,6 +390,7 @@ class ViewSourceViewTests(TestCase):
         self.assertTrue('%s (%s)' %
                         (self.redirect.job_title, self.redirect.job_location)
                         in response.content)
+        self.assertTrue(self.redirect.url in response.content)
         self.assertTrue('National Labor Exchange' in response.content)
         self.assertTrue('bu=%s">%s' %
                         (self.redirect.buid, self.redirect.company_name)
