@@ -27,13 +27,13 @@ class ViewSourceViewTests(TestCase):
         resolve to a DestinationManipulation instance, default to 0
         """
         for vsid in ['', '1']:
-            response = self.client.get(reverse('home', args=[self.redirect_guid,
-                                                             vsid]))
+            response = self.client.get(reverse('home',
+                                               args=[self.redirect_guid,
+                                                     vsid]))
             # In this case, view source id 0 is a sourcecodetag redirect
             test_url = 'http://testserver/%s%s' % \
                 (self.redirect.url, self.manipulation.value_1)
             self.assertEqual(response['Location'], test_url)
-
 
     def test_get_with_malformed_guid(self):
         """
@@ -44,7 +44,7 @@ class ViewSourceViewTests(TestCase):
                                               'hex characters']:
             with self.assertRaises(NoReverseMatch):
                 self.client.get(reverse('home', args=[guid]))
-    
+
     def test_open_graph_redirect(self):
         """
         Check social bot open graph response
@@ -52,9 +52,9 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(
             reverse('home', args=[self.redirect_guid,
                                   self.manipulation.view_source]),
-                                  HTTP_USER_AGENT='facebookexternalhit')        
+            HTTP_USER_AGENT='facebookexternalhit')
         self.assertContains(response, 'US.jobs - Programmer - DirectEmployers')
-        
+
     def test_sourcecodetag_redirect(self):
         """
         Check view that manipulates a url with the sourcecodetag action
@@ -372,7 +372,7 @@ class ViewSourceViewTests(TestCase):
                         in response.content)
         self.assertTrue('facebook.com/us-jobs/?jvid=%s%s' %
                         (self.redirect_guid, self.manipulation.view_source)
-                            in response.content)
+                        in response.content)
         self.assertFalse('National Labor Exchange' in response.content)
 
     def test_expired_state_job(self):

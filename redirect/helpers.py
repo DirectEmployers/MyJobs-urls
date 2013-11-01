@@ -109,6 +109,7 @@ URL manipulation methods
 
 """
 
+
 def micrositetag(redirect_obj, manipulation_obj):
     """
     Redirects to the url from redirect_obj.url with source codes appended.
@@ -316,6 +317,7 @@ def replacethenaddpre(redirect_obj, manipulation_obj):
     """
     url = replace(redirect_obj, manipulation_obj)
     return manipulation_obj.value_2 + url
+
 
 def cframe(redirect_obj, manipulation_obj):
     """
