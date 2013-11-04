@@ -365,6 +365,7 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(
             reverse('home', args=[self.redirect_guid,
                                   self.manipulation.view_source]))
+        self.assertEqual(response.status_code, 410)
         self.assertTemplateUsed(response, 'redirect/expired.html')
         self.assertTrue('Please <a href="http://us.jobs/"' in response.content)
         self.assertTrue('%s (%s)' %
@@ -385,6 +386,7 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(
             reverse('home', args=[self.redirect_guid,
                                   self.manipulation.view_source]))
+        self.assertEqual(response.status_code, 410)
         self.assertTemplateUsed(response, 'redirect/expired.html')
         self.assertTrue('Please <a href="#" onclick' in response.content)
         self.assertTrue('%s (%s)' %
@@ -400,6 +402,7 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(
             reverse('home', args=[self.redirect_guid,
                                   self.manipulation.view_source]))
+        self.assertEqual(response.status_code, 410)
         self.assertTemplateUsed(response, 'redirect/expired.html')
         self.assertTrue('Please <a href="#" onclick' in response.content)
         self.assertTrue('%s (%s)' %
