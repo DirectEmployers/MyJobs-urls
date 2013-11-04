@@ -118,20 +118,22 @@ def micrositetag(redirect_obj, manipulation_obj):
 
     # There is often (always?) a second action that needs to take place
     # to achieve the correct manipulated result.
-    try:
-        # Try to retrieve a DestinationManipulation object for the current
-        # buid and view_source, but for action_type 2
-        manipulation_2 = DestinationManipulation.objects.get(
-            buid=manipulation_obj.buid,
-            view_source=manipulation_obj.view_source,
-            action_type=2)
-    except DestinationManipulation.DoesNotExist:
+    manipulation_2 = None
+    if manipulation_obj.action_type == 1:
         try:
-            # If the previous does not exist, check view_source 0
+            # Try to retrieve a DestinationManipulation object for the current
+            # buid and view_source, but for action_type 2
             manipulation_2 = DestinationManipulation.objects.get(
-                buid=redirect_obj.buid, view_source=0, action_type=2)
+                buid=manipulation_obj.buid,
+                view_source=manipulation_obj.view_source,
+                action_type=2)
         except DestinationManipulation.DoesNotExist:
-            manipulation_2 = None
+            try:
+                # If the previous does not exist, check view_source 0
+                manipulation_2 = DestinationManipulation.objects.get(
+                    buid=redirect_obj.buid, view_source=0, action_type=2)
+            except DestinationManipulation.DoesNotExist:
+                pass
 
     if manipulation_2 and (manipulation_2.value_1 != '[blank]'):
         # A manipulation exists. Retrieve the method corresponding to its
