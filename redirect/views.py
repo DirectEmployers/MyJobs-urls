@@ -1,8 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import uuid
 
 from django.http import *
-from django.shortcuts import get_object_or_404, render_to_response
+from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
 from django.utils import timezone
 
 from redirect import models
@@ -142,11 +143,12 @@ def home(request, guid, vsid='0'):
                            'http://us.jobs/results.asp?bu=%s">%s</a>.' %
                            (guid_redirect.buid, guid_redirect.company_name))
                 redirect_url = guid_redirect.url
-            response = render_to_response('redirect/expired.html',
-                                          {'url': redirect_url,
-                                           'location': guid_redirect.job_location,
-                                           'title': guid_redirect.job_title,
-                                           'expired': expired})
+            response = HttpResponseGone(
+                render_to_string('redirect/expired.html',
+                                 {'url': redirect_url,
+                                  'location': guid_redirect.job_location,
+                                  'title': guid_redirect.job_title,
+                                  'expired': expired}))
         else:
             response = HttpResponsePermanentRedirect(redirect_url)
 
