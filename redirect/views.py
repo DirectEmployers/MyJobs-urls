@@ -14,20 +14,13 @@ def home(request, guid, vsid='0'):
     guid_redirect = get_object_or_404(models.Redirect,
                                       guid='{%s}' % uuid.UUID(guid))
 
-    manipulation = None
-    try:
-        manipulation = models.DestinationManipulation.objects.get(
-            buid=guid_redirect.buid, view_source=vsid, action_type=1)
-    except models.DestinationManipulation.DoesNotExist:
-        try:
-            manipulation = models.DestinationManipulation.objects.get(
-                buid=guid_redirect.buid, view_source=vsid)
-        except models.DestinationManipulation.DoesNotExist:
-            try:
-                manipulation = models.DestinationManipulation.objects.get(
-                    buid=guid_redirect.buid, view_source=0)
-            except models.DestinationManipulation.DoesNotExist:
-                pass
+    manipulation = models.DestinationManipulation.objects.filter(
+        buid=guid_redirect.buid, view_source=vsid).order_by('action_type')
+    if not manipulation:
+        manipulation = models.DestinationManipulation.objects.filter(
+            buid=guid_redirect.buid, view_source=0).order_by('action_type')
+    if manipulation:
+        manipulation = manipulation[0]
 
     expired = False
     facebook = False

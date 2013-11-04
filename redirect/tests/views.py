@@ -7,6 +7,7 @@ from django.core.urlresolvers import reverse, NoReverseMatch
 from django.utils import timezone
 from django.utils.http import urlquote_plus
 
+from redirect.models import DestinationManipulation
 from redirect.tests.factories import (
     RedirectFactory, CanonicalMicrositeFactory, DestinationManipulationFactory)
 
@@ -34,6 +35,27 @@ class ViewSourceViewTests(TestCase):
             test_url = 'http://testserver/%s%s' % \
                 (self.redirect.url, self.manipulation.value_1)
             self.assertEqual(response['Location'], test_url)
+
+    def test_action_types(self):
+        """
+        DestinationManipulation.action_type is an integer that can be either
+        1 or 2. Sometimes a DestinationManipulation object exists with
+        action_type 2 but no corresponding object exists for action_type 1.
+        The correct object should be retrieved regardless.
+        """
+        old_action_type = self.manipulation.action_type
+        self.manipulation.action_type = old_action_type + 1
+        self.manipulation.save()
+
+        with self.assertRaises(DestinationManipulation.DoesNotExist):
+            DestinationManipulation.objects.get(buid=self.manipulation.buid,
+                                                view_source=self.manipulation.view_source,
+                                                action_type=old_action_type)
+
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid,
+                                                 self.manipulation.view_source]))
+        self.assertEqual(response.status_code, 301)
 
     def test_get_with_malformed_guid(self):
         """
