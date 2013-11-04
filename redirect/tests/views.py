@@ -36,6 +36,26 @@ class ViewSourceViewTests(TestCase):
                 (self.redirect.url, self.manipulation.value_1)
             self.assertEqual(response['Location'], test_url)
 
+    def test_with_action_type_2(self):
+        """
+        Sometimes a DestinationManipulation object exists with an action_type
+        of 2 but a corresponding object with an action_type of 1 does not
+        exist. If one of these is encountered, we should not run the
+        manipulation twice.
+        """
+        self.manipulation.action_type = '2'
+        self.manipulation.action = 'micrositetag'
+        self.redirect.url = 'www.my.jobs/[Unique_ID]/job/'
+        self.manipulation.save()
+        self.redirect.save()
+
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid,
+                                                 self.manipulation.view_source]))
+        self.assertEqual(response.status_code, 301)
+        self.assertTrue(response['Location'].endswith(
+            self.redirect.url.replace('[Unique_ID]', str(self.redirect.uid))))
+
     def test_action_types(self):
         """
         DestinationManipulation.action_type is an integer that can be either
