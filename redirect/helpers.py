@@ -130,8 +130,9 @@ def set_aguid_cookie(response, host, aguid):
         domain = '.' + '.'.join(host[-2:])
 
         # Sets a site-wide cookie
-        # Works for "normal" domains (my.jobs, jcnlx.com), but doesn't set a cookie
-        # if accessed via localhost (depends on browser, apparently) or IP
+        # Works for "normal" domains (my.jobs, jcnlx.com), but doesn't set a
+        # cookie if accessed via localhost (depends on browser, apparently)
+        # or IP
         response.set_cookie('aguid', aguid,
                             expires=365 * 24 * 60 * 60,
                             domain=domain)
