@@ -1,8 +1,10 @@
 import datetime
 import re
+from urllib import unquote
+import uuid
 
 from django.test import TestCase
-from django.test.client import Client
+from django.test.client import Client, RequestFactory
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.utils import timezone
 from django.utils.http import urlquote_plus
@@ -10,6 +12,7 @@ from django.utils.http import urlquote_plus
 from redirect.models import DestinationManipulation
 from redirect.tests.factories import (
     RedirectFactory, CanonicalMicrositeFactory, DestinationManipulationFactory)
+from redirect.views import home
 
 
 class ViewSourceViewTests(TestCase):
@@ -21,6 +24,8 @@ class ViewSourceViewTests(TestCase):
         self.microsite = CanonicalMicrositeFactory()
         self.manipulation = DestinationManipulationFactory()
         self.redirect_guid = self.guid_re.sub('', self.redirect.guid)
+
+        self.factory = RequestFactory()
 
     def test_get_with_bad_vsid(self):
         """
@@ -439,3 +444,16 @@ class ViewSourceViewTests(TestCase):
         self.assertTrue('bu=%s">%s' %
                         (self.redirect.buid, self.redirect.company_name)
                         in response.content)
+
+    def test_cookie_domains(self):
+        for host in ['jcnlx.com', 'my.jobs']:
+            request = self.factory.get(
+                reverse('home', args=[self.redirect_guid,
+                                      self.manipulation.view_source]),
+                HTTP_HOST=host)
+            response = home(request, self.redirect_guid,
+                            self.manipulation.view_source)
+
+            cookie = response.cookies['aguid']
+            self.assertEqual(cookie.items()[1], ('domain', '.' + host))
+            uuid.UUID(unquote(cookie.value))
