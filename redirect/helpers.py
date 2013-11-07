@@ -105,7 +105,8 @@ def quote_string(value):
 
 def set_aguid_cookie(response, host, aguid):
     """
-    Sets an aguid cookie using the same domain as was requested
+    Sets an aguid cookie using the same domain as was requested. Does not work
+    if hosted on a two-level TLD (.com.<country_code>, for example)
 
     Inputs:
     :response: HttpResponse (or a subclass) object prior to setting the cookie

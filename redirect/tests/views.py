@@ -446,7 +446,10 @@ class ViewSourceViewTests(TestCase):
                         in response.content)
 
     def test_cookie_domains(self):
-        for host in ['jcnlx.com', 'my.jobs']:
+        # The value for host is unimportant - if this code does not end up
+        # being served on r.my.jobs, it's okay. We're just testing that we
+        # properly retrieve the root domain from what is provided.
+        for host in ['jcnlx.com', 'my.jobs', 'r.my.jobs']:
             request = self.factory.get(
                 reverse('home', args=[self.redirect_guid,
                                       self.manipulation.view_source]),
@@ -455,5 +458,7 @@ class ViewSourceViewTests(TestCase):
                             self.manipulation.view_source)
 
             cookie = response.cookies['aguid']
-            self.assertEqual(cookie.items()[1], ('domain', '.' + host))
+            expected_domain = host.split('.')
+            expected_domain= '.' + '.'.join(expected_domain[-2:])
+            self.assertIn(('domain', expected_domain), cookie.items())
             uuid.UUID(unquote(cookie.value))
