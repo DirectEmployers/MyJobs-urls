@@ -103,6 +103,43 @@ def quote_string(value):
     return value
 
 
+def set_aguid_cookie(response, host, aguid):
+    """
+    Sets an aguid cookie using the same domain as was requested. Does not work
+    if hosted on a two-level TLD (.com.<country_code>, for example)
+
+    Inputs:
+    :response: HttpResponse (or a subclass) object prior to setting the cookie
+    :host: HTTP_HOST header
+    :aguid: aguid for the current user, either retrieved from a cookie for a
+        repeat visitor or calculated anew for a new user
+
+    Outputs:
+    :response: Input :response: with an added aguid cookie
+    """
+    # The test client does not send a HTTP_HOST header by default; don't try
+    # to set a cookie if there is no host
+    if host:
+        # Remove port, if any
+        host = host.split(':')[0]
+
+        # Assume that whatever is after the last period is the tld
+        # Whatever is before the tld should be the root domain
+        host = host.split('.')[-2:]
+
+        # Reconstruct the domain for use in a cookie
+        domain = '.' + '.'.join(host[-2:])
+
+        # Sets a site-wide cookie
+        # Works for "normal" domains (my.jobs, jcnlx.com), but doesn't set a
+        # cookie if accessed via localhost (depends on browser, apparently)
+        # or IP
+        response.set_cookie('aguid', aguid,
+                            expires=365 * 24 * 60 * 60,
+                            domain=domain)
+    return response
+
+
 """
 
 URL manipulation methods

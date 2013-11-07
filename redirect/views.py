@@ -158,7 +158,8 @@ def home(request, guid, vsid='0'):
             d_hours = int(d_seconds / 60 / 60)
             qs += '%s&jcnlx.xhr=%s' % (err, d_hours)
         response['X-REDIRECT'] = qs
-        response.set_cookie('aguid', aguid,
-                            expires=365 * 24 * 60 * 60,
-                            domain='.my.jobs')
+
+        response = helpers.set_aguid_cookie(response,
+                                            request.META.get('HTTP_HOST'),
+                                            aguid)
     return response
