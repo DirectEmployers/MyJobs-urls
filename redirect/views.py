@@ -160,6 +160,6 @@ def home(request, guid, vsid='0'):
         response['X-REDIRECT'] = qs
 
         response = helpers.set_aguid_cookie(response,
-                                            request.META.get('HTTP_HOST'),
+                                            request.get_host(),
                                             aguid)
     return response
