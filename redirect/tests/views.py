@@ -458,7 +458,9 @@ class ViewSourceViewTests(TestCase):
                             self.manipulation.view_source)
 
             cookie = response.cookies['aguid']
-            expected_domain = host.split('.')
-            expected_domain= '.' + '.'.join(expected_domain[-2:])
+            if 'my.jobs' in host:
+                expected_domain = '.my.jobs'
+            else:
+                expected_domain = '.jcnlx.com'
             self.assertIn(('domain', expected_domain), cookie.items())
             uuid.UUID(unquote(cookie.value))
