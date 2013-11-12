@@ -12,6 +12,6 @@ urlpatterns = patterns('',
 
     # Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^(?P<guid>\w{32})$', home, name='home'),
-    url(r'^(?P<guid>\w{32})(?P<vsid>\d*)$', home, name='home'),
+    url(r'^(?P<guid>[0-9A-Fa-f]{32})$', home, name='home'),
+    url(r'^(?P<guid>[0-9A-Fa-f]{32})(?P<vsid>\d*)$', home, name='home'),
 )
