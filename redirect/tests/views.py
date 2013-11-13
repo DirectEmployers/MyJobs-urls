@@ -71,8 +71,8 @@ class ViewSourceViewTests(TestCase):
         Navigating to a url with a malformed guid or a guid that contains
         non-hex characters should display a 404 page
         """
-        for guid in [self.redirect_guid[:16], 'guid should be 32 '
-                                              'hex characters']:
+        for guid in [self.redirect_guid[:16],
+                     'g' * 32]:
             with self.assertRaises(NoReverseMatch):
                 self.client.get(reverse('home', args=[guid]))
 
