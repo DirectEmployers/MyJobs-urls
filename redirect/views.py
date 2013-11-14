@@ -6,18 +6,18 @@ from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from redirect import models
+from redirect.models import Redirect, DestinationManipulation as DM
 from redirect import helpers
 
 
 def home(request, guid, vsid='0'):
-    guid_redirect = get_object_or_404(models.Redirect,
+    guid_redirect = get_object_or_404(Redirect,
                                       guid='{%s}' % uuid.UUID(guid))
 
-    manipulation = models.DestinationManipulation.objects.filter(
+    manipulation = DM.objects.filter(
         buid=guid_redirect.buid, view_source=vsid).order_by('action_type')
     if not manipulation:
-        manipulation = models.DestinationManipulation.objects.filter(
+        manipulation = DM.objects.filter(
             buid=guid_redirect.buid, view_source=0).order_by('action_type')
     if manipulation:
         manipulation = manipulation[0]
@@ -105,8 +105,33 @@ def home(request, guid, vsid='0'):
                     pass
 
                 redirect_url = redirect_method(guid_redirect, manipulation)
+
             else:
                 redirect_url = guid_redirect.url
+
+            # After any manipulations have been performed, check for a 'vs'
+            # request parameter. If this exists, this is an apply click and
+            # one additional manipulation should be performed.
+            apply_vs = request.REQUEST.get('vs')
+            if apply_vs:
+                apply_manipulation = None
+                try:
+                    # There may be multiple objects with this buid and vs;
+                    # We want the one with the highest action_type
+                    apply_manipulation = DM.objects.filter(
+                        buid=manipulation.buid,
+                        view_source=apply_vs).order_by('-action_type')[0]
+                except IndexError:
+                    # Should never happen unless someone manually types in the
+                    # url and makes a typo, which is apparently quite common
+                    pass
+                if apply_manipulation and \
+                        (apply_manipulation.value_1 != '[blank]'):
+                    redirect_method = getattr(helpers,
+                                              apply_manipulation.action)
+                    guid_redirect.url = redirect_url
+                    redirect_url = redirect_method(guid_redirect,
+                                                   apply_manipulation)
 
         redirect_url = helpers.get_hosted_state_url(guid_redirect,
                                                     redirect_url)
