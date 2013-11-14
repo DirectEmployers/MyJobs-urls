@@ -476,3 +476,14 @@ class ViewSourceViewTests(TestCase):
         self.assertEqual(response.status_code, 301)
         self.assertTrue(self.redirect.url + self.apply_manipulation.value_1
                         in response['Location'])
+
+    def test_bad_vs_query(self):
+        self.apply_manipulation = DestinationManipulationFactory(
+            view_source=1234)
+
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid]) +
+                                   '?vs=%sbad_vs' %
+                                   self.apply_manipulation.view_source)
+
+        self.assertTrue(response['Location'].endswith(self.redirect.url))
