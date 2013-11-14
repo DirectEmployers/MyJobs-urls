@@ -119,7 +119,7 @@ def home(request, guid, vsid='0'):
                     # There may be multiple objects with this buid and vs;
                     # We want the one with the highest action_type
                     apply_manipulation = DM.objects.filter(
-                        buid=manipulation.buid,
+                        buid=guid_redirect.buid,
                         view_source=apply_vs).order_by('-action_type')[0]
                 except IndexError:
                     # Should never happen unless someone manually types in the
