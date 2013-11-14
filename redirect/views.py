@@ -116,10 +116,14 @@ def home(request, guid, vsid='0'):
             if apply_vs:
                 apply_manipulation = None
                 try:
+                    # There may be multiple objects with this buid and vs;
+                    # We want the one with the highest action_type
                     apply_manipulation = DM.objects.filter(
                         buid=manipulation.buid,
                         view_source=apply_vs).order_by('-action_type')[0]
                 except IndexError:
+                    # Should never happen unless someone manually types in the
+                    # url and makes a typo, which is apparently quite common
                     pass
                 if apply_manipulation and \
                         (apply_manipulation.value_1 != '[blank]'):
