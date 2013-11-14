@@ -468,7 +468,6 @@ class ViewSourceViewTests(TestCase):
     def test_apply_click(self):
         self.apply_manipulation = DestinationManipulationFactory(
             view_source=1234)
-        self.redirect.save()
 
         response = self.client.get(reverse('home',
                                            args=[self.redirect_guid]) +
