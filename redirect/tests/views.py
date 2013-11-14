@@ -464,3 +464,19 @@ class ViewSourceViewTests(TestCase):
                 expected_domain = '.jcnlx.com'
             self.assertIn(('domain', expected_domain), cookie.items())
             uuid.UUID(unquote(cookie.value))
+
+    def test_apply_click(self):
+        self.apply_manipulation = DestinationManipulationFactory(
+            view_source=1234)
+        self.manipulation.action = 'microsite'
+        self.manipulation.value_1 = 'www.my.jobs/[Unique_ID]/job'
+        self.manipulation.save()
+
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid]) +
+                                   '?vs=%s' %
+                                   self.apply_manipulation.view_source)
+        self.assertEqual(response.status_code, 301)
+        self.assertTrue(str(self.redirect.uid) in response['Location'])
+        self.assertTrue(
+            response['Location'].endswith(self.apply_manipulation.value_1))
