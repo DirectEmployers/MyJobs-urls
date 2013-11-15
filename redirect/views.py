@@ -29,7 +29,6 @@ def home(request, guid, vsid='0'):
                 buid=guid_redirect.buid,
                 view_source=apply_vs,
                 action_type=2)
-            print manipulation
         except ValueError:
             # Should never happen unless someone manually types in the
             # url and makes a typo or their browser does something it shouldn't
