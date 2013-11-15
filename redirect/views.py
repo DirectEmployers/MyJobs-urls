@@ -14,13 +14,33 @@ def home(request, guid, vsid='0'):
     guid_redirect = get_object_or_404(Redirect,
                                       guid='{%s}' % uuid.UUID(guid))
 
-    manipulation = DM.objects.filter(
-        buid=guid_redirect.buid, view_source=vsid).order_by('action_type')
-    if not manipulation:
+    manipulation = None
+
+    # Check for a 'vs' request parameter. If it exists, this is an apply click
+    # and vs should be used in place of vsid
+    apply_vs = request.REQUEST.get('vs')
+    if apply_vs:
+        try:
+            apply_vs = int(apply_vs)
+
+            # There may be multiple objects with this buid and vs;
+            # We want the one with the highest action_type
+            manipulation = DM.objects.filter(
+                buid=guid_redirect.buid,
+                view_source=apply_vs).order_by('-action_type')[0]
+        except (IndexError, ValueError):
+            # Should never happen unless someone manually types in the
+            # url and makes a typo or their browser does something it shouldn't
+            # with links, which is apparently quite common
+            pass
+    else:
         manipulation = DM.objects.filter(
-            buid=guid_redirect.buid, view_source=0).order_by('action_type')
-    if manipulation:
-        manipulation = manipulation[0]
+            buid=guid_redirect.buid, view_source=vsid).order_by('action_type')
+        if not manipulation:
+            manipulation = DM.objects.filter(
+                buid=guid_redirect.buid, view_source=0).order_by('action_type')
+        if manipulation:
+            manipulation = manipulation[0]
 
     expired = False
     facebook = False
@@ -108,30 +128,6 @@ def home(request, guid, vsid='0'):
 
             else:
                 redirect_url = guid_redirect.url
-
-            # After any manipulations have been performed, check for a 'vs'
-            # request parameter. If this exists, this is an apply click and
-            # one additional manipulation should be performed.
-            apply_vs = request.REQUEST.get('vs')
-            if apply_vs:
-                apply_manipulation = None
-                try:
-                    # There may be multiple objects with this buid and vs;
-                    # We want the one with the highest action_type
-                    apply_manipulation = DM.objects.filter(
-                        buid=guid_redirect.buid,
-                        view_source=apply_vs).order_by('-action_type')[0]
-                except IndexError:
-                    # Should never happen unless someone manually types in the
-                    # url and makes a typo, which is apparently quite common
-                    pass
-                if apply_manipulation and \
-                        (apply_manipulation.value_1 != '[blank]'):
-                    redirect_method = getattr(helpers,
-                                              apply_manipulation.action)
-                    guid_redirect.url = redirect_url
-                    redirect_url = redirect_method(guid_redirect,
-                                                   apply_manipulation)
 
         redirect_url = helpers.get_hosted_state_url(guid_redirect,
                                                     redirect_url)
