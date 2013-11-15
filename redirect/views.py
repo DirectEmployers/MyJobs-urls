@@ -25,14 +25,29 @@ def home(request, guid, vsid='0'):
 
             # There may be multiple objects with this buid and vs;
             # We want the one with the highest action_type
-            manipulation = DM.objects.filter(
+            manipulation = DM.objects.get(
                 buid=guid_redirect.buid,
-                view_source=apply_vs).order_by('-action_type')[0]
-        except (IndexError, ValueError):
+                view_source=apply_vs,
+                action_type=2)
+            print manipulation
+        except ValueError:
             # Should never happen unless someone manually types in the
             # url and makes a typo or their browser does something it shouldn't
             # with links, which is apparently quite common
             pass
+        except DM.DoesNotExist:
+            if apply_vs != 0:
+                try:
+                    # If a manipulation for action type 2 of the provided view
+                    # source does not exist and that view source is not 0, try
+                    # using view source 0
+                    manipulation = DM.objects.get(
+                        buid=guid_redirect.buid,
+                        view_source=0,
+                        action_type=2)
+                except DM.DoesNotExist:
+                    # No manipulation exists, redirect to the unmanipulated url
+                    pass
     else:
         manipulation = DM.objects.filter(
             buid=guid_redirect.buid, view_source=vsid).order_by('action_type')
