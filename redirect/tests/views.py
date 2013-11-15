@@ -474,8 +474,7 @@ class ViewSourceViewTests(TestCase):
                                    '?vs=%s' %
                                    self.apply_manipulation.view_source)
         self.assertEqual(response.status_code, 301)
-        self.assertTrue(self.redirect.url + self.apply_manipulation.value_1
-                        in response['Location'])
+        self.assertTrue(response['Location'].endswith(self.redirect.url))
 
     def test_bad_vs_query(self):
         self.apply_manipulation = DestinationManipulationFactory(
