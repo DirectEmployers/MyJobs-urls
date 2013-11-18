@@ -37,7 +37,5 @@ urlpatterns = patterns('',
         RedirectView.as_view(url='https://secure.my.jobs/terms/')),
 
     # Potential www.my.jobs redirects
-    url(r'^favicon.ico$',
-        RedirectView.as_view(url='http://www.my.jobs/favicon.ico')),
     url(r'^.*/$', myjobs_redirect),
 )

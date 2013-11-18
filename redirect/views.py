@@ -188,4 +188,10 @@ def home(request, guid, vsid='0'):
 
 
 def myjobs_redirect(request):
-    return HttpResponsePermanentRedirect('http://www.my.jobs' + request.path)
+    path = request.path
+    query = request.META.get('QUERY_STRING')
+    if query:
+        query = '?' + query
+    if path[-1] == '/':
+        path = path[:-1]
+    return HttpResponsePermanentRedirect('http://www.my.jobs' + path + query)
