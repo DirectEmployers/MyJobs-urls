@@ -133,8 +133,6 @@ def home(request, guid, vsid='0'):
         redirect_url = helpers.get_hosted_state_url(guid_redirect,
                                                     redirect_url)
 
-        aguid = request.COOKIES.get('aguid') or \
-            helpers.quote_string('{%s}' % str(uuid.uuid4()))
         if expired:
             err = '&jcnlx.err=XIN'
             if facebook:
@@ -167,13 +165,17 @@ def home(request, guid, vsid='0'):
         else:
             response = HttpResponsePermanentRedirect(redirect_url)
 
+        aguid = request.COOKIES.get('aguid') or \
+                helpers.quote_string('{%s}' % str(uuid.uuid4()))
+        myguid = request.COOKIES.get('myguid', '')
         buid = helpers.get_Post_a_Job_buid(guid_redirect)
-        qs = 'jcnlx.ref=%s&jcnlx.url=%s&jcnlx.buid=%s&jcnlx.vsid=%s&jcnlx.aguid=%s'
+        qs = 'jcnlx.ref=%s&jcnlx.url=%s&jcnlx.buid=%s&jcnlx.vsid=%s&jcnlx.aguid=%s&jcnlx.myguid=%s'
         qs %= (helpers.quote_string(request.META.get('HTTP_REFERER', '')),
                helpers.quote_string(redirect_url),
                buid,
                vsid,
-               aguid)
+               aguid,
+               myguid)
         if expired:
             now = datetime.now(tz=timezone.utc)
             d_seconds = (now - guid_redirect.expired_date).total_seconds()
