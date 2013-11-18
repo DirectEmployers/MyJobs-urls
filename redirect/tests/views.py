@@ -1,7 +1,9 @@
 import datetime
 import re
-from urllib import unquote
+from urllib import unquote, urlopen
 import uuid
+
+import requests
 
 from django.test import TestCase
 from django.test.client import Client, RequestFactory
@@ -486,3 +488,13 @@ class ViewSourceViewTests(TestCase):
                                    self.apply_manipulation.view_source)
 
         self.assertTrue(response['Location'].endswith(self.redirect.url))
+
+    def test_myjobs_redirects(self):
+        paths = {'/terms': 'https://secure.my.jobs',
+                 '/jobs': 'http://www.my.jobs',
+                 '/bad_path': 'http://www.my.jobs'}
+        for path in paths.keys():
+            response = self.client.get(path, follow=True)
+            self.assertEqual(response.status_code, 301)
+            self.assertTrue(response['Location'].startswith(paths[path]))
+
