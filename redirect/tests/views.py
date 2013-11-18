@@ -1,9 +1,7 @@
 import datetime
 import re
-from urllib import unquote, urlopen
+from urllib import unquote
 import uuid
-
-import requests
 
 from django.test import TestCase
 from django.test.client import Client, RequestFactory
