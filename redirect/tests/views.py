@@ -488,11 +488,9 @@ class ViewSourceViewTests(TestCase):
         self.assertTrue(response['Location'].endswith(self.redirect.url))
 
     def test_myjobs_redirects(self):
-        paths = {'/terms': 'https://secure.my.jobs',
-                 '/search?location=Indianapolis': 'http://www.my.jobs',
-                 '/bad_path': 'http://www.my.jobs'}
-        for path in paths.keys():
+        paths = ['/terms', '/search?location=Indianapolis']
+        for path in paths:
             response = self.client.get(path, follow=True)
             self.assertEqual(response.status_code, 301)
-            self.assertTrue(response['Location'].startswith(paths[path] + path))
+            self.assertTrue(response['Location'].startswith('http://www.my.jobs'))
 
