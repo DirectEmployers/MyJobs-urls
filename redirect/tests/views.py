@@ -486,3 +486,11 @@ class ViewSourceViewTests(TestCase):
                                    self.apply_manipulation.view_source)
 
         self.assertTrue(response['Location'].endswith(self.redirect.url))
+
+    def test_myjobs_redirects(self):
+        paths = ['/terms', '/search?location=Indianapolis']
+        for path in paths:
+            response = self.client.get(path, follow=True)
+            self.assertEqual(response.status_code, 301)
+            self.assertTrue(response['Location'].startswith('http://www.my.jobs'))
+

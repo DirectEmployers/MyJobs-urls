@@ -185,3 +185,8 @@ def home(request, guid, vsid='0'):
                                             request.get_host(),
                                             aguid)
     return response
+
+
+def myjobs_redirect(request):
+    return HttpResponsePermanentRedirect(
+        'http://www.my.jobs' + request.get_full_path())
