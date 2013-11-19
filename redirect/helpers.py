@@ -1,3 +1,5 @@
+import re
+
 from django.utils.http import urlquote_plus
 
 from redirect.models import *
@@ -27,9 +29,10 @@ STATE_MAP = {
 }
 
 
-def add_query(url, name, value):
+def replace_or_add_query(url, name, value):
     """
-    Adds field/value pair to the provided url as a query string
+    Adds field/value pair to the provided url as a query string if the :name:
+    key isn't already in the url, or replaces it otherwise.
 
     Appends the proper pair separator (?&) based on the input url
 
@@ -41,9 +44,30 @@ def add_query(url, name, value):
     Outputs:
     :url: Input url with query string appended
     """
-    url += '&' if url.find('?') >= 0 else '?'
-    url += '%s=%s' % (name, value)
-    return url
+    url = url.split('?')
+    path = url[0]
+    if len(url) == 2:
+        query = url[1]
+    else:
+        query = ''
+    print path, query
+    new_query = '%s=%s' % (name, value)
+
+    new_re = re.compile(r'(?P<separator>[\?&])?%s=[^&]*' % name)
+    match = new_re.search(query)
+    if match:
+        print match.group()
+        group = match.group()[0]
+        if group and group[0] in ['?', '&']:
+            separator = ''
+        else:
+            separator = '?'
+        query = query.replace('%s%s' % (separator, match.group()),
+                              '%s%s' % (separator, new_query))
+    else:
+        query += '&' if query else ''
+        query += '%s=%s' % (name, value)
+    return '?'.join([path, query])
 
 
 def get_hosted_state_url(redirect, url):
@@ -190,7 +214,7 @@ def microsite(redirect_obj, manipulation_obj):
     """
     url = manipulation_obj.value_1
     url = url.replace('[Unique_ID]', str(redirect_obj.uid))
-    url = add_query(url, 'vs', manipulation_obj.view_source)
+    url = replace_or_add_query(url, 'vs', manipulation_obj.view_source)
     return url
 
 
@@ -199,8 +223,11 @@ def sourcecodetag(redirect_obj, manipulation_obj):
     Appends a query parameter to the redirect url
     """
     url = redirect_obj.url
-    url += manipulation_obj.value_1
-    return url
+    query = manipulation_obj.value_1
+    if query[0] in ['?', '&']:
+        query = query[1:]
+    query = query.split('=')
+    return replace_or_add_query(url, *query)
 
 
 def doubleclickwrap(redirect_obj, manipulation_obj):

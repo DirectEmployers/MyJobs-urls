@@ -38,7 +38,7 @@ class ViewSourceViewTests(TestCase):
                                                      vsid]))
             # In this case, view source id 0 is a sourcecodetag redirect
             test_url = 'http://testserver/%s%s' % \
-                (self.redirect.url, self.manipulation.value_1)
+                (self.redirect.url, self.manipulation.value_1.replace('&','?'))
             self.assertEqual(response['Location'], test_url)
 
     def test_with_action_type_2(self):
@@ -98,7 +98,7 @@ class ViewSourceViewTests(TestCase):
                                   self.manipulation.view_source]))
         #content = json.loads(response.content)
         test_url = 'http://testserver/%s%s' % \
-            (self.redirect.url, self.manipulation.value_1)
+            (self.redirect.url, self.manipulation.value_1.replace('&','?'))
         self.assertEqual(response['Location'], test_url)
 
     def test_micrositetag_redirect(self):
@@ -488,12 +488,16 @@ class ViewSourceViewTests(TestCase):
         self.assertTrue(response['Location'].endswith(self.redirect.url))
 
     def test_source_code_collision(self):
-        self.redirect.url = 'directemployers.jobs?foo=bar&src=de'
-        self.redirect.save()
-        self.manipulation.value_1 = '&src=JB-DE'
-        self.manipulation.save()
+        print
+        print
+        url = 'directemployers.jobs?%ssrc=de'
+        for part in ['foo=bar&', '']:
+            self.redirect.url = url % part
+            self.redirect.save()
+            self.manipulation.value_1 = '&src=JB-DE'
+            self.manipulation.save()
 
-        response = self.client.get(reverse('home',
-                                           args=[self.redirect_guid]))
-        self.assertTrue('src=de' not in response['Location'])
-        self.assertTrue('src=JB-DE' in response['Location'])
+            response = self.client.get(reverse('home',
+                                               args=[self.redirect_guid]))
+            self.assertTrue('src=de' not in response['Location'])
+            self.assertTrue('src=JB-DE' in response['Location'])
