@@ -488,10 +488,20 @@ class ViewSourceViewTests(TestCase):
         self.assertTrue(response['Location'].endswith(self.redirect.url))
 
     def test_source_code_collision(self):
-        print
-        print
-        url = 'directemployers.jobs?%ssrc=de'
-        for part in ['foo=bar&', '']:
+        """
+        Test that we never duplicate source codes in the event of a collision
+
+        Tests three circumstances:
+        - The source code is the last entry in the query
+        - The source code is somewhere in the middle
+        - The source code is the first query
+        - The source code is the only query
+        """
+        url = 'directemployers.jobs?%ssrc=de%s'
+        for part in [('foo=bar&', ''),  # last
+                     ('foo=bar&', '&code=de'),  # middle
+                     ('', '&foo=bar'),  # first
+                     ('', '')]:  # only
             self.redirect.url = url % part
             self.redirect.save()
             self.manipulation.value_1 = '&src=JB-DE'

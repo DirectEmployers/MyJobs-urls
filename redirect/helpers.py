@@ -44,29 +44,34 @@ def replace_or_add_query(url, name, value):
     Outputs:
     :url: Input url with query string appended
     """
-    url = url.split('?')
+    url = url.split('?', 1)
     path = url[0]
     if len(url) == 2:
         query = url[1]
     else:
         query = ''
-    print path, query
-    new_query = '%s=%s' % (name, value)
 
-    new_re = re.compile(r'(?P<separator>[\?&])?%s=[^&]*' % name)
-    match = new_re.search(query)
-    if match:
-        print match.group()
-        group = match.group()[0]
-        if group and group[0] in ['?', '&']:
-            separator = ''
-        else:
-            separator = '?'
-        query = query.replace('%s%s' % (separator, match.group()),
-                              '%s%s' % (separator, new_query))
-    else:
-        query += '&' if query else ''
-        query += '%s=%s' % (name, value)
+    replaced = False
+    queries = query.split('&')
+    if queries[0] == '':
+        # If query is blank, query.split('&') results in the list [''], which
+        # we don't want; Remove the blank entry.
+        del queries[0]
+
+    for i in range(len(queries)):
+        if queries[i].startswith('%s=' % name):
+            # This name already exists in the query string; Replace its value
+            # with :value:
+            q = queries[i].split('=')
+            q[1] = value
+            queries[i] = '='.join(q)
+            replaced = True
+            break
+
+    if not replaced:
+        # The given name does not already exist in the query string
+        queries.append('%s=%s' % (name, value))
+    query = '&'.join(queries)
     return '?'.join([path, query])
 
 
