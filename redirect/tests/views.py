@@ -486,3 +486,14 @@ class ViewSourceViewTests(TestCase):
                                    self.apply_manipulation.view_source)
 
         self.assertTrue(response['Location'].endswith(self.redirect.url))
+
+    def test_source_code_collision(self):
+        self.redirect.url = 'directemployers.jobs?foo=bar&src=de'
+        self.redirect.save()
+        self.manipulation.value_1 = '&src=JB-DE'
+        self.manipulation.save()
+
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid]))
+        self.assertTrue('src=de' not in response['Location'])
+        self.assertTrue('src=JB-DE' in response['Location'])
