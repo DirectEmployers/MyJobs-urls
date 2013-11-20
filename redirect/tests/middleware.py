@@ -15,7 +15,8 @@ class MyJobsMiddlewareTests(TestCase):
         A request for any domain other than my.jobs should get redirected
         to the same path on my.jobs.
         """
-        request = self.factory.get('/',
-                                   HTTP_HOST='jcnlx.com')
-        response = self.middleware.process_request(request)
-        self.assertEqual(response['Location'], 'http://my.jobs/')
+        for path in ['/', '/search?foo=bar']:
+            request = self.factory.get(path,
+                                       HTTP_HOST='jcnlx.com')
+            response = self.middleware.process_request(request)
+            self.assertEqual(response['Location'], 'http://my.jobs' + path)
