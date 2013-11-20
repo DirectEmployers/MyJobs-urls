@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 
 from django.http import *
@@ -14,35 +14,7 @@ def home(request, guid, vsid='0'):
     guid_redirect = get_object_or_404(Redirect,
                                       guid='{%s}' % uuid.UUID(guid))
 
-    manipulation = None
-
-    # Check for a 'vs' request parameter. If it exists, this is an apply click
-    # and vs should be used in place of vsid
-    apply_vs = request.REQUEST.get('vs')
-    if apply_vs:
-        try:
-            apply_vs = int(apply_vs)
-
-            # There may be multiple objects with this buid and vs;
-            # We want the one with the highest action_type
-            manipulation = DM.objects.get(
-                buid=guid_redirect.buid,
-                view_source=apply_vs,
-                action_type=2)
-        except (ValueError, DM.DoesNotExist):
-            # Should never happen unless someone manually types in the
-            # url and makes a typo or their browser does something it shouldn't
-            # with links, which is apparently quite common
-            pass
-    else:
-        manipulation = DM.objects.filter(
-            buid=guid_redirect.buid, view_source=vsid).order_by('action_type')
-        if not manipulation:
-            manipulation = DM.objects.filter(
-                buid=guid_redirect.buid, view_source=0).order_by('action_type')
-        if manipulation:
-            manipulation = manipulation[0]
-
+    redirect_url = None
     expired = False
     facebook = False
 
@@ -117,7 +89,39 @@ def home(request, guid, vsid='0'):
             if guid_redirect.expired_date:
                 expired = True
 
-            if manipulation:
+        manipulations = None
+
+        # Check for a 'vs' request parameter. If it exists, this is an apply
+        # click and vs should be used in place of vsid
+        apply_vs = request.REQUEST.get('vs')
+        if apply_vs:
+            try:
+                apply_vs = int(apply_vs)
+                manipulations = DM.objects.filter(
+                    buid=guid_redirect.buid,
+                    view_source=apply_vs,
+                    action_type=2)
+            except ValueError:
+                # Should never happen unless someone manually types in the
+                # url and makes a typo or their browser does something it
+                # shouldn't with links, which is apparently quite common
+                pass
+        else:
+            manipulations = DM.objects.filter(
+                buid=guid_redirect.buid,
+                view_source=vsid).order_by('action_type')
+            if not manipulations and vsid != '0':
+                manipulations = DM.objects.filter(
+                    buid=guid_redirect.buid,
+                    view_source=0).order_by('action_type')
+
+        if manipulations and not redirect_url:
+            new_job = (guid_redirect.new_date + timedelta(minutes=30)) > \
+                datetime.now(tz=timezone.utc)
+            for manipulation in manipulations:
+                if (new_job and manipulation.action == 'microsite' and
+                        manipulation.action_type == 1):
+                    continue
                 method_name = manipulation.action
 
                 try:
@@ -126,9 +130,10 @@ def home(request, guid, vsid='0'):
                     pass
 
                 redirect_url = redirect_method(guid_redirect, manipulation)
+                guid_redirect.url = redirect_url
 
-            else:
-                redirect_url = guid_redirect.url
+        if not redirect_url:
+            redirect_url = guid_redirect.url
 
         redirect_url = helpers.get_hosted_state_url(guid_redirect,
                                                     redirect_url)

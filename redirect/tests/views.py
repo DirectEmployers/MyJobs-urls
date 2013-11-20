@@ -9,6 +9,7 @@ from django.core.urlresolvers import reverse, NoReverseMatch
 from django.utils import timezone
 from django.utils.http import urlquote_plus
 
+from redirect import helpers
 from redirect.models import DestinationManipulation
 from redirect.tests.factories import (
     RedirectFactory, CanonicalMicrositeFactory, DestinationManipulationFactory)
@@ -494,3 +495,32 @@ class ViewSourceViewTests(TestCase):
             self.assertEqual(response.status_code, 301)
             self.assertTrue(response['Location'].startswith('http://www.my.jobs'))
 
+    def test_microsite_redirect_on_new_job(self):
+        """
+        Ensure that microsite manipulations are not done if a job was added
+        within the last 30 minutes
+        """
+        self.redirect.new_date = datetime.datetime.now(tz=timezone.utc)
+        self.redirect.url = 'example.com/jobdetail.ftl'
+        self.redirect.save()
+        self.manipulation.action = 'microsite'
+        self.manipulation.value_1 = 'www.my.jobs/[Unique_ID]/job/'
+        self.manipulation.save()
+
+        DestinationManipulationFactory(action='sourcecodeswitch',
+                                       buid=self.manipulation.buid,
+                                       view_source=self.manipulation.view_source,
+                                       value_1='jobdetail.ftl',
+                                       value_2='jobapply.ftl',
+                                       action_type=2)
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid]))
+        url = helpers.microsite(self.redirect, self.manipulation)
+        self.assertFalse(url in response['Location'])
+        self.assertTrue('jobapply.ftl' in response['Location'])
+
+        self.redirect.new_date -= datetime.timedelta(minutes=30)
+        self.redirect.save()
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid]))
+        self.assertTrue(url in response['Location'])

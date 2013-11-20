@@ -1,7 +1,8 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import factory
-import pytz
+
+from django.utils import timezone
 
 from redirect import models
 
@@ -20,7 +21,7 @@ class RedirectFactory(factory.Factory):
     buid = 0
     uid = 0
     url = 'directemployers.org'
-    new_date = datetime.now(tz=pytz.utc)
+    new_date = datetime.now(tz=timezone.utc) - timedelta(minutes=30)
     # Unused for current testing but may be useful later
     expired_date = None
     job_location = 'Indianapolis'

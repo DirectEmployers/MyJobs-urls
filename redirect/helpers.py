@@ -151,36 +151,7 @@ def micrositetag(redirect_obj, manipulation_obj):
     """
     Redirects to the url from redirect_obj.url with source codes appended.
     """
-    url = redirect_obj.url.replace('[Unique_ID]', str(redirect_obj.uid))
-
-    # There is often (always?) a second action that needs to take place
-    # to achieve the correct manipulated result.
-    manipulation_2 = None
-    if manipulation_obj.action_type == 1:
-        try:
-            # Try to retrieve a DestinationManipulation object for the current
-            # buid and view_source, but for action_type 2
-            manipulation_2 = DestinationManipulation.objects.get(
-                buid=manipulation_obj.buid,
-                view_source=manipulation_obj.view_source,
-                action_type=2)
-        except DestinationManipulation.DoesNotExist:
-            try:
-                # If the previous does not exist, check view_source 0
-                manipulation_2 = DestinationManipulation.objects.get(
-                    buid=redirect_obj.buid, view_source=0, action_type=2)
-            except DestinationManipulation.DoesNotExist:
-                pass
-
-    if manipulation_2 and (manipulation_2.value_1 != '[blank]'):
-        # A manipulation exists. Retrieve the method corresponding to its
-        # action, call that method, and return the result
-        method_name = manipulation_2.action
-        method = globals()[method_name]
-        redirect_obj.url = url
-        url = method(redirect_obj, manipulation_2)
-
-    return url
+    return redirect_obj.url.replace('[Unique_ID]', str(redirect_obj.uid))
 
 
 def microsite(redirect_obj, manipulation_obj):
