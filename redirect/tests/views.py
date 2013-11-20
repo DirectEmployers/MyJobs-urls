@@ -511,3 +511,10 @@ class ViewSourceViewTests(TestCase):
                                                args=[self.redirect_guid]))
             self.assertTrue('src=de' not in response['Location'])
             self.assertTrue('src=JB-DE' in response['Location'])
+
+    def test_myjobs_redirects(self):
+        paths = ['/terms', '/search?location=Indianapolis']
+        for path in paths:
+            response = self.client.get(path, follow=True)
+            self.assertEqual(response.status_code, 301)
+            self.assertTrue(response['Location'].startswith('http://www.my.jobs'))
