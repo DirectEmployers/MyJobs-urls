@@ -11,6 +11,10 @@ class MyJobsMiddlewareTests(TestCase):
         self.factory = RequestFactory()
 
     def test_redirects_to_myjobs(self):
+        """
+        A request for any domain other than my.jobs should get redirected
+        to the same path on my.jobs.
+        """
         request = self.factory.get('/',
                                    HTTP_HOST='jcnlx.com')
         response = self.middleware.process_request(request)
