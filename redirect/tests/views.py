@@ -39,7 +39,7 @@ class ViewSourceViewTests(TestCase):
                                                      vsid]))
             # In this case, view source id 0 is a sourcecodetag redirect
             test_url = 'http://testserver/%s%s' % \
-                (self.redirect.url, self.manipulation.value_1)
+                (self.redirect.url, self.manipulation.value_1.replace('&','?'))
             self.assertEqual(response['Location'], test_url)
 
     def test_with_action_type_2(self):
@@ -99,7 +99,7 @@ class ViewSourceViewTests(TestCase):
                                   self.manipulation.view_source]))
         #content = json.loads(response.content)
         test_url = 'http://testserver/%s%s' % \
-            (self.redirect.url, self.manipulation.value_1)
+            (self.redirect.url, self.manipulation.value_1.replace('&','?'))
         self.assertEqual(response['Location'], test_url)
 
     def test_micrositetag_redirect(self):
@@ -486,6 +486,44 @@ class ViewSourceViewTests(TestCase):
                                    '?vs=%sbad_vs' %
                                    self.apply_manipulation.view_source)
 
+        self.assertTrue(response['Location'].endswith(self.redirect.url))
+
+    def test_source_code_collision(self):
+        """
+        Test that we never duplicate source codes in the event of a collision
+
+        Tests three circumstances:
+        - The source code is the last entry in the query
+        - The source code is somewhere in the middle
+        - The source code is the first query
+        - The source code is the only query
+        """
+        url = 'directemployers.jobs?%ssrc=de%s'
+        for part in [('foo=bar&', ''),  # last
+                     ('foo=bar&', '&code=de'),  # middle
+                     ('', '&foo=bar'),  # first
+                     ('', '')]:  # only
+            self.redirect.url = url % part
+            self.redirect.save()
+            self.manipulation.value_1 = '&src=JB-DE'
+            self.manipulation.save()
+
+            response = self.client.get(reverse('home',
+                                               args=[self.redirect_guid]))
+            self.assertTrue('src=de' not in response['Location'])
+            self.assertTrue('src=JB-DE' in response['Location'])
+
+    def test_invalid_sourcecodetag_redirect(self):
+        """
+        In the event that the desired source code is not present in the
+        database somehow, performing a sourcecodetag redirect should result
+        in that source code not being added to the final url
+        """
+        self.manipulation.value_1 = ''
+        self.manipulation.save()
+
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid]))
         self.assertTrue(response['Location'].endswith(self.redirect.url))
 
     def test_myjobs_redirects(self):
