@@ -27,9 +27,10 @@ STATE_MAP = {
 }
 
 
-def add_query(url, name, value):
+def replace_or_add_query(url, name, value):
     """
-    Adds field/value pair to the provided url as a query string
+    Adds field/value pair to the provided url as a query string if the :name:
+    key isn't already in the url, or replaces it otherwise.
 
     Appends the proper pair separator (?&) based on the input url
 
@@ -41,9 +42,35 @@ def add_query(url, name, value):
     Outputs:
     :url: Input url with query string appended
     """
-    url += '&' if url.find('?') >= 0 else '?'
-    url += '%s=%s' % (name, value)
-    return url
+    url = url.split('?', 1)
+    path = url[0]
+    if len(url) == 2:
+        query = url[1]
+    else:
+        query = ''
+
+    replaced = False
+    queries = query.split('&')
+    if queries[0] == '':
+        # If query is blank, query.split('&') results in the list [''], which
+        # we don't want; Remove the blank entry.
+        del queries[0]
+
+    for i in range(len(queries)):
+        if queries[i].startswith('%s=' % name):
+            # This name already exists in the query string; Replace its value
+            # with :value:
+            q = queries[i].split('=')
+            q[1] = value
+            queries[i] = '='.join(q)
+            replaced = True
+            break
+
+    if not replaced:
+        # The given name does not already exist in the query string
+        queries.append('%s=%s' % (name, value))
+    query = '&'.join(queries)
+    return '?'.join([path, query])
 
 
 def get_hosted_state_url(redirect, url):
@@ -190,7 +217,7 @@ def microsite(redirect_obj, manipulation_obj):
     """
     url = manipulation_obj.value_1
     url = url.replace('[Unique_ID]', str(redirect_obj.uid))
-    url = add_query(url, 'vs', manipulation_obj.view_source)
+    url = replace_or_add_query(url, 'vs', manipulation_obj.view_source)
     return url
 
 
@@ -199,7 +226,15 @@ def sourcecodetag(redirect_obj, manipulation_obj):
     Appends a query parameter to the redirect url
     """
     url = redirect_obj.url
-    url += manipulation_obj.value_1
+    query = manipulation_obj.value_1
+    if query and query.find('=') > 0:
+        # At first blush, this appears to be a valid part of a query string.
+        # Technically = being the first character would not cause any issues on
+        # our side, but that would make for an invalid parameter.
+        if query[0] in ['?', '&']:
+            query = query[1:]
+        query = query.split('=')
+        url = replace_or_add_query(url, *query)
     return url
 
 
