@@ -9,6 +9,7 @@ from django.core.urlresolvers import reverse, NoReverseMatch
 from django.utils import timezone
 from django.utils.http import urlquote_plus
 
+from redirect import helpers
 from redirect.models import DestinationManipulation
 from redirect.tests.factories import (
     RedirectFactory, CanonicalMicrositeFactory, DestinationManipulationFactory)
@@ -531,3 +532,45 @@ class ViewSourceViewTests(TestCase):
             response = self.client.get(path, follow=True)
             self.assertEqual(response.status_code, 301)
             self.assertTrue(response['Location'].startswith('http://www.my.jobs'))
+
+    def test_microsite_redirect_on_new_job(self):
+        """
+        Ensure that microsite manipulations are not done if a job was added
+        within the last 30 minutes
+        """
+        # Make the redirect and manipulation objects look like real data
+        self.redirect.new_date = datetime.datetime.now(tz=timezone.utc)
+        self.redirect.url = 'example.com/jobdetail.ftl'
+        self.redirect.save()
+        self.manipulation.action = 'microsite'
+        self.manipulation.value_1 = 'www.my.jobs/[Unique_ID]/job/'
+        self.manipulation.save()
+
+        # Create a new DestinationManipulation object which should be
+        # the only manipulation done
+        DestinationManipulationFactory(action='sourcecodeswitch',
+                                       buid=self.manipulation.buid,
+                                       view_source=self.manipulation.view_source,
+                                       value_1='jobdetail.ftl',
+                                       value_2='jobapply.ftl',
+                                       action_type=2)
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid]))
+
+        # We know how the code *should* behave when doing just a microsite
+        # redirect and what *should* happen if a job is older than 30 minutes.
+        url = helpers.microsite(self.redirect, self.manipulation)
+
+        # The result of doing a microsite manipulation does not appear
+        # in the response headers...
+        self.assertFalse(url in response['Location'])
+        # ... while the result of doing a sourcecodeswitch does.
+        self.assertTrue('jobapply.ftl' in response['Location'])
+
+        # If a job is 30 minutes old or older, the microsite result is used
+        # as expected.
+        self.redirect.new_date -= datetime.timedelta(minutes=30)
+        self.redirect.save()
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid]))
+        self.assertTrue(url in response['Location'])
