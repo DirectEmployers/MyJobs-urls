@@ -512,6 +512,19 @@ class ViewSourceViewTests(TestCase):
             self.assertTrue('src=de' not in response['Location'])
             self.assertTrue('src=JB-DE' in response['Location'])
 
+    def test_invalid_sourcecodetag_redirect(self):
+        """
+        In the event that the desired source code is not present in the
+        database somehow, performing a sourcecodetag redirect should result
+        in that source code not being added to the final url
+        """
+        self.manipulation.value_1 = ''
+        self.manipulation.save()
+
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid]))
+        self.assertTrue(response['Location'].endswith(self.redirect.url))
+
     def test_myjobs_redirects(self):
         paths = ['/terms', '/search?location=Indianapolis']
         for path in paths:

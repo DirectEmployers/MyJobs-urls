@@ -227,10 +227,15 @@ def sourcecodetag(redirect_obj, manipulation_obj):
     """
     url = redirect_obj.url
     query = manipulation_obj.value_1
-    if query[0] in ['?', '&']:
-        query = query[1:]
-    query = query.split('=')
-    return replace_or_add_query(url, *query)
+    if query and query.find('=') > 0:
+        # At first blush, this appears to be a valid part of a query string.
+        # Technically = being the first character would not cause any issues on
+        # our side, but that would make for an invalid parameter.
+        if query[0] in ['?', '&']:
+            query = query[1:]
+        query = query.split('=')
+        url = replace_or_add_query(url, *query)
+    return url
 
 
 def doubleclickwrap(redirect_obj, manipulation_obj):
