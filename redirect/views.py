@@ -10,9 +10,16 @@ from redirect.models import Redirect, DestinationManipulation as DM
 from redirect import helpers
 
 
-def home(request, guid, vsid='0'):
+def home(request, guid, vsid='0', debug=None):
+    guid = '{%s}' % uuid.UUID(guid)
+    if debug:
+        response = HttpResponse('sGUID=%s<br>' % guid)
+
     guid_redirect = get_object_or_404(Redirect,
-                                      guid='{%s}' % uuid.UUID(guid))
+                                      guid=guid)
+
+    if debug:
+        response.content += 'sRetLink(original)=%s<br>' % guid_redirect.url
 
     manipulation = None
 
@@ -132,6 +139,10 @@ def home(request, guid, vsid='0'):
 
         redirect_url = helpers.get_hosted_state_url(guid_redirect,
                                                     redirect_url)
+
+        if debug:
+            response.content += 'sRetLink=%s<br>' % redirect_url
+            return response
 
         if expired:
             err = '&jcnlx.err=XIN'
