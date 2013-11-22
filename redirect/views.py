@@ -2,7 +2,8 @@ from datetime import datetime, timedelta
 import uuid
 
 from django.http import *
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render_to_response
+from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils import timezone
 
@@ -42,28 +43,13 @@ def home(request, guid, vsid='0'):
     if redirect_user_agent:
         company_name = guid_redirect.company_name
         company_name = helpers.quote_string(company_name)
-
-        html = "<html>"
-        html += ("<head prefix='og: http://ogp.me/ns# fb: http://ogp.me/ns/fb#"
-                 " website: http://ogp.me/ns/website#'>")
-        html += "<title>US.jobs - %s - %s</title>" % (guid_redirect.job_title,
-                                                      company_name)
-        html += ("<meta property='og:description' content='The US.jobs National"
-                 " Labor Exchange is a free job search service of "
-                 "DirectEmployers Association.' />")
-        html += ("<meta property='og:image' content='http://profile.ak."
-                 "fbcdn.net/hprofile-ak-ash2/50226_125241814265748_3627"
-                 "96096_n.jpg' />")
-        html += "<meta property='og:locale' content='en_US' />"
-        html += "<meta property='og:site_name' content='US.jobs' />"
-        html += ("<meta property='og:title' content='US.jobs - %s - %s' />"
-                 % (guid_redirect.job_title, company_name))
-        html += "<meta property='og:type' content='article' />"
-        html += ("<meta property='og:url' content='http://jcnlx.com/%s%s' />"
-                 % (clean_guid, user_agent_vs))
-        html += "</head>"
-        html += "</html>"
-        response = HttpResponse(content=html, mimetype='text/html')
+        data = {'title': guid_redirect.job_title,
+                 'company': company_name,
+                 'guid': clean_guid,
+                 'vs': user_agent_vs}
+        response = render_to_response('redirect/opengraph.html',
+                                      data,
+                                      context_instance=RequestContext(request))
     else:
         if vsid == '1604':
             # msccn redirect
