@@ -27,3 +27,5 @@ ALLOWED_HOSTS = ['localhost',
 #INSTALLED_APPS += ('debug_toolbar',)
 
 NEW_RELIC_TRACKING = True
+
+MIDDLEWARE_CLASSES += ('redirect.middleware.MyJobsRedirectMiddleware',)
