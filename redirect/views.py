@@ -13,13 +13,19 @@ from redirect import helpers
 def home(request, guid, vsid='0', debug=None):
     guid = '{%s}' % uuid.UUID(guid)
     if debug:
-        response = HttpResponse('sGUID=%s<br>' % guid)
+        # On localhost ip will always be empty unless you've got a setup
+        # that mirrors production
+        debug_response = HttpResponse('ip=%s<br>GUID=%s<br>' %
+                                      (request.META.get('HTTP_X_FORWARDED_FOR',
+                                                        ''),
+                                       guid))
 
     guid_redirect = get_object_or_404(Redirect,
                                       guid=guid)
 
     if debug:
-        response.content += 'sRetLink(original)=%s<br>' % guid_redirect.url
+        debug_response.content += \
+            'RetLink(original)=%s<br>' % guid_redirect.url
 
     redirect_url = None
     expired = False
@@ -97,8 +103,8 @@ def home(request, guid, vsid='0', debug=None):
                 expired = True
 
             manipulations = None
-            # Check for a 'vs' request parameter. If it exists, this is an apply
-            # click and vs should be used in place of vsid
+            # Check for a 'vs' request parameter. If it exists, this is an
+            # apply click and vs should be used in place of vsid
             apply_vs = request.REQUEST.get('vs')
             if apply_vs:
                 try:
@@ -129,6 +135,11 @@ def home(request, guid, vsid='0', debug=None):
                             manipulation.action_type == 1):
                         continue
                     method_name = manipulation.action
+                    if debug:
+                        debug_response.content += \
+                            'ActionTypeID=%s Action=%s<br>' % \
+                            (manipulation.action_type,
+                             manipulation.action)
 
                     try:
                         redirect_method = getattr(helpers, method_name)
@@ -136,17 +147,25 @@ def home(request, guid, vsid='0', debug=None):
                         pass
 
                     redirect_url = redirect_method(guid_redirect, manipulation)
+                    if debug:
+                        debug_response.content += \
+                            ('ActionTypeID=%s ManipulatedLink=%s VSID=%s<br>' %
+                             (manipulation.action_type,
+                              redirect_url,
+                              manipulation.view_source))
                     guid_redirect.url = redirect_url
 
         if not redirect_url:
             redirect_url = guid_redirect.url
+            if debug:
+                debug_response.content += \
+                    'ManipulatedLink(No Manipulation)=%s<br>' % redirect_url
 
         redirect_url = helpers.get_hosted_state_url(guid_redirect,
                                                     redirect_url)
 
         if debug:
-            response.content += 'sRetLink=%s<br>' % redirect_url
-            return response
+            debug_response.content += 'RetLink=%s<br>' % redirect_url
 
         if expired:
             err = '&jcnlx.err=XIN'
@@ -181,7 +200,7 @@ def home(request, guid, vsid='0', debug=None):
             response = HttpResponsePermanentRedirect(redirect_url)
 
         aguid = request.COOKIES.get('aguid') or \
-                helpers.quote_string('{%s}' % str(uuid.uuid4()))
+            helpers.quote_string('{%s}' % str(uuid.uuid4()))
         myguid = request.COOKIES.get('myguid', '')
         buid = helpers.get_Post_a_Job_buid(guid_redirect)
         qs = 'jcnlx.ref=%s&jcnlx.url=%s&jcnlx.buid=%s&jcnlx.vsid=%s&jcnlx.aguid=%s&jcnlx.myguid=%s'
@@ -201,7 +220,11 @@ def home(request, guid, vsid='0', debug=None):
         response = helpers.set_aguid_cookie(response,
                                             request.get_host(),
                                             aguid)
-    return response
+
+    if debug and not redirect_user_agent:
+        return debug_response
+    else:
+        return response
 
 
 def myjobs_redirect(request):
