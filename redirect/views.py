@@ -2,7 +2,8 @@ from datetime import datetime, timedelta
 import uuid
 
 from django.http import *
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render_to_response
+from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils import timezone
 
@@ -42,28 +43,13 @@ def home(request, guid, vsid='0'):
     if redirect_user_agent:
         company_name = guid_redirect.company_name
         company_name = helpers.quote_string(company_name)
-
-        html = "<html>"
-        html += ("<head prefix='og: http://ogp.me/ns# fb: http://ogp.me/ns/fb#"
-                 " website: http://ogp.me/ns/website#'>")
-        html += "<title>US.jobs - %s - %s</title>" % (guid_redirect.job_title,
-                                                      company_name)
-        html += ("<meta property='og:description' content='The US.jobs National"
-                 " Labor Exchange is a free job search service of "
-                 "DirectEmployers Association.' />")
-        html += ("<meta property='og:image' content='http://profile.ak."
-                 "fbcdn.net/hprofile-ak-ash2/50226_125241814265748_3627"
-                 "96096_n.jpg' />")
-        html += "<meta property='og:locale' content='en_US' />"
-        html += "<meta property='og:site_name' content='US.jobs' />"
-        html += ("<meta property='og:title' content='US.jobs - %s - %s' />"
-                 % (guid_redirect.job_title, company_name))
-        html += "<meta property='og:type' content='article' />"
-        html += ("<meta property='og:url' content='http://jcnlx.com/%s%s' />"
-                 % (clean_guid, user_agent_vs))
-        html += "</head>"
-        html += "</html>"
-        response = HttpResponse(content=html, mimetype='text/html')
+        data = {'title': guid_redirect.job_title,
+                 'company': company_name,
+                 'guid': clean_guid,
+                 'vs': user_agent_vs}
+        response = render_to_response('redirect/opengraph.html',
+                                      data,
+                                      context_instance=RequestContext(request))
     else:
         if vsid == '1604':
             # msccn redirect
@@ -139,33 +125,27 @@ def home(request, guid, vsid='0'):
 
         if expired:
             err = '&jcnlx.err=XIN'
+            data = {'location': guid_redirect.job_location,
+                    'title': guid_redirect.job_title}
             if facebook:
-                expired = ('Please <a href="http://us.jobs/" target="_blank">'
-                           'visit US.jobs</a> and continue with your job '
-                           'search.')
-            elif (guid_redirect.buid in [1228, 5480]
-                  or 2650 <= guid_redirect.buid <= 2703):
-                expired = ('Please <a href="#" onclick="window.close();return '
-                           'false;">close this window</a> and continue with '
-                           'your job search.')
+                expired_context = 'facebook'
+            elif (guid_redirect.buid in [1228, 5480] or
+                  2650 <= guid_redirect.buid <= 2703):
+                expired_context= 'special'
                 if guid_redirect.buid in [1228, 5480]:
                     err = '&jcnlx.err=XJC'
                 else:
                     err = '&jcnlx.err=XST'
             else:
-                expired = ('Please <a href="#" onclick="window.close();return '
-                           'false;">close this window</a> and continue with '
-                           'your job search, or visit the National Labor '
-                           'Exchange to view all current jobs for <a href="'
-                           'http://us.jobs/results.asp?bu=%s">%s</a>.' %
-                           (guid_redirect.buid, guid_redirect.company_name))
+                expired_context = 'default'
                 redirect_url = guid_redirect.url
+                data['buid'] = guid_redirect.buid
+                data['company_name'] = guid_redirect.company_name
+
+            data['expired_context'] = expired_context
+            data['url'] = redirect_url
             response = HttpResponseGone(
-                render_to_string('redirect/expired.html',
-                                 {'url': redirect_url,
-                                  'location': guid_redirect.job_location,
-                                  'title': guid_redirect.job_title,
-                                  'expired': expired}))
+                render_to_string('redirect/expired.html', data))
         else:
             response = HttpResponsePermanentRedirect(redirect_url)
 
