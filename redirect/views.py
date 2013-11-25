@@ -125,33 +125,27 @@ def home(request, guid, vsid='0'):
 
         if expired:
             err = '&jcnlx.err=XIN'
+            data = {'location': guid_redirect.job_location,
+                    'title': guid_redirect.job_title}
             if facebook:
-                expired = ('Please <a href="http://us.jobs/" target="_blank">'
-                           'visit US.jobs</a> and continue with your job '
-                           'search.')
-            elif (guid_redirect.buid in [1228, 5480]
-                  or 2650 <= guid_redirect.buid <= 2703):
-                expired = ('Please <a href="#" onclick="window.close();return '
-                           'false;">close this window</a> and continue with '
-                           'your job search.')
+                expired = 'facebook'
+            elif (guid_redirect.buid in [1228, 5480] or
+                  2650 <= guid_redirect.buid <= 2703):
+                expired = 'close'
                 if guid_redirect.buid in [1228, 5480]:
                     err = '&jcnlx.err=XJC'
                 else:
                     err = '&jcnlx.err=XST'
             else:
-                expired = ('Please <a href="#" onclick="window.close();return '
-                           'false;">close this window</a> and continue with '
-                           'your job search, or visit the National Labor '
-                           'Exchange to view all current jobs for <a href="'
-                           'http://us.jobs/results.asp?bu=%s">%s</a>.' %
-                           (guid_redirect.buid, guid_redirect.company_name))
+                expired = 'company'
                 redirect_url = guid_redirect.url
+                data['buid'] = guid_redirect.buid
+                data['company_name'] = guid_redirect.company_name
+
+            data['expired'] = expired
+            data['url'] = redirect_url
             response = HttpResponseGone(
-                render_to_string('redirect/expired.html',
-                                 {'url': redirect_url,
-                                  'location': guid_redirect.job_location,
-                                  'title': guid_redirect.job_title,
-                                  'expired': expired}))
+                render_to_string('redirect/expired.html', data))
         else:
             response = HttpResponsePermanentRedirect(redirect_url)
 
