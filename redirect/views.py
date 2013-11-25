@@ -16,17 +16,14 @@ def home(request, guid, vsid='0', debug=None):
     if debug:
         # On localhost ip will always be empty unless you've got a setup
         # that mirrors production
-        debug_response = HttpResponse('ip=%s<br>GUID=%s<br>' %
-                                      (request.META.get('HTTP_X_FORWARDED_FOR',
-                                                        ''),
-                                       guid))
+        debug_content = ['ip=%s' % request.META.get('HTTP_X_FORWARDED_FOR', ''),
+                         'GUID=%s' % guid]
 
     guid_redirect = get_object_or_404(Redirect,
                                       guid=guid)
 
     if debug:
-        debug_response.content += \
-            'RetLink(original)=%s<br>' % guid_redirect.url
+        debug_content.append('RetLink(original)=%s' % guid_redirect.url)
 
     redirect_url = None
     expired = False
@@ -122,10 +119,10 @@ def home(request, guid, vsid='0', debug=None):
                         continue
                     method_name = manipulation.action
                     if debug:
-                        debug_response.content += \
-                            'ActionTypeID=%s Action=%s<br>' % \
+                        debug_content.append(
+                            'ActionTypeID=%s Action=%s' % \
                             (manipulation.action_type,
-                             manipulation.action)
+                             manipulation.action))
 
                     try:
                         redirect_method = getattr(helpers, method_name)
@@ -134,24 +131,24 @@ def home(request, guid, vsid='0', debug=None):
 
                     redirect_url = redirect_method(guid_redirect, manipulation)
                     if debug:
-                        debug_response.content += \
-                            ('ActionTypeID=%s ManipulatedLink=%s VSID=%s<br>' %
-                             (manipulation.action_type,
-                              redirect_url,
-                              manipulation.view_source))
+                        debug_content.append(
+                            'ActionTypeID=%s ManipulatedLink=%s VSID=%s' %
+                            (manipulation.action_type,
+                             redirect_url,
+                             manipulation.view_source))
                     guid_redirect.url = redirect_url
 
         if not redirect_url:
             redirect_url = guid_redirect.url
             if debug:
-                debug_response.content += \
-                    'ManipulatedLink(No Manipulation)=%s<br>' % redirect_url
+                debug_content.append(
+                    'ManipulatedLink(No Manipulation)=%s' % redirect_url)
 
         redirect_url = helpers.get_hosted_state_url(guid_redirect,
                                                     redirect_url)
 
         if debug:
-            debug_response.content += 'RetLink=%s<br>' % redirect_url
+            debug_content.append('RetLink=%s' % redirect_url)
 
         if expired:
             err = '&jcnlx.err=XIN'
@@ -202,7 +199,10 @@ def home(request, guid, vsid='0', debug=None):
                                             aguid)
 
     if debug and not redirect_user_agent:
-        return debug_response
+        data = {'debug_content': debug_content}
+        return render_to_response('redirect/debug.html',
+                                  data,
+                                  context_instance=RequestContext(request))
     else:
         return response
 
