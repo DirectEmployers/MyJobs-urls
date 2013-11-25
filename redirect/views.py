@@ -128,21 +128,21 @@ def home(request, guid, vsid='0'):
             data = {'location': guid_redirect.job_location,
                     'title': guid_redirect.job_title}
             if facebook:
-                expired = 'facebook'
+                expired_context = 'facebook'
             elif (guid_redirect.buid in [1228, 5480] or
                   2650 <= guid_redirect.buid <= 2703):
-                expired = 'close'
+                expired_context= 'special'
                 if guid_redirect.buid in [1228, 5480]:
                     err = '&jcnlx.err=XJC'
                 else:
                     err = '&jcnlx.err=XST'
             else:
-                expired = 'company'
+                expired_context = 'default'
                 redirect_url = guid_redirect.url
                 data['buid'] = guid_redirect.buid
                 data['company_name'] = guid_redirect.company_name
 
-            data['expired'] = expired
+            data['expired_context'] = expired_context
             data['url'] = redirect_url
             response = HttpResponseGone(
                 render_to_string('redirect/expired.html', data))

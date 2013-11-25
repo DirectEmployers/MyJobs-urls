@@ -14,11 +14,11 @@
         <div style="width:370px;margin:auto;text-align:left">
             We apologize, this job posting is no longer available as it was recently removed from the originating site.<br><br>
 
-            {% if expired == 'facebook' %}
+            {% if expired_context == 'facebook' %}
 
                 Please <a href="http://us.jobs/" target="_blank">visit US.jobs</a> and continue with your job search.
 
-            {% elif expired == 'close' %}
+            {% elif expired_context == 'special' %}
 
                 Please <a href="#" onclick="window.close();return false;">close this window</a> and continue with your job search.
 
