@@ -86,6 +86,7 @@ class ViewSourceViewTests(TestCase):
                                   self.manipulation.view_source]),
             HTTP_USER_AGENT='facebookexternalhit')
         self.assertContains(response, 'US.jobs - Programmer - DirectEmployers')
+        self.assertTemplateUsed(response, 'redirect/opengraph.html')
 
     def test_sourcecodetag_redirect(self):
         """
