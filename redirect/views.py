@@ -21,7 +21,7 @@ def home(request, guid, vsid='0', debug=None):
 
     guid_redirect = get_object_or_404(Redirect,
                                       guid=guid)
-
+    print guid_redirect.url
     if debug:
         debug_content.append('RetLink(original)=%s' % guid_redirect.url)
 
@@ -113,10 +113,14 @@ def home(request, guid, vsid='0', debug=None):
             if manipulations and not redirect_url:
                 new_job = (guid_redirect.new_date + timedelta(minutes=30)) > \
                     datetime.now(tz=timezone.utc)
+                previous_manipulation = ''
                 for manipulation in manipulations:
                     if (new_job and manipulation.action == 'microsite' and
                             manipulation.action_type == 1):
                         continue
+                    elif previous_manipulation == 'microsite':
+                        break;
+                    previous_manipulation = manipulation.action
                     method_name = manipulation.action
                     if debug:
                         debug_content.append(
