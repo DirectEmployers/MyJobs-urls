@@ -46,16 +46,12 @@ def replace_or_add_query(url, query):
     :url: Input url with query string appended
     """
     url = urlparse.urlparse(url)
-    old_query = urllib.unquote(url.query)
-    old_query = urlparse.parse_qs(old_query, keep_blank_values=True)
+    old_query = urlparse.parse_qs(url.query, keep_blank_values=True)
 
-    new_queries = query.split('&')
+    new_queries = urlparse.parse_qs(query)
 
-    for new_query in new_queries:
-        if new_query.count('=') == 1:
-            new_query = new_query.split('=')
-            old_query[new_query[0]] = new_query[1]
-    old_query = urllib.urlencode(old_query, True)
+    old_query.update(new_queries)
+    old_query = '&'.join(['='.join([k, v[0]]) for k, v in old_query.iteritems()])
     url = url._replace(query=old_query)
     return urlparse.urlunparse(url)
 
