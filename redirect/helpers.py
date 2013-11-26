@@ -46,7 +46,7 @@ def replace_or_add_query(url, query):
     :url: Input url with query string appended
     """
     url = urlparse.urlparse(url)
-    old_query = urlparse.parse_qs(url.query)
+    old_query = urlparse.parse_qs(url.query, keep_blank_values=True)
 
     new_queries = query.split('&')
 
