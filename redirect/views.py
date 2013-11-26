@@ -11,9 +11,19 @@ from redirect.models import Redirect, DestinationManipulation as DM
 from redirect import helpers
 
 
-def home(request, guid, vsid='0'):
+def home(request, guid, vsid='0', debug=None):
+    guid = '{%s}' % uuid.UUID(guid)
+    if debug:
+        # On localhost ip will always be empty unless you've got a setup
+        # that mirrors production
+        debug_content = ['ip=%s' % request.META.get('HTTP_X_FORWARDED_FOR', ''),
+                         'GUID=%s' % guid]
+
     guid_redirect = get_object_or_404(Redirect,
-                                      guid='{%s}' % uuid.UUID(guid))
+                                      guid=guid)
+
+    if debug:
+        debug_content.append('RetLink(original)=%s' % guid_redirect.url)
 
     redirect_url = None
     expired = False
@@ -76,8 +86,8 @@ def home(request, guid, vsid='0'):
                 expired = True
 
             manipulations = None
-            # Check for a 'vs' request parameter. If it exists, this is an apply
-            # click and vs should be used in place of vsid
+            # Check for a 'vs' request parameter. If it exists, this is an
+            # apply click and vs should be used in place of vsid
             apply_vs = request.REQUEST.get('vs')
             if apply_vs:
                 try:
@@ -108,6 +118,11 @@ def home(request, guid, vsid='0'):
                             manipulation.action_type == 1):
                         continue
                     method_name = manipulation.action
+                    if debug:
+                        debug_content.append(
+                            'ActionTypeID=%s Action=%s' % \
+                            (manipulation.action_type,
+                             manipulation.action))
 
                     try:
                         redirect_method = getattr(helpers, method_name)
@@ -115,13 +130,25 @@ def home(request, guid, vsid='0'):
                         pass
 
                     redirect_url = redirect_method(guid_redirect, manipulation)
+                    if debug:
+                        debug_content.append(
+                            'ActionTypeID=%s ManipulatedLink=%s VSID=%s' %
+                            (manipulation.action_type,
+                             redirect_url,
+                             manipulation.view_source))
                     guid_redirect.url = redirect_url
 
         if not redirect_url:
             redirect_url = guid_redirect.url
+            if debug:
+                debug_content.append(
+                    'ManipulatedLink(No Manipulation)=%s' % redirect_url)
 
         redirect_url = helpers.get_hosted_state_url(guid_redirect,
                                                     redirect_url)
+
+        if debug:
+            debug_content.append('RetLink=%s' % redirect_url)
 
         if expired:
             err = '&jcnlx.err=XIN'
@@ -150,7 +177,7 @@ def home(request, guid, vsid='0'):
             response = HttpResponsePermanentRedirect(redirect_url)
 
         aguid = request.COOKIES.get('aguid') or \
-                helpers.quote_string('{%s}' % str(uuid.uuid4()))
+            helpers.quote_string('{%s}' % str(uuid.uuid4()))
         myguid = request.COOKIES.get('myguid', '')
         buid = helpers.get_Post_a_Job_buid(guid_redirect)
         qs = 'jcnlx.ref=%s&jcnlx.url=%s&jcnlx.buid=%s&jcnlx.vsid=%s&jcnlx.aguid=%s&jcnlx.myguid=%s'
@@ -170,7 +197,14 @@ def home(request, guid, vsid='0'):
         response = helpers.set_aguid_cookie(response,
                                             request.get_host(),
                                             aguid)
-    return response
+
+    if debug and not redirect_user_agent:
+        data = {'debug_content': debug_content}
+        return render_to_response('redirect/debug.html',
+                                  data,
+                                  context_instance=RequestContext(request))
+    else:
+        return response
 
 
 def myjobs_redirect(request):

@@ -178,7 +178,8 @@ def micrositetag(redirect_obj, manipulation_obj):
     """
     Redirects to the url from redirect_obj.url with source codes appended.
     """
-    return redirect_obj.url.replace('[Unique_ID]', str(redirect_obj.uid))
+    url = redirect_obj.url.replace('[Unique_ID]', str(redirect_obj.uid))
+    return url
 
 
 def microsite(redirect_obj, manipulation_obj):

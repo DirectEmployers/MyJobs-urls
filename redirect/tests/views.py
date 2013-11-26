@@ -534,6 +534,15 @@ class ViewSourceViewTests(TestCase):
             self.assertEqual(response.status_code, 301)
             self.assertTrue(response['Location'].startswith('http://www.my.jobs'))
 
+    def test_debug_parameter(self):
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid,
+                                                 self.manipulation.view_source,
+                                                 '+']))
+        self.assertTrue(self.redirect.guid in response.content)
+        self.assertTrue(self.redirect.url in response.content)
+        self.assertEqual(response.status_code, 200)
+
     def test_microsite_redirect_on_new_job(self):
         """
         Ensure that microsite manipulations are not done if a job was added
