@@ -1,8 +1,9 @@
-<html>
-<head>
+{% extends 'base.html' %}
+{% block title %}
     <title>Something went wrong when processing your request!</title>
-</head>
-<body>
+{% endblock %}
+
+{% block content %}
     <div style="margin-top:50px;font-weight:bold;font-size:18px;text-align:center">
         Something went wrong when processing your request!
     </div>
@@ -12,5 +13,4 @@
             It is possible that a typo could have been made (I (uppercase i), l (lowercase L), and 1 (one), among others, can look very similar).
         </div>
     </div>
-</body>
-</html>
+{% endblock %}
