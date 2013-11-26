@@ -21,7 +21,6 @@ def home(request, guid, vsid='0', debug=None):
 
     guid_redirect = get_object_or_404(Redirect,
                                       guid=guid)
-    print guid_redirect.url
     if debug:
         debug_content.append('RetLink(original)=%s' % guid_redirect.url)
 
