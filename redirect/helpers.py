@@ -32,15 +32,14 @@ STATE_MAP = {
 
 def replace_or_add_query(url, query):
     """
-    Adds field/value pair to the provided url as a query string if the :name:
+    Adds field/value pair to the provided url as a query string if the
     key isn't already in the url, or replaces it otherwise.
 
     Appends the proper pair separator (?&) based on the input url
 
     Inputs:
     :url: URL that query string should be appended to
-    :name: Field portion of query string
-    :value: Value portion of query string
+    :query: Query string(s) to add to :url:
 
     Outputs:
     :url: Input url with query string appended
