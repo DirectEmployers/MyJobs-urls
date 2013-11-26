@@ -1,4 +1,4 @@
-from urllib import urlencode
+import urllib
 import urlparse
 
 from django.utils.http import urlquote_plus
@@ -46,7 +46,8 @@ def replace_or_add_query(url, query):
     :url: Input url with query string appended
     """
     url = urlparse.urlparse(url)
-    old_query = urlparse.parse_qs(url.query, keep_blank_values=True)
+    old_query = urllib.unquote(url.query)
+    old_query = urlparse.parse_qs(old_query, keep_blank_values=True)
 
     new_queries = query.split('&')
 
@@ -54,9 +55,9 @@ def replace_or_add_query(url, query):
         if new_query.count('=') == 1:
             new_query = new_query.split('=')
             old_query[new_query[0]] = new_query[1]
-    old_query = urlencode(old_query, True)
+    old_query = urllib.urlencode(old_query, True)
     url = url._replace(query=old_query)
-    return urlparse.urlunparse(url).replace('%25','%')
+    return urlparse.urlunparse(url)
 
 
 def get_hosted_state_url(redirect, url):
