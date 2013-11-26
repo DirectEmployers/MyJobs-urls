@@ -15,8 +15,7 @@ urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
 
     # Redirect views
-    url(r'^(?P<guid>[0-9A-Fa-f]{32})$', home, name='home'),
-    url(r'^(?P<guid>[0-9A-Fa-f]{32})(?P<vsid>\d*)$', home, name='home'),
+    url(r'^(?P<guid>[0-9A-Fa-f]{32})(?P<vsid>\d+)?(?P<debug>\+)?$', home, name='home'),
 
     # Potential www.my.jobs redirect, catches root and anything not caught
     # previously
