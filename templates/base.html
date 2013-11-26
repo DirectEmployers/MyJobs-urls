@@ -3,11 +3,40 @@
 <head {% block head_attributes %}{% endblock %}>
     {% block title %}
     {% endblock %}
+
     {% block meta %}
+    {% endblock %}
+
+    {% block quantcast_part_1 %}
+        <!-- Quantcast Tag, part 1 -->
+        <script type="text/javascript">
+          var _qevents = _qevents || [];
+          (function() {
+           var elem = document.createElement('script');
+           elem.src = (document.location.protocol == "https:" ? "https://secure" : "http://edge")
+                       + ".quantserve.com/quant.js";
+           elem.async = true;
+           elem.type = "text/javascript";
+           var scpt = document.getElementsByTagName('script')[0];
+           scpt.parentNode.insertBefore(elem, scpt);
+          })();
+        </script>
     {% endblock %}
 </head>
 <body>
     {% block content %}
+    {% endblock %}
+
+    {% block quantcast_part_2 %}
+        <!-- Quantcast Tag, part 2 -->
+        <script type="text/javascript">
+            _qevents.push( { qacct:"p-f4sayuhJjqv_Q", labels:"Dot Jobs"} );
+        </script>
+        <noscript>
+        <div style="display: none;">
+            <img src="http://pixel.quantserve.com/pixel/p-f4sayuhJjqv_Q.gif?labels=Dot%20Jobs" height="1" width="1" alt="Quantcast"/>
+        </div>
+        </noscript>
     {% endblock %}
 </body>
 </html>
