@@ -1,12 +1,21 @@
-<html>
-    <head prefix='og: http://ogp.me/ns# fb: http://ogp.me/ns/fb# website: http://ogp.me/ns/website#'>
-        <title>US.jobs - {{ title }} - {{ company }}</title>
-        <meta property='og:description' content='The US.jobs National Labor Exchange is a free job search service of DirectEmployers Association.' />
-        <meta property='og:image' content='http://profile.ak.fbcdn.net/hprofile-ak-ash2/50226_125241814265748_362796096_n.jpg' />
-        <meta property='og:locale' content='en_US' />
-        <meta property='og:site_name' content='US.jobs' />
-        <meta property='og:title' content='US.jobs - {{ title }} - {{ company }}' />
-        <meta property='og:type' content='article' />
-        <meta property='og:url' content='http://my.jobs/{{ guid }}{{ vs }}' />
-    </head>
-</html>
+{% extends 'base.html' %}
+{% block head_attributes %}prefix='og: http://ogp.me/ns# fb: http://ogp.me/ns/fb# website: http://ogp.me/ns/website#'{% endblock %}
+
+{% block title %}
+    <title>US.jobs - {{ title }} - {{ company }}</title>
+{% endblock %}
+
+{% block meta %}
+    <meta property='og:description' content='The US.jobs National Labor Exchange is a free job search service of DirectEmployers Association.' />
+    <meta property='og:image' content='http://profile.ak.fbcdn.net/hprofile-ak-ash2/50226_125241814265748_362796096_n.jpg' />
+    <meta property='og:locale' content='en_US' />
+    <meta property='og:site_name' content='US.jobs' />
+    <meta property='og:title' content='US.jobs - {{ title }} - {{ company }}' />
+    <meta property='og:type' content='article' />
+    <meta property='og:url' content='http://my.jobs/{{ guid }}{{ vs }}' />
+{% endblock %}
+
+{% block quantcast_part_1 %}
+{% endblock %}
+{% block quantcast_part_2 %}
+{% endblock %}

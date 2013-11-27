@@ -77,6 +77,14 @@ class ViewSourceViewTests(TestCase):
             with self.assertRaises(NoReverseMatch):
                 self.client.get(reverse('home', args=[guid]))
 
+    def test_job_does_not_exist(self):
+        """
+        Nonexistent jobs should display a 404 page.
+        """
+        response = self.client.get(reverse('home', args=['1'*32]))
+        self.assertEqual(response.status_code, 404)
+        self.assertTemplateUsed(response, '404.html')
+
     def test_open_graph_redirect(self):
         """
         Check social bot open graph response
