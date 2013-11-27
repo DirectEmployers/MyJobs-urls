@@ -522,6 +522,21 @@ class ViewSourceViewTests(TestCase):
             self.assertTrue('src=de' not in response['Location'])
             self.assertTrue('src=JB-DE' in response['Location'])
 
+    def test_source_code_with_encoded_parameters(self):
+        """
+        Sometimes the value that we're adding has %-encoded values already;
+        Ensure that we don't accidentally unencode or double-encode those
+        values (ie %20->%2520)
+        """
+        self.manipulation.value_1 = '&src=with%20space'
+        self.manipulation.save()
+
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid]))
+        # We ensure that there is never a & without a preceding ? - that is
+        # unlikely, however
+        self.assertTrue('?' + self.manipulation.value_1[1:] in response['Location'])
+
     def test_invalid_sourcecodetag_redirect(self):
         """
         In the event that the desired source code is not present in the

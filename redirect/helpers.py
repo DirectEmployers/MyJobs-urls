@@ -1,3 +1,6 @@
+import urllib
+import urlparse
+
 from django.utils.http import urlquote_plus
 
 from redirect.models import *
@@ -27,50 +30,29 @@ STATE_MAP = {
 }
 
 
-def replace_or_add_query(url, name, value):
+def replace_or_add_query(url, query):
     """
-    Adds field/value pair to the provided url as a query string if the :name:
+    Adds field/value pair to the provided url as a query string if the
     key isn't already in the url, or replaces it otherwise.
 
     Appends the proper pair separator (?&) based on the input url
 
     Inputs:
     :url: URL that query string should be appended to
-    :name: Field portion of query string
-    :value: Value portion of query string
+    :query: Query string(s) to add to :url:
 
     Outputs:
     :url: Input url with query string appended
     """
-    url = url.split('?', 1)
-    path = url[0]
-    if len(url) == 2:
-        query = url[1]
-    else:
-        query = ''
+    url = urlparse.urlparse(url)
+    old_query = urlparse.parse_qs(url.query, keep_blank_values=True)
 
-    replaced = False
-    queries = query.split('&')
-    if queries[0] == '':
-        # If query is blank, query.split('&') results in the list [''], which
-        # we don't want; Remove the blank entry.
-        del queries[0]
+    new_queries = urlparse.parse_qs(query)
 
-    for i in range(len(queries)):
-        if queries[i].startswith('%s=' % name):
-            # This name already exists in the query string; Replace its value
-            # with :value:
-            q = queries[i].split('=')
-            q[1] = value
-            queries[i] = '='.join(q)
-            replaced = True
-            break
-
-    if not replaced:
-        # The given name does not already exist in the query string
-        queries.append('%s=%s' % (name, value))
-    query = '&'.join(queries)
-    return '?'.join([path, query])
+    old_query.update(new_queries)
+    old_query = '&'.join(['='.join([k, v[0]]) for k, v in old_query.iteritems()])
+    url = url._replace(query=old_query)
+    return urlparse.urlunparse(url)
 
 
 def get_hosted_state_url(redirect, url):
@@ -189,7 +171,7 @@ def microsite(redirect_obj, manipulation_obj):
     """
     url = manipulation_obj.value_1
     url = url.replace('[Unique_ID]', str(redirect_obj.uid))
-    url = replace_or_add_query(url, 'vs', manipulation_obj.view_source)
+    url = replace_or_add_query(url, 'vs=%s' % manipulation_obj.view_source)
     return url
 
 
@@ -205,8 +187,9 @@ def sourcecodetag(redirect_obj, manipulation_obj):
         # our side, but that would make for an invalid parameter.
         if query[0] in ['?', '&']:
             query = query[1:]
-        query = query.split('=')
-        url = replace_or_add_query(url, *query)
+            url = replace_or_add_query(url, query)
+        else:
+            url = url + query
     return url
 
 
