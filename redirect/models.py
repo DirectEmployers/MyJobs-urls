@@ -1,20 +1,41 @@
-from django.db import models
+from django.db import connections, models
+from django.db.models.query import QuerySet
 from django.utils.translation import ugettext_lazy as _
+
+
+CHOICES = ['sourcecodetag', 'microsite', 'micrositetag', 'amptoamp', 'cframe',
+           'anchorredirectissue', 'urlswap', 'replacethenadd',
+           'replacethenaddpre', 'sourceurlwrapappend', 'sourcecodeinsertion',
+           'sourceurlwrapunencoded', 'sourceurlwrapunencodedappend',
+           'switchlastinstance', 'switchlastthenadd', 'sourcecodeswitch',
+           'doubleclickunwind', 'fixurl']
+
+
+CHOICE_LIST = tuple((choice, choice) for choice in CHOICES)
 
 
 class DestinationManipulation(models.Model):
     """
     Represents the original DestinationManipulation table
     """
-    action_type = models.IntegerField()
-    buid = models.IntegerField()
-    view_source = models.IntegerField()
-    action = models.CharField(max_length=255, blank=True, null=True, default="")
+    action_type = models.IntegerField(help_text=_('Always 1 or 2'))
+    buid = models.IntegerField(help_text=_('Business unit ID that owns '
+                                           'this manipulation'))
+    view_source = models.IntegerField(help_text=_('View source ID for a'
+                                                  'particular manipulation'))
+    action = models.CharField(max_length=255, blank=True, null=True,
+                              choices=CHOICE_LIST, default=CHOICES[0],
+                              help_text=_('String describing what type of '
+                                          'manipulation is to occur'))
     value_1 = models.TextField(blank=True)
     value_2 = models.TextField(blank=True)
 
     class Meta:
         unique_together = ('action_type', 'buid', 'view_source')
+
+    def __unicode__(self):
+        return u'buid: %s, action: %s-%s, view source %s' % (
+            self.buid, self.action_type, self.action, self.view_source)
 
 
 class Redirect(models.Model):
@@ -25,9 +46,8 @@ class Redirect(models.Model):
     guid = models.CharField(max_length=38, primary_key=True,
                             help_text=_('36-character hex string'))
     buid = models.IntegerField(default=0,
-                               help_text=_('Used in conjunction with'
-                                           'viewsource_id to index into the '
-                                           'RedirectAction table'))
+                               help_text=_('Business unit ID for a given '
+                                           'job provider'))
     uid = models.IntegerField(unique=True, blank=True, null=True,
                               help_text=_("Unique id on partner's ATS or "
                                           "other job repository"))
@@ -35,7 +55,7 @@ class Redirect(models.Model):
     new_date = models.DateTimeField(help_text=_('Date that this job was '
                                                 'added'))
     expired_date = models.DateTimeField(blank=True, null=True,
-                                        help_text=_('Date that this job was'
+                                        help_text=_('Date that this job was '
                                                     'marked as expired'))
     job_location = models.CharField(max_length=255, blank=True)
     job_title = models.CharField(max_length=255, blank=True)
@@ -89,8 +109,8 @@ class RedirectAction(models.Model):
         SOURCEURLWRAPAPPEND_ACTION, SOURCECODEINSERTION_ACTION,
         SOURCEURLWRAPUNENCODED_ACTION, SOURCEURLWRAPUNENCODEDAPPEND_ACTION,
         SWITCHLASTINSTANCE_ACTION, SWITCHLASTTHENADD_ACTION,
-        SOURCECODESWITCH_ACTION, DOUBLECLICKUNWIND_ACTION, FIXURL_ACTION,
-        SWITCHLASTTENADD_ACTION) = range(19)
+        SOURCECODESWITCH_ACTION, DOUBLECLICKUNWIND_ACTION,
+        FIXURL_ACTION,) = range(18)
 
     ACTION_CHOICES = (
         (SOURCECODETAG_ACTION, 'sourcecodetag'),
@@ -111,7 +131,6 @@ class RedirectAction(models.Model):
         (SOURCECODESWITCH_ACTION, 'sourcecodeswitch'),
         (DOUBLECLICKUNWIND_ACTION, 'doubleclickunwind'),
         (FIXURL_ACTION, 'fixurl'),
-        (SWITCHLASTTENADD_ACTION, 'switchlastthenadd'),
     )
 
     buid = models.IntegerField(default=0)
