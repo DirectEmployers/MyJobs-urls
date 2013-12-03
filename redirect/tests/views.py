@@ -613,8 +613,8 @@ class ViewSourceViewTests(TestCase):
         Ensure that query parameters retain their encoding when adding new
         parameters.
         """
-        self.redirect.url = 'example.com?foo=%20%3d%2b'
+        self.redirect.url = 'example.com?%2b=%20%3d%2b'
         self.redirect.save()
         response = self.client.get(reverse('home',
                                            args=[self.redirect_guid]))
-        self.assertTrue('foo=%20%3d%2b' in response['Location'].lower())
+        self.assertTrue('%2b=%20%3d%2b' in response['Location'].lower())
