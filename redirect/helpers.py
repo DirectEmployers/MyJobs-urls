@@ -60,8 +60,8 @@ def replace_or_add_query(url, query):
         if not replaced:
             old_query.append(new_query[new_index])
 
-    # parse_qs apparently unencodes the query that you pass it;
-    # Re-encode the query parameters when reconstructing the string.
+    # parse_qsl unencodes the query that you pass it; Re-encode the query
+    # parameters when reconstructing the string.
     old_query = '&'.join(['='.join([urllib.quote(k), urllib.quote(v)])
                          for k, v in old_query])
     url = url._replace(query=old_query)
