@@ -50,7 +50,10 @@ def replace_or_add_query(url, query):
     new_queries = urlparse.parse_qs(query)
 
     old_query.update(new_queries)
-    old_query = '&'.join(['='.join([k, v[0]]) for k, v in old_query.iteritems()])
+    # parse_qs apparently unencodes the query that you pass it;
+    # Re-encode the query parameters when reconstructing the string.
+    old_query = '&'.join(['='.join([k, urllib.quote(v[0])])
+                          for k, v in old_query.iteritems()])
     url = url._replace(query=old_query)
     return urlparse.urlunparse(url)
 

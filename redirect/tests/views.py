@@ -607,3 +607,15 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(reverse('home',
                                            args=[self.redirect_guid]))
         self.assertTrue(url in response['Location'])
+
+    def test_percent_encoded_url_params(self):
+        """
+        Ensure that query parameters retain their encoding when adding new
+        parameters.
+        """
+        self.redirect.url = 'example.com?foo=%20%3d%2b'
+        self.redirect.save()
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid]))
+        print response['Location']
+        self.assertTrue('foo=%20%3d%2b' in response['Location'].lower())
