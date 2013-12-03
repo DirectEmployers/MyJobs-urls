@@ -56,8 +56,7 @@ def replace_or_add_query(url, query):
             replaced = True
             old_index = old_keys.index(new_query[new_index][0])
             old_query[old_index] = new_query[new_index]
-            continue
-        if not replaced:
+        else:
             old_query.append(new_query[new_index])
 
     # parse_qsl unencodes the query that you pass it; Re-encode the query
