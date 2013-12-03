@@ -50,10 +50,8 @@ def replace_or_add_query(url, query):
 
     new_query = urlparse.parse_qsl(query)
 
-    replaced = False
     for new_index in range(len(new_query)):
         if new_query[new_index][0] in old_keys:
-            replaced = True
             old_index = old_keys.index(new_query[new_index][0])
             old_query[old_index] = new_query[new_index]
         else:
