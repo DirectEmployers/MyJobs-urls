@@ -617,5 +617,4 @@ class ViewSourceViewTests(TestCase):
         self.redirect.save()
         response = self.client.get(reverse('home',
                                            args=[self.redirect_guid]))
-        print response['Location']
         self.assertTrue('foo=%20%3d%2b' in response['Location'].lower())
