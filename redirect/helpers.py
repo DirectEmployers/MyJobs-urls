@@ -45,15 +45,25 @@ def replace_or_add_query(url, query):
     :url: Input url with query string appended
     """
     url = urlparse.urlparse(url)
-    old_query = urlparse.parse_qs(url.query, keep_blank_values=True)
+    old_query = urlparse.parse_qsl(url.query, keep_blank_values=True)
+    old_keys = [q[0] for q in old_query]
 
-    new_queries = urlparse.parse_qs(query)
+    new_query = urlparse.parse_qsl(query)
 
-    old_query.update(new_queries)
+    replaced = False
+    for new_index in range(len(new_query)):
+        if new_query[new_index][0] in old_keys:
+            replaced = True
+            old_index = old_keys.index(new_query[new_index][0])
+            old_query[old_index] = new_query[new_index]
+            continue
+        if not replaced:
+            old_query.append(new_query[new_index])
+
     # parse_qs apparently unencodes the query that you pass it;
     # Re-encode the query parameters when reconstructing the string.
-    old_query = '&'.join(['='.join([urllib.quote(k), urllib.quote(v[0])])
-                          for k, v in old_query.iteritems()])
+    old_query = '&'.join(['='.join([urllib.quote(k), urllib.quote(v)])
+                         for k, v in old_query])
     url = url._replace(query=old_query)
     return urlparse.urlunparse(url)
 
