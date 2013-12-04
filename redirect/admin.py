@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.contrib.admin.filters import FieldListFilter
 from django.utils.translation import ugettext_lazy as _
 
 from redirect.models import *

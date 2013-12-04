@@ -1,5 +1,4 @@
-from django.db import connections, models
-from django.db.models.query import QuerySet
+from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 
