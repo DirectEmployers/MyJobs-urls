@@ -36,6 +36,24 @@ class DestinationManipulation(models.Model):
         return u'buid: %s, action: %s-%s, view source %s' % (
             self.buid, self.action_type, self.action, self.view_source)
 
+    def get_view_source_name(self):
+        vs = None
+        try:
+            vs = ViewSource.objects.get(view_source_id=self.view_source)
+        except ViewSource.DoesNotExist:
+            pass
+
+        if vs:
+            tag = '<a href="/admin/redirect/viewsource/%s">' % vs.pk
+            tag += '%s</a>' % vs.name
+        else:
+            tag = str(self.view_source)
+        return tag
+
+    get_view_source_name.short_description = 'View source'
+    get_view_source_name.allow_tags = True
+    get_view_source_name.admin_order_field = 'view_source'
+
 
 class Redirect(models.Model):
     """

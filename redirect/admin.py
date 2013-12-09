@@ -57,9 +57,8 @@ class MultiSearchFilter(admin.FieldListFilter):
 
 
 class ViewSourceAdmin(admin.ModelAdmin):
-    """
-    Currently unused, but will be used once the improved models are in place.
-    """
+    list_display = ['view_source_id', 'name', 'microsite']
+
     def get_readonly_fields(self, request, obj=None):
         """
         If a new object is being created, leave view_source_id editable.
@@ -74,16 +73,8 @@ class ViewSourceAdmin(admin.ModelAdmin):
 class DestinationManipulationAdmin(admin.ModelAdmin):
     list_filter = ['action_type', ('action', MultiSearchFilter)]
     search_fields = ['=buid', '=view_source']
-    list_display = ['buid', 'view_source', 'action_type', 'action', 'value_1', 'value_2']
+    list_display = ['buid', 'get_view_source_name', 'action_type', 'action', 'value_1', 'value_2']
 
 
-class RedirectAdmin(admin.ModelAdmin):
-    search_fields = ['=buid', 'guid', 'url']
-    list_display = ['guid', 'buid', 'new_date', 'expired_date', 'job_location', 'job_title', 'company_name']
-    def queryset(self, request):
-        qs = super(RedirectAdmin, self).queryset(request)
-        return qs.filter(expired_date=None)
-
-
-admin.site.register(Redirect, RedirectAdmin)
+admin.site.register(ViewSource, ViewSourceAdmin)
 admin.site.register(DestinationManipulation, DestinationManipulationAdmin)
