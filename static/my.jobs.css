@@ -10,8 +10,6 @@ body {
     border: 1px solid #333333;
     padding-left: 10px;
     padding-right: 10px;
-    -ms-overflow-x: auto;
-    overflow-x: auto;
 }
 
 /*Topbar Styles*/
