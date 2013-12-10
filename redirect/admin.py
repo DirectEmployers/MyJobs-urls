@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 
 from redirect.models import *
@@ -56,6 +57,48 @@ class MultiSearchFilter(admin.FieldListFilter):
                 'display': value}
 
 
+class BlankValueListFilter(admin.SimpleListFilter):
+    """
+    Filters :field_name: based on whether or not that field has valuable text
+    or is [Null, '[blank]', or '']
+
+    Should only be used via a subclass which defines title, parameter_name,
+    and field_name
+    """
+    title = ''
+    parameter_name = ''
+
+    field_name = ''
+
+    def lookups(self, request, model_admin):
+        return (
+            ('Blank', _('Field is blank')),
+            ('Exists', _('Field exists')))
+
+    def queryset(self, request, queryset):
+        query = Q(**{self.field_name: '[blank]'}) | \
+                Q(**{self.field_name: ''}) | \
+                Q(**{'%s__isnull' % self.field_name: True})
+        if self.value() == 'Blank':
+            return queryset.filter(query)
+        elif self.value() == 'Exists':
+            return queryset.exclude(query)
+        else:
+            return queryset
+
+
+class BlankValueList1Filter(BlankValueListFilter):
+    title = _('Value 1')
+    parameter_name = 'value_1'
+    field_name='value_1'
+
+
+class BlankValueList2Filter(BlankValueListFilter):
+    title = _('Value 2')
+    parameter_name = 'value_2'
+    field_name='value_2'
+
+
 class ViewSourceAdmin(admin.ModelAdmin):
     list_display = ['view_source_id', 'name', 'microsite']
 
@@ -71,7 +114,10 @@ class ViewSourceAdmin(admin.ModelAdmin):
 
 
 class DestinationManipulationAdmin(admin.ModelAdmin):
-    list_filter = ['action_type', ('action', MultiSearchFilter)]
+    list_filter = ['action_type',
+                   ('action', MultiSearchFilter),
+                   BlankValueList1Filter,
+                   BlankValueList2Filter]
     search_fields = ['=buid', '=view_source']
     list_display = ['buid', 'get_view_source_name', 'action_type', 'action', 'value_1', 'value_2']
 
