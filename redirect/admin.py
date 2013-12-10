@@ -101,6 +101,8 @@ class BlankValueList2Filter(BlankValueListFilter):
 
 class ViewSourceAdmin(admin.ModelAdmin):
     list_display = ['view_source_id', 'name', 'microsite']
+    list_filter = ['microsite']
+    search_fields = ['=view_source_id', 'name']
 
     def get_readonly_fields(self, request, obj=None):
         """
