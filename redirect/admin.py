@@ -12,9 +12,14 @@ class ViewSourceAdmin(admin.ModelAdmin):
             return []
 
 
+class ExcludedViewSourceAdmin(admin.ModelAdmin):
+    list_display = ['view_source']
+
+
 admin.site.register(Redirect)
 admin.site.register(DestinationManipulation)
 admin.site.register(ATSSourceCode)
 admin.site.register(ViewSource, ViewSourceAdmin)
 admin.site.register(RedirectAction)
 admin.site.register(CanonicalMicrosite)
+admin.site.register(ExcludedViewSource, ExcludedViewSourceAdmin)

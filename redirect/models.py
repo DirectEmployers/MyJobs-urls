@@ -155,3 +155,9 @@ class ViewSource(models.Model):
             except ViewSource.DoesNotExist:
                 self.view_source_id = 0
         super(ViewSource, self).save(*args, **kwargs)
+
+
+class ExcludedViewSource(models.Model):
+    view_source = models.IntegerField(primary_key=True,
+                                      help_text=_('This view source will not '
+                                                  'redirect to a microsite'))
