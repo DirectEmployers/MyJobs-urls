@@ -35,7 +35,7 @@ class ViewSourceViewTests(TestCase):
         If no view source id is provided or the given view source id does not
         resolve to a DestinationManipulation instance, default to 0
         """
-        for vsid in ['', '3']:
+        for vsid in ['', '1']:
             response = self.client.get(reverse('home',
                                                args=[self.redirect_guid,
                                                      vsid]))
