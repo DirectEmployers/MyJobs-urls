@@ -3,14 +3,16 @@ import re
 from urllib import unquote
 import uuid
 
+from django.conf import settings
+from django.core.cache import cache
+from django.core.urlresolvers import reverse, NoReverseMatch
 from django.test import TestCase
 from django.test.client import Client, RequestFactory
-from django.core.urlresolvers import reverse, NoReverseMatch
 from django.utils import timezone
 from django.utils.http import urlquote_plus
 
 from redirect import helpers
-from redirect.models import DestinationManipulation
+from redirect.models import DestinationManipulation, ExcludedViewSource
 from redirect.tests.factories import (
     RedirectFactory, CanonicalMicrositeFactory, DestinationManipulationFactory)
 from redirect.views import home
@@ -33,7 +35,7 @@ class ViewSourceViewTests(TestCase):
         If no view source id is provided or the given view source id does not
         resolve to a DestinationManipulation instance, default to 0
         """
-        for vsid in ['', '1']:
+        for vsid in ['', '3']:
             response = self.client.get(reverse('home',
                                                args=[self.redirect_guid,
                                                      vsid]))
@@ -618,3 +620,41 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(reverse('home',
                                            args=[self.redirect_guid]))
         self.assertTrue('%2b=%20%3d%2b' in response['Location'].lower())
+
+    def test_cache_gets_set_on_view(self):
+        """
+        Viewing any page when the cache is empty should populate a list of
+        excluded view sources
+        """
+        cache_key = settings.EXCLUDED_VIEW_SOURCE_CACHE_KEY
+        cache.delete(cache_key)
+
+        self.assertFalse(cache.get(cache_key))
+
+        self.client.get(reverse('home',
+                                args=[self.redirect_guid]))
+
+        self.assertTrue(cache.get(cache_key))
+
+    def test_cache_gets_cleared_on_save(self):
+        """
+        Saving an ExpiredViewSource object should remove the list of
+        excluded view sources, which will be replaced on the next request
+        """
+        cache_key = settings.EXCLUDED_VIEW_SOURCE_CACHE_KEY
+        self.client.get(reverse('home',
+                                args=[self.redirect_guid]))
+
+        new_evs = ExcludedViewSource.objects.all().order_by('-view_source')[0]
+        new_evs = new_evs.view_source + 1
+
+        self.assertFalse(new_evs in cache.get(cache_key))
+
+        ExcludedViewSource(view_source=new_evs).save()
+
+        self.assertFalse(cache.get(cache_key))
+
+        self.client.get(reverse('home',
+                                args=[self.redirect_guid]))
+
+        self.assertTrue(new_evs in cache.get(cache_key))

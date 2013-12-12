@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 import uuid
 
+from django.conf import settings
+from django.core.cache import cache
 from django.http import *
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
@@ -11,7 +13,9 @@ from redirect.models import Redirect, DestinationManipulation as DM
 from redirect import helpers
 
 
-def home(request, guid, vsid='0', debug=None):
+def home(request, guid, vsid=None, debug=None):
+    if vsid is None:
+        vsid = '0'
     guid = '{%s}' % uuid.UUID(guid)
     if debug:
         # On localhost ip will always be empty unless you've got a setup
@@ -53,9 +57,9 @@ def home(request, guid, vsid='0', debug=None):
         company_name = guid_redirect.company_name
         company_name = helpers.quote_string(company_name)
         data = {'title': guid_redirect.job_title,
-                 'company': company_name,
-                 'guid': clean_guid,
-                 'vs': user_agent_vs}
+                'company': company_name,
+                'guid': clean_guid,
+                'vs': user_agent_vs}
         response = render_to_response('redirect/opengraph.html',
                                       data,
                                       context_instance=RequestContext(request))
@@ -104,7 +108,8 @@ def home(request, guid, vsid='0', debug=None):
                 manipulations = DM.objects.filter(
                     buid=guid_redirect.buid,
                     view_source=vsid).order_by('action_type')
-                if not manipulations and vsid != '0':
+                if not manipulations and vsid != '0' and \
+                        int(vsid) not in settings.EXCLUDED_VIEW_SOURCES:
                     manipulations = DM.objects.filter(
                         buid=guid_redirect.buid,
                         view_source=0).order_by('action_type')
@@ -118,7 +123,7 @@ def home(request, guid, vsid='0', debug=None):
                             manipulation.action_type == 1):
                         continue
                     elif previous_manipulation == 'microsite':
-                        break;
+                        break
                     previous_manipulation = manipulation.action
                     method_name = manipulation.action
                     if debug:
@@ -161,7 +166,7 @@ def home(request, guid, vsid='0', debug=None):
                 expired_context = 'facebook'
             elif (guid_redirect.buid in [1228, 5480] or
                   2650 <= guid_redirect.buid <= 2703):
-                expired_context= 'special'
+                expired_context = 'special'
                 if guid_redirect.buid in [1228, 5480]:
                     err = '&jcnlx.err=XJC'
                 else:
