@@ -168,10 +168,9 @@ URL manipulation methods
 
 def micrositetag(redirect_obj, manipulation_obj):
     """
-    Redirects to the url from redirect_obj.url with source codes appended.
+    Redirects to the url from redirect_obj.url
     """
-    url = redirect_obj.url.replace('[Unique_ID]', str(redirect_obj.uid))
-    return url
+    return redirect_obj.url
 
 
 def microsite(redirect_obj, manipulation_obj):
