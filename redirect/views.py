@@ -9,7 +9,8 @@ from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from redirect.models import Redirect, DestinationManipulation as DM
+from redirect.models import (
+    Redirect, DestinationManipulation as DM, CanonicalMicrosite)
 from redirect import helpers
 
 
@@ -75,76 +76,96 @@ def home(request, guid, vsid=None, debug=None):
                              vsid,
                              company_name,
                              guid_redirect.uid))
-        elif vsid == '294':
-            # facebook redirect
-            facebook = True
-
-            if guid_redirect.expired_date:
-                expired = True
-
-            redirect_url = 'http://apps.facebook.com/us-jobs/?jvid=%s%s' % \
-                (clean_guid, vsid)
         else:
             if guid_redirect.expired_date:
                 expired = True
 
-            manipulations = None
-            # Check for a 'vs' request parameter. If it exists, this is an
-            # apply click and vs should be used in place of vsid
-            apply_vs = request.REQUEST.get('vs')
-            if apply_vs:
-                try:
-                    apply_vs = int(apply_vs)
-                    manipulations = DM.objects.filter(
-                        buid=guid_redirect.buid,
-                        view_source=apply_vs,
-                        action_type=2)
-                except ValueError:
-                    # Should never happen unless someone manually types in the
-                    # url and makes a typo or their browser does something it
-                    # shouldn't with links, which is apparently quite common
-                    pass
-            else:
-                manipulations = DM.objects.filter(
-                    buid=guid_redirect.buid,
-                    view_source=vsid).order_by('action_type')
-                if not manipulations and vsid != '0' and \
-                        int(vsid) not in settings.EXCLUDED_VIEW_SOURCES:
-                    manipulations = DM.objects.filter(
-                        buid=guid_redirect.buid,
-                        view_source=0).order_by('action_type')
+            if vsid == '294':
+                # facebook redirect
+                facebook = True
 
-            if manipulations and not redirect_url:
+                redirect_url = 'http://apps.facebook.com/us-jobs/?jvid=%s%s' % \
+                    (clean_guid, vsid)
+            else:
+                manipulations = None
+                # Check for a 'vs' request parameter. If it exists, this is an
+                # apply click and vs should be used in place of vsid
+                apply_vs = request.REQUEST.get('vs')
+                skip_microsite = False
+                vs_to_use = vsid
+                if apply_vs:
+                    skip_microsite = True
+                    vs_to_use = apply_vs
+
                 new_job = (guid_redirect.new_date + timedelta(minutes=30)) > \
                     datetime.now(tz=timezone.utc)
-                previous_manipulation = ''
-                for manipulation in manipulations:
-                    if (new_job and manipulation.action == 'microsite' and
-                            manipulation.action_type == 1):
-                        continue
-                    elif previous_manipulation == 'microsite':
-                        break
-                    previous_manipulation = manipulation.action
-                    method_name = manipulation.action
-                    if debug:
-                        debug_content.append(
-                            'ActionTypeID=%s Action=%s' % \
-                            (manipulation.action_type,
-                             manipulation.action))
 
+                try:
+                    microsite = CanonicalMicrosite.objects.get(
+                        buid=guid_redirect.buid)
+                except CanonicalMicrosite.DoesNotExist:
+                    microsite = None
+
+                if (vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
+                        microsite is None) or skip_microsite or new_job:
                     try:
-                        redirect_method = getattr(helpers, method_name)
-                    except AttributeError:
+                        vs_to_use = int(vs_to_use)
+                        manipulations = DM.objects.filter(
+                            buid=guid_redirect.buid,
+                            view_source=vs_to_use).order_by(
+                                'action_type').exclude(
+                                    action__in=['microsite',
+                                                'micrositetag'])
+                        if not manipulations and vsid != '0' and \
+                                int(vsid) not in settings.EXCLUDED_VIEW_SOURCES:
+                            manipulations = DM.objects.filter(
+                                buid=guid_redirect.buid,
+                                view_source=0).order_by(
+                                    'action_type').exclude(
+                                        action__in=['microsite',
+                                                    'micrositetag'])
+                    except ValueError:
+                        # Should never happen unless someone manually types in
+                        # the url and makes a typo or their browser does
+                        # something it shouldn't with links, which is
+                        # apparently quite common
                         pass
+                else:
+                    redirect_url = '%s%s/job/?vs=%s' % \
+                        (microsite.canonical_microsite_url,
+                         guid_redirect.uid,
+                         vs_to_use)
 
-                    redirect_url = redirect_method(guid_redirect, manipulation)
-                    if debug:
-                        debug_content.append(
-                            'ActionTypeID=%s ManipulatedLink=%s VSID=%s' %
-                            (manipulation.action_type,
-                             redirect_url,
-                             manipulation.view_source))
-                    guid_redirect.url = redirect_url
+                if manipulations and not redirect_url:
+                    previous_manipulation = ''
+                    for manipulation in manipulations:
+                        if (new_job and manipulation.action == 'microsite' and
+                                manipulation.action_type == 1):
+                            continue
+                        elif previous_manipulation == 'microsite':
+                            break
+                        previous_manipulation = manipulation.action
+                        method_name = manipulation.action
+                        if debug:
+                            debug_content.append(
+                                'ActionTypeID=%s Action=%s' %
+                                (manipulation.action_type,
+                                 manipulation.action))
+
+                        try:
+                            redirect_method = getattr(helpers, method_name)
+                        except AttributeError:
+                            pass
+
+                        redirect_url = redirect_method(guid_redirect,
+                                                       manipulation)
+                        if debug:
+                            debug_content.append(
+                                'ActionTypeID=%s ManipulatedLink=%s VSID=%s' %
+                                (manipulation.action_type,
+                                 redirect_url,
+                                 manipulation.view_source))
+                        guid_redirect.url = redirect_url
 
         if not redirect_url:
             redirect_url = guid_redirect.url
