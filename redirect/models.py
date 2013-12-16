@@ -161,6 +161,10 @@ class ViewSource(models.Model):
 
 
 class ExcludedViewSource(models.Model):
+    """
+    Each instance represents a particular view source that does not redirect
+    to a microsite
+    """
     view_source = models.IntegerField(primary_key=True,
                                       help_text=_('This view source will not '
                                                   'redirect to a microsite'))
@@ -171,4 +175,5 @@ def clear_vs_cache(sender, instance, created, **kwargs):
     cache.delete(cache_key)
 
 
+# Clears excluded view source cache when an instance is saved
 post_save.connect(clear_vs_cache, sender=ExcludedViewSource, dispatch_uid="clear_vs_cache")

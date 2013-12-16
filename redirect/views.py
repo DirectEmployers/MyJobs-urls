@@ -97,6 +97,9 @@ def home(request, guid, vsid=None, debug=None):
                     skip_microsite = True
                     vs_to_use = apply_vs
 
+                # Is this a new job (< 30 minutes old)? Used in conjunction
+                # with the set of excluded view sources to determine if we
+                # should redirect to a microsite
                 new_job = (guid_redirect.new_date + timedelta(minutes=30)) > \
                     datetime.now(tz=timezone.utc)
 
@@ -116,14 +119,30 @@ def home(request, guid, vsid=None, debug=None):
                 else:
                     if (vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
                             microsite is None) or skip_microsite or new_job:
+                        # vs_to_use in settings.EXCLUDED_VIEW_SOURCES
+                        #     The given view source should not redirect to a
+                        #     microsite
+                        # microsite is None
+                        #     This business unit has no associated microsite
+                        # skip_microsite:
+                        #     Prevents microsite loops when the vs= parameter
+                        #     is provided
+                        # new_job
+                        #     This job is new and may not have propagated to
+                        #     microsites yet; skip microsite redirects
                         manipulations = DM.objects.filter(
                             buid=guid_redirect.buid,
                             view_source=vs_to_use).order_by(
                                 'action_type').exclude(
                                     action__in=['microsite',
                                                 'micrositetag'])
-                        if not manipulations and vs_to_use != '0' and \
+                        if not manipulations and vs_to_use != 0 and \
                                 vs_to_use not in settings.EXCLUDED_VIEW_SOURCES:
+                            # not manipulations and vs_to_use != 0
+                            #     The view source passed via url resulted in no
+                            #     manipulations; Try again with view source 0
+                            # vs_to_use not in settings.EXCLUDED_VIEW_SOURCES
+                            #     Implies skip_microsite or new_job
                             manipulations = DM.objects.filter(
                                 buid=guid_redirect.buid,
                                 view_source=0).order_by(
@@ -131,6 +150,7 @@ def home(request, guid, vsid=None, debug=None):
                                         action__in=['microsite',
                                                     'micrositetag'])
                     else:
+                        # Everything prior is false; redirect to the microsite
                         redirect_url = '%s%s/job/?vs=%s' % \
                             (microsite.canonical_microsite_url,
                              guid_redirect.uid,
