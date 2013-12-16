@@ -106,35 +106,35 @@ def home(request, guid, vsid=None, debug=None):
                 except CanonicalMicrosite.DoesNotExist:
                     microsite = None
 
-                if (vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
-                        microsite is None) or skip_microsite or new_job:
-                    try:
-                        vs_to_use = int(vs_to_use)
+                try:
+                    vs_to_use = int(vs_to_use)
+                except ValueError:
+                    # Should never happen unless someone manually types in the
+                    # url and makes a typo or their browser does something it
+                    # shouldn't with links, which is apparently quite common
+                    pass
+                else:
+                    if (vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
+                            microsite is None) or skip_microsite or new_job:
                         manipulations = DM.objects.filter(
                             buid=guid_redirect.buid,
                             view_source=vs_to_use).order_by(
                                 'action_type').exclude(
                                     action__in=['microsite',
                                                 'micrositetag'])
-                        if not manipulations and vsid != '0' and \
-                                int(vsid) not in settings.EXCLUDED_VIEW_SOURCES:
+                        if not manipulations and vs_to_use != '0' and \
+                                vs_to_use not in settings.EXCLUDED_VIEW_SOURCES:
                             manipulations = DM.objects.filter(
                                 buid=guid_redirect.buid,
                                 view_source=0).order_by(
                                     'action_type').exclude(
                                         action__in=['microsite',
                                                     'micrositetag'])
-                    except ValueError:
-                        # Should never happen unless someone manually types in
-                        # the url and makes a typo or their browser does
-                        # something it shouldn't with links, which is
-                        # apparently quite common
-                        pass
-                else:
-                    redirect_url = '%s%s/job/?vs=%s' % \
-                        (microsite.canonical_microsite_url,
-                         guid_redirect.uid,
-                         vs_to_use)
+                    else:
+                        redirect_url = '%s%s/job/?vs=%s' % \
+                            (microsite.canonical_microsite_url,
+                             guid_redirect.uid,
+                             vs_to_use)
 
                 if manipulations and not redirect_url:
                     previous_manipulation = ''

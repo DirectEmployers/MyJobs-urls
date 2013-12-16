@@ -39,9 +39,11 @@ class ViewSourceViewTests(TestCase):
             response = self.client.get(reverse('home',
                                                args=[self.redirect_guid,
                                                      vsid]))
-            # In this case, view source id 0 is a sourcecodetag redirect
-            test_url = 'http://testserver/%s%s' % \
-                (self.redirect.url, self.manipulation.value_1.replace('&','?'))
+
+            test_url = '%s%s/job/?vs=%s' % (self.microsite.canonical_microsite_url,
+                                           self.redirect.uid,
+                                           vsid or '0')
+
             self.assertEqual(response['Location'], test_url)
 
     def test_with_action_type_2(self):
@@ -52,8 +54,10 @@ class ViewSourceViewTests(TestCase):
         manipulation twice.
         """
         self.manipulation.action_type = '2'
-        self.manipulation.action = 'micrositetag'
-        self.redirect.url = 'www.my.jobs/[Unique_ID]/job/'
+        self.manipulation.action = 'sourcecodetag'
+        self.manipulation.value_1 = '?src=foo'
+        self.manipulation.view_source = 10
+        self.redirect.url = 'http://www.directemployers.org'
         self.manipulation.save()
         self.redirect.save()
 
@@ -65,9 +69,10 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(reverse('home',
                                            args=[self.redirect_guid,
                                                  self.manipulation.view_source]))
+
         self.assertEqual(response.status_code, 301)
-        self.assertTrue(response['Location'].endswith(
-            self.redirect.url.replace('[Unique_ID]', str(self.redirect.uid))))
+        self.assertEqual(response['Location'],
+                         self.redirect.url + self.manipulation.value_1)
 
     def test_get_with_malformed_guid(self):
         """
@@ -109,29 +114,8 @@ class ViewSourceViewTests(TestCase):
             reverse('home', args=[self.redirect_guid,
                                   self.manipulation.view_source]))
         #content = json.loads(response.content)
-        test_url = 'http://testserver/%s%s' % \
-            (self.redirect.url, self.manipulation.value_1.replace('&','?'))
-        self.assertEqual(response['Location'], test_url)
-
-    def test_micrositetag_redirect(self):
-        """
-        Check view that manipulates a url with the micrositetag action creates
-        the correct redirect url which should be to the microsite with the
-        unique ID
-        """
-        self.manipulation.action = 'micrositetag'
-        self.manipulation.save()
-
-        self.redirect.uid = '37945336'
-        self.redirect.url = 'jobs.jobs/[Unique_ID]/job'
-        self.redirect.save()
-
-        response = self.client.get(
-            reverse('home', args=[self.redirect_guid,
-                                  self.manipulation.view_source]))
-        test_url = 'http://testserver/%s' % \
-            self.microsite.canonical_microsite_url.replace(
-                '[Unique_ID]', str(self.redirect.uid))
+        test_url = '%s?%s' % (self.redirect.url,
+                              self.manipulation.value_1[1:])
         self.assertEqual(response['Location'], test_url)
 
     def test_microsite_redirect(self):
@@ -141,19 +125,17 @@ class ViewSourceViewTests(TestCase):
         the end
         example: http://cadence.jobs/noida-ind/smcs/37945336/job/?vs=274
         """
-        self.manipulation.action = 'microsite'
-        self.manipulation.value_1 = 'jobsearch.lilly.com/[Unique_ID]/job/'
+        self.manipulation.action = 'sourcecodetag'
+        self.manipulation.value_1 = '?src=foo'
+        self.manipulation.view_source=0
         self.manipulation.save()
-
-        self.redirect.url = 'jobsearch.lilly.com/[Unique_ID]/job/'
-        self.redirect.save()
 
         response = self.client.get(
             reverse('home', args=[self.redirect_guid,
                                   self.manipulation.view_source]))
-        test_url = 'http://testserver/' + self.manipulation.value_1
-        test_url = test_url.replace('[Unique_ID]', str(self.redirect.uid))
-        test_url += '?vs=%s' % self.manipulation.view_source
+        test_url = '%s%s/job/?vs=%s' % (self.microsite.canonical_microsite_url,
+                                        self.redirect.uid,
+                                        self.manipulation.view_source)
         self.assertEqual(response['Location'], test_url)
 
     def test_amptoamp_redirect(self):
@@ -486,7 +468,11 @@ class ViewSourceViewTests(TestCase):
                                    '?vs=%s' %
                                    self.apply_manipulation.view_source)
         self.assertEqual(response.status_code, 301)
-        self.assertTrue(response['Location'].endswith(self.redirect.url))
+
+        test_url = '%s?%s' % (self.redirect.url,
+                              self.apply_manipulation.value_1[1:])
+
+        self.assertEqual(response['Location'], test_url)
 
     def test_bad_vs_query(self):
         self.apply_manipulation = DestinationManipulationFactory(
@@ -520,7 +506,9 @@ class ViewSourceViewTests(TestCase):
             self.manipulation.save()
 
             response = self.client.get(reverse('home',
-                                               args=[self.redirect_guid]))
+                                               args=[self.redirect_guid,
+                                                     self.manipulation.view_source]))
+
             self.assertTrue('src=de' not in response['Location'])
             self.assertTrue('src=JB-DE' in response['Location'])
 
@@ -534,7 +522,9 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.save()
 
         response = self.client.get(reverse('home',
-                                           args=[self.redirect_guid]))
+                                           args=[self.redirect_guid,
+                                                 self.manipulation.view_source]))
+
         # We ensure that there is never a & without a preceding ? - that is
         # unlikely, however
         self.assertTrue('?' + self.manipulation.value_1[1:] in response['Location'])
@@ -549,7 +539,9 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.save()
 
         response = self.client.get(reverse('home',
-                                           args=[self.redirect_guid]))
+                                           args=[self.redirect_guid,
+                                                 self.manipulation.view_source]))
+
         self.assertTrue(response['Location'].endswith(self.redirect.url))
 
     def test_myjobs_redirects(self):
@@ -568,39 +560,29 @@ class ViewSourceViewTests(TestCase):
         self.assertTrue(self.redirect.url in response.content)
         self.assertEqual(response.status_code, 200)
 
-    def test_microsite_redirect_on_new_job(self):
+    def test_redirect_on_new_job(self):
         """
-        Ensure that microsite manipulations are not done if a job was added
+        Ensure that are not done if a job was added
         within the last 30 minutes
         """
         # Make the redirect and manipulation objects look like real data
         self.redirect.new_date = datetime.datetime.now(tz=timezone.utc)
-        self.redirect.url = 'example.com/jobdetail.ftl'
+        self.redirect.url = 'http://www.directemployers.org'
         self.redirect.save()
-        self.manipulation.action = 'microsite'
-        self.manipulation.value_1 = 'www.my.jobs/[Unique_ID]/job/'
+        self.manipulation.action = 'sourcecodetag'
+        self.manipulation.value_1 = '?src=foo'
+        self.manipulation.view_source = 0
         self.manipulation.save()
 
-        # Create a new DestinationManipulation object which should be
-        # the only manipulation done
-        DestinationManipulationFactory(action='sourcecodeswitch',
-                                       buid=self.manipulation.buid,
-                                       view_source=self.manipulation.view_source,
-                                       value_1='jobdetail.ftl',
-                                       value_2='jobapply.ftl',
-                                       action_type=2)
         response = self.client.get(reverse('home',
                                            args=[self.redirect_guid]))
 
-        # We know how the code *should* behave when doing just a microsite
-        # redirect and what *should* happen if a job is older than 30 minutes.
-        url = helpers.microsite(self.redirect, self.manipulation)
-
-        # The result of doing a microsite manipulation does not appear
-        # in the response headers...
-        self.assertFalse(url in response['Location'])
+        # The job would normally redirect to a microsite, but it should not
+        # in this instance
+        self.assertFalse(response['Location'].startswith(
+            self.microsite.canonical_microsite_url))
         # ... while the result of doing a sourcecodeswitch does.
-        self.assertTrue('jobapply.ftl' in response['Location'])
+        self.assertTrue(self.manipulation.value_1 in response['Location'])
 
         # If a job is 30 minutes old or older, the microsite result is used
         # as expected.
@@ -608,7 +590,10 @@ class ViewSourceViewTests(TestCase):
         self.redirect.save()
         response = self.client.get(reverse('home',
                                            args=[self.redirect_guid]))
-        self.assertTrue(url in response['Location'])
+        test_url = '%s%s/job/?vs=%s' % (self.microsite.canonical_microsite_url,
+                                        self.redirect.uid,
+                                        self.manipulation.view_source)
+        self.assertEqual(response['Location'], test_url)
 
     def test_percent_encoded_url_params(self):
         """
@@ -618,7 +603,8 @@ class ViewSourceViewTests(TestCase):
         self.redirect.url = 'example.com?%2b=%20%3d%2b'
         self.redirect.save()
         response = self.client.get(reverse('home',
-                                           args=[self.redirect_guid]))
+                                           args=[self.redirect_guid,
+                                                 self.manipulation.view_source]))
         self.assertTrue('%2b=%20%3d%2b' in response['Location'].lower())
 
     def test_cache_gets_set_on_view(self):
