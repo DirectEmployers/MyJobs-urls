@@ -1,6 +1,8 @@
 from datetime import timedelta
 from os.path import abspath, dirname, join
 
+from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS
+
 from secrets import *
 
 
@@ -57,14 +59,7 @@ STATICFILES_FINDERS = (
 #    'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
-TEMPLATE_CONTEXT_PROCESSORS = (
-    "django.contrib.auth.context_processors.auth",
-    "django.core.context_processors.debug",
-    "django.core.context_processors.i18n",
-    "django.core.context_processors.media",
-    "django.core.context_processors.static",
-    "django.core.context_processors.tz",
-    "django.contrib.messages.context_processors.messages",
+TEMPLATE_CONTEXT_PROCESSORS += (
     'django.core.context_processors.request',
 )
 
