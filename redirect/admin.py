@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import admin
 from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
@@ -87,21 +88,42 @@ class BlankValueListFilter(admin.SimpleListFilter):
             return queryset
 
 
-class BlankValueList1Filter(BlankValueListFilter):
+class BlankValue1ListFilter(BlankValueListFilter):
     title = _('Value 1')
     parameter_name = 'value_1'
     field_name='value_1'
 
 
-class BlankValueList2Filter(BlankValueListFilter):
+class BlankValue2ListFilter(BlankValueListFilter):
     title = _('Value 2')
     parameter_name = 'value_2'
     field_name='value_2'
 
 
+class ExcludedViewSourceFilter(admin.SimpleListFilter):
+    title = _('excluded')
+    parameter_name = 'ms'
+    def lookups(self, request, model_admin):
+        return (('Yes', _('Yes')),
+                ('No', _('No')))
+
+    def queryset(self, request, queryset):
+        if getattr(self, 'view_source_id', None) is not None:
+            param = 'view_source_id'
+        else:
+            param = 'view_source'
+        filter_dict = {'%s__in' % param: settings.EXCLUDED_VIEW_SOURCES}
+        if self.value() == 'Yes':
+            return queryset.filter(**filter_dict)
+        elif self.value() == 'No':
+            return queryset.exclude(**filter_dict)
+        else:
+            return queryset
+
+
 class ViewSourceAdmin(admin.ModelAdmin):
-    list_display = ['view_source_id', 'name', 'microsite']
-    list_filter = ['microsite']
+    list_display = ['view_source_id', 'name', 'is_excluded']
+    list_filter = [ExcludedViewSourceFilter]
     search_fields = ['=view_source_id', 'name']
 
     def get_readonly_fields(self, request, obj=None):
@@ -122,8 +144,9 @@ class ExcludedViewSourceAdmin(admin.ModelAdmin):
 class DestinationManipulationAdmin(admin.ModelAdmin):
     list_filter = ['action_type',
                    ('action', MultiSearchFilter),
-                   BlankValueList1Filter,
-                   BlankValueList2Filter]
+                   BlankValue1ListFilter,
+                   BlankValue2ListFilter,
+                   ExcludedViewSourceFilter]
     search_fields = ['=buid', '=view_source']
     list_display = ['buid', 'get_view_source_name', 'action_type', 'action', 'value_1', 'value_2']
 
