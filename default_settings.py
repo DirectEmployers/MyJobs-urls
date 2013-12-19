@@ -1,6 +1,8 @@
 from datetime import timedelta
 from os.path import abspath, dirname, join
 
+from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS
+
 from secrets import *
 
 
@@ -56,6 +58,10 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 #    'django.contrib.staticfiles.finders.DefaultStorageFinder',
+)
+
+TEMPLATE_CONTEXT_PROCESSORS += (
+    'django.core.context_processors.request',
 )
 
 # List of callables that know how to import templates from various sources.
