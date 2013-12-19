@@ -22,6 +22,13 @@ ALLOWED_HOSTS = ['localhost',
                  '.jcnlx.org',
                  '.my.jobs']
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': '127.0.0.1:11211',
+        }
+}
+
 # Uncomment for Django Debug Toolbar
 #MIDDLEWARE_CLASSES += ('debug_toolbar.middleware.DebugToolbarMiddleware',)
 #INSTALLED_APPS += ('debug_toolbar',)

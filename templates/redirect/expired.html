@@ -4,31 +4,33 @@
 {% endblock %}
 
 {% block content %}
-    <div style="margin-top:50px;font-weight:bold;font-size:18px;text-align:center">
-        Job posting no longer exists!
-    </div>
-    <div style="margin-top:30px;font-weight:normal;font-size:14px;text-align:center">
-        <span style="font-weight:bold">{{ title }} ({{ location }})</span><br>
-        <a href="{{ url|safe }}">{{ url }}</a>
-    </div>
-    <div style="margin-top:30px;font-weight:normal;font-size:14px;text-align:center">
-        <div style="width:370px;margin:auto;text-align:left">
-            We apologize, this job posting is no longer available as it was recently removed from the originating site.<br><br>
+    <div id="expired-job" class="center">
+        <h4>
+            Job posting no longer exists!
+        </h4>
+        <div style="margin-top:30px;font-weight:normal;font-size:14px;text-align:center">
+            <span style="font-weight:bold">{{ title }} ({{ location }})</span><br>
+            <a href="{{ url|safe }}">{{ url }}</a>
+        </div>
+        <div style="margin-top:30px;font-weight:normal;font-size:14px;text-align:center">
+            <div style="width:370px;margin:auto;text-align:left">
+                We apologize, this job posting is no longer available as it was recently removed from the originating site.<br><br>
 
-            {% if expired_context == 'facebook' %}
+                {% if expired_context == 'facebook' %}
 
-                Please <a href="http://us.jobs/" target="_blank">visit US.jobs</a> and continue with your job search.
+                    Please <a href="http://us.jobs/" target="_blank">visit US.jobs</a> and continue with your job search.
 
-            {% elif expired_context == 'special' %}
+                {% elif expired_context == 'special' %}
 
-                Please <a href="#" onclick="window.close();return false;">close this window</a> and continue with your job search.
+                    Please <a href="#" onclick="window.close();return false;">close this window</a> and continue with your job search.
 
-            {% else %}
+                {% else %}
 
-                Please <a href="#" onclick="window.close();return false;">close this window</a> and continue with your job search, or visit the National Labor Exchange to view all current jobs for <a href="http://us.jobs/results.asp?bu={{ buid }}">{{ company_name }}</a>.
+                    Please <a href="#" onclick="window.close();return false;">close this window</a> and continue with your job search, or visit the National Labor Exchange to view all current jobs for <a href="http://us.jobs/results.asp?bu={{ buid }}">{{ company_name }}</a>.
 
-            {% endif %}
+                {% endif %}
 
+            </div>
         </div>
     </div>
 {% endblock %}
