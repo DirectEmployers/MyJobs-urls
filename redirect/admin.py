@@ -121,6 +121,20 @@ class ExcludedViewSourceFilter(admin.SimpleListFilter):
             return queryset
 
 
+class DestinationManipulationAdmin(admin.ModelAdmin):
+    list_filter = ['action_type',
+                   ('action', MultiSearchFilter),
+                   BlankValue1ListFilter,
+                   BlankValue2ListFilter,
+                   ExcludedViewSourceFilter]
+    search_fields = ['=buid', '=view_source']
+    list_display = ['buid', 'get_view_source_name', 'action_type', 'action', 'value_1', 'value_2']
+
+
+class ExcludedViewSourceAdmin(admin.ModelAdmin):
+    list_display = ['view_source']
+
+
 class ViewSourceAdmin(admin.ModelAdmin):
     list_display = ['view_source_id', 'name', 'is_excluded']
     list_filter = [ExcludedViewSourceFilter]
@@ -135,20 +149,6 @@ class ViewSourceAdmin(admin.ModelAdmin):
             return self.readonly_fields + ('view_source_id',)
         else:
             return []
-
-
-class ExcludedViewSourceAdmin(admin.ModelAdmin):
-    list_display = ['view_source']
-
-
-class DestinationManipulationAdmin(admin.ModelAdmin):
-    list_filter = ['action_type',
-                   ('action', MultiSearchFilter),
-                   BlankValue1ListFilter,
-                   BlankValue2ListFilter,
-                   ExcludedViewSourceFilter]
-    search_fields = ['=buid', '=view_source']
-    list_display = ['buid', 'get_view_source_name', 'action_type', 'action', 'value_1', 'value_2']
 
 
 admin.site.register(ViewSource, ViewSourceAdmin)
