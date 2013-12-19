@@ -99,6 +99,19 @@ class BlankValueList2Filter(BlankValueListFilter):
     field_name='value_2'
 
 
+class DestinationManipulationAdmin(admin.ModelAdmin):
+    list_filter = ['action_type',
+                   ('action', MultiSearchFilter),
+                   BlankValueList1Filter,
+                   BlankValueList2Filter]
+    search_fields = ['=buid', '=view_source']
+    list_display = ['buid', 'get_view_source_name', 'action_type', 'action', 'value_1', 'value_2']
+
+
+class ExcludedViewSourceAdmin(admin.ModelAdmin):
+    list_display = ['view_source']
+
+
 class ViewSourceAdmin(admin.ModelAdmin):
     list_display = ['view_source_id', 'name', 'microsite']
     list_filter = ['microsite']
@@ -115,14 +128,6 @@ class ViewSourceAdmin(admin.ModelAdmin):
             return []
 
 
-class DestinationManipulationAdmin(admin.ModelAdmin):
-    list_filter = ['action_type',
-                   ('action', MultiSearchFilter),
-                   BlankValueList1Filter,
-                   BlankValueList2Filter]
-    search_fields = ['=buid', '=view_source']
-    list_display = ['buid', 'get_view_source_name', 'action_type', 'action', 'value_1', 'value_2']
-
-
 admin.site.register(ViewSource, ViewSourceAdmin)
 admin.site.register(DestinationManipulation, DestinationManipulationAdmin)
+admin.site.register(ExcludedViewSource, ExcludedViewSourceAdmin)

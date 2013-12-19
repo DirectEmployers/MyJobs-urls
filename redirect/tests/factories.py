@@ -11,7 +11,7 @@ class CanonicalMicrositeFactory(factory.Factory):
     FACTORY_FOR = models.CanonicalMicrosite
 
     buid = 0
-    canonical_microsite_url = 'jobs.jobs/[Unique_ID]/job'
+    canonical_microsite_url = 'http://www.my.jobs/'
 
 
 class RedirectFactory(factory.Factory):
@@ -20,7 +20,7 @@ class RedirectFactory(factory.Factory):
     guid = '{12345678-90ab-cdef-1234-567890abcdef}'
     buid = 0
     uid = 0
-    url = 'directemployers.org'
+    url = 'http://www.directemployers.org'
     new_date = datetime.now(tz=timezone.utc) - timedelta(minutes=30)
     # Unused for current testing but may be useful later
     expired_date = None
@@ -61,6 +61,6 @@ class DestinationManipulationFactory(factory.Factory):
     action_type = 1
     action = 'sourcecodetag'
     buid = 0
-    view_source = 0
+    view_source = 10
     value_1 = '&codes=DEjn'
     value_2 = '&codes=ArmyRES'

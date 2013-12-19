@@ -1,4 +1,7 @@
+from django.conf import settings
+from django.core.cache import cache
 from django.db import models
+from django.db.models.signals import post_save
 from django.utils.translation import ugettext_lazy as _
 
 
@@ -191,3 +194,22 @@ class ViewSource(models.Model):
             except ViewSource.DoesNotExist:
                 self.view_source_id = 0
         super(ViewSource, self).save(*args, **kwargs)
+
+
+class ExcludedViewSource(models.Model):
+    """
+    Each instance represents a particular view source that does not redirect
+    to a microsite
+    """
+    view_source = models.IntegerField(primary_key=True,
+                                      help_text=_('This view source will not '
+                                                  'redirect to a microsite'))
+
+
+def clear_vs_cache(sender, instance, created, **kwargs):
+    cache_key = settings.EXCLUDED_VIEW_SOURCE_CACHE_KEY
+    cache.delete(cache_key)
+
+
+# Clears excluded view source cache when an instance is saved
+post_save.connect(clear_vs_cache, sender=ExcludedViewSource, dispatch_uid="clear_vs_cache")
