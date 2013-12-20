@@ -140,4 +140,4 @@ CACHES = {
 
 NEW_RELIC_TRACKING = False
 
-EXCLUDED_VIEW_SOURCE_CACHE_KEY = 'expired_view_sources'
+EXCLUDED_VIEW_SOURCE_CACHE_KEY = 'excluded_view_sources'
