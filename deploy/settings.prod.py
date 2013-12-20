@@ -25,8 +25,11 @@ ALLOWED_HOSTS = ['localhost',
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
-        'LOCATION': '127.0.0.1:11211',
-        }
+        'LOCATION': [
+            'dseo-mc-cluster.qksjst.0003.use1.cache.amazonaws.com:11211',
+            'dseo-mc-cluster.qksjst.0004.use1.cache.amazonaws.com:11211'
+        ]
+    }
 }
 
 # Uncomment for Django Debug Toolbar
