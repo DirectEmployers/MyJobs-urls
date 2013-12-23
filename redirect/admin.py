@@ -131,3 +131,4 @@ class ViewSourceAdmin(admin.ModelAdmin):
 admin.site.register(ViewSource, ViewSourceAdmin)
 admin.site.register(DestinationManipulation, DestinationManipulationAdmin)
 admin.site.register(ExcludedViewSource, ExcludedViewSourceAdmin)
+admin.site.register(CustomExcludedViewSource)

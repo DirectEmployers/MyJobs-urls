@@ -10,7 +10,8 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from redirect.models import (
-    Redirect, DestinationManipulation as DM, CanonicalMicrosite)
+    Redirect, DestinationManipulation as DM, CanonicalMicrosite,
+    CustomExcludedViewSource)
 from redirect import helpers
 
 
@@ -117,9 +118,13 @@ def home(request, guid, vsid=None, debug=None):
                     # shouldn't with links, which is apparently quite common
                     pass
                 else:
-                    if (vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
-                            microsite is None) or skip_microsite or new_job:
-                        # vs_to_use in settings.EXCLUDED_VIEW_SOURCES
+                    if ((vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
+                            microsite is None or
+                            (guid_redirect.buid,
+                             vs_to_use) in settings.CUSTOM_EXCLUSIONS) or
+                            skip_microsite or new_job):
+                        # vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
+                        # (buid, vs_to_use) in settings.CUSTOM_EXCLUSIONS
                         #     The given view source should not redirect to a
                         #     microsite
                         # microsite is None

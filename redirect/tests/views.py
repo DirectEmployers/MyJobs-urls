@@ -12,9 +12,11 @@ from django.utils import timezone
 from django.utils.http import urlquote_plus
 
 from redirect import helpers
-from redirect.models import DestinationManipulation, ExcludedViewSource
+from redirect.models import (
+    DestinationManipulation, ExcludedViewSource, clear_custom_vs_cache)
 from redirect.tests.factories import (
-    RedirectFactory, CanonicalMicrositeFactory, DestinationManipulationFactory)
+    RedirectFactory, CanonicalMicrositeFactory, DestinationManipulationFactory,
+    CustomExcludedViewSourceFactory)
 from redirect.views import home
 
 
@@ -29,6 +31,12 @@ class ViewSourceViewTests(TestCase):
         self.redirect_guid = self.guid_re.sub('', self.redirect.guid)
 
         self.factory = RequestFactory()
+
+    def tearDown(self):
+        """
+        The cache is not cleared between tests. We need to do it manually.
+        """
+        cache.clear()
 
     def test_get_with_bad_vsid(self):
         """
@@ -644,3 +652,12 @@ class ViewSourceViewTests(TestCase):
                                 args=[self.redirect_guid]))
 
         self.assertTrue(new_evs in cache.get(cache_key))
+
+    def test_custom_microsite_exclusion(self):
+        custom_exclusion = CustomExcludedViewSourceFactory()
+
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid,
+                                                 custom_exclusion.view_source]))
+        self.assertFalse(response['Location'].startswith(
+            self.microsite.canonical_microsite_url))
