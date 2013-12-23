@@ -151,6 +151,12 @@ class ViewSourceAdmin(admin.ModelAdmin):
             return []
 
 
+class CanonicalMicrositeAdmin(admin.ModelAdmin):
+    list_display = ['buid', 'canonical_microsite_url']
+    search_fields = ['buid', 'canonical_microsite_url']
+
+
 admin.site.register(ViewSource, ViewSourceAdmin)
 admin.site.register(DestinationManipulation, DestinationManipulationAdmin)
 admin.site.register(ExcludedViewSource, ExcludedViewSourceAdmin)
+admin.site.register(CanonicalMicrosite, CanonicalMicrositeAdmin)
