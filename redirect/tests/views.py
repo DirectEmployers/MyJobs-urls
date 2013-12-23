@@ -667,5 +667,7 @@ class ViewSourceViewTests(TestCase):
             reverse('home',
                     args=[self.redirect_guid,
                           custom_exclusion.view_source]))
+        self.assertFalse(custom_exclusion.view_source in
+                         settings.CUSTOM_EXCLUSIONS)
         self.assertFalse(response['Location'].startswith(
             self.microsite.canonical_microsite_url))
