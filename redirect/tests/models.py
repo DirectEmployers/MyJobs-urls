@@ -1,9 +1,3 @@
-from datetime import datetime, timedelta
-import unittest
-
-import pytz
-import uuid
-
 from django.test import TestCase
 
 from redirect.models import ViewSource

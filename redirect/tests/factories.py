@@ -65,6 +65,7 @@ class DestinationManipulationFactory(factory.Factory):
     value_1 = '&codes=DEjn'
     value_2 = '&codes=ArmyRES'
 
+
 class CustomExcludedViewSourceFactory(factory.Factory):
     FACTORY_FOR = models.CustomExcludedViewSource
 

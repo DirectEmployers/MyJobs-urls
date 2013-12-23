@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 import uuid
 
 from django.conf import settings
-from django.core.cache import cache
 from django.http import *
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
@@ -10,8 +9,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from redirect.models import (
-    Redirect, DestinationManipulation as DM, CanonicalMicrosite,
-    CustomExcludedViewSource)
+    Redirect, DestinationManipulation as DM, CanonicalMicrosite)
 from redirect import helpers
 
 
