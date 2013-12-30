@@ -48,9 +48,15 @@ class DestinationManipulation(models.Model):
 
         if vs:
             tag = '<a href="/admin/redirect/viewsource/%s">' % vs.pk
-            tag += '%s</a>' % vs.name
+            tag += '%s (%s)</a>' % (vs.name, vs.view_source_id)
         else:
             tag = str(self.view_source)
+
+        tag += '<br><span class="float-right">Excluded <img src="/static/admin/img/icon-%s.gif" alt=%s></span>'
+        if self.view_source in settings.EXCLUDED_VIEW_SOURCES:
+            tag %= ('yes', 'True')
+        else:
+            tag %= ('no', 'False')
         return tag
 
     get_view_source_name.short_description = 'View source'
@@ -175,7 +181,7 @@ class ViewSource(models.Model):
                                          default=None)
     name = models.CharField(max_length=255, blank=True)
     friendly_name = models.CharField(max_length=255, blank=True)
-    microsite = models.BooleanField(help_text=_('View source is a microsite'))
+    microsite = models.BooleanField(help_text=_('Defunct; Use CanonicalMicrosite'))
 
     class Meta:
         get_latest_by = 'view_source_id'
@@ -194,6 +200,16 @@ class ViewSource(models.Model):
             except ViewSource.DoesNotExist:
                 self.view_source_id = 0
         super(ViewSource, self).save(*args, **kwargs)
+
+    def is_excluded(self):
+        tag = '<img src="/static/admin/img/icon-%s.gif" alt=%s>'
+        if self.view_source_id in settings.EXCLUDED_VIEW_SOURCES:
+            tag %= ('yes', 'True')
+        else:
+            tag %= ('no', 'False')
+        return tag
+    is_excluded.short_description = 'excluded'
+    is_excluded.allow_tags = True
 
 
 class ExcludedViewSource(models.Model):

@@ -100,6 +100,7 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(reverse('home', args=['1' * 32]))
         self.assertEqual(response.status_code, 404)
         self.assertTemplateUsed(response, '404.html')
+        self.assertTrue('google-analytics' in response.content)
 
     def test_open_graph_redirect(self):
         """
@@ -111,6 +112,7 @@ class ViewSourceViewTests(TestCase):
             HTTP_USER_AGENT='facebookexternalhit')
         self.assertContains(response, 'US.jobs - Programmer - DirectEmployers')
         self.assertTemplateUsed(response, 'redirect/opengraph.html')
+        self.assertTrue('google-analytics' not in response.content)
 
     def test_sourcecodetag_redirect(self):
         """
@@ -409,6 +411,7 @@ class ViewSourceViewTests(TestCase):
                         (self.redirect_guid, self.manipulation.view_source)
                         in response.content)
         self.assertFalse('National Labor Exchange' in response.content)
+        self.assertTrue('google-analytics' in response.content)
 
     def test_expired_state_job(self):
         self.manipulation.buid = self.redirect.buid = 1228
@@ -428,6 +431,7 @@ class ViewSourceViewTests(TestCase):
                         in response.content)
         self.assertTrue(self.redirect.url in response.content)
         self.assertFalse('National Labor Exchange' in response.content)
+        self.assertTrue('google-analytics' in response.content)
 
     def test_other_expired_job(self):
         self.redirect.expired_date = datetime.datetime.now(tz=timezone.utc)
@@ -447,6 +451,7 @@ class ViewSourceViewTests(TestCase):
         self.assertTrue('bu=%s">%s' %
                         (self.redirect.buid, self.redirect.company_name)
                         in response.content)
+        self.assertTrue('google-analytics' in response.content)
 
     def test_cookie_domains(self):
         # The value for host is unimportant - if this code does not end up
@@ -573,6 +578,7 @@ class ViewSourceViewTests(TestCase):
         self.assertTrue(self.redirect.guid in response.content)
         self.assertTrue(self.redirect.url in response.content)
         self.assertEqual(response.status_code, 200)
+        self.assertTrue('google-analytics' in response.content)
 
     def test_redirect_on_new_job(self):
         """
