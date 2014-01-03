@@ -187,7 +187,7 @@ class ViewSource(models.Model):
         get_latest_by = 'view_source_id'
 
     def __unicode__(self):
-        return u'%s, view source %d' % (self.name, self.view_source_id)
+        return u'%s (%d)' % (self.name, self.view_source_id)
 
     def save(self, *args, **kwargs):
         if not self.view_source_id:
@@ -200,6 +200,7 @@ class ViewSource(models.Model):
             except ViewSource.DoesNotExist:
                 self.view_source_id = 0
         super(ViewSource, self).save(*args, **kwargs)
+
 
     def is_excluded(self):
         tag = '<img src="/static/admin/img/icon-%s.gif" alt=%s>'
@@ -220,6 +221,27 @@ class ExcludedViewSource(models.Model):
     view_source = models.IntegerField(primary_key=True,
                                       help_text=_('This view source will not '
                                                   'redirect to a microsite'))
+
+    def get_vs_cell(self):
+        """
+        The Django admin is heavily table based. Construct the tags that will
+        go into this excluded view source's cell.
+        """
+        try:
+            vs = ViewSource.objects.get(view_source_id=self.view_source)
+        except ViewSource.DoesNotExist:
+            vs = None
+
+        tag = '<a href="/admin/redirect/excludedviewsource/%s">' % self.view_source
+
+        if vs:
+            tag += '%s</a>' % (str(vs),)
+        else:
+            tag += '%s</a>' % (self.view_source)
+        return tag
+    get_vs_cell.short_description = 'view source'
+    get_vs_cell.allow_tags = True
+
 
 
 def clear_vs_cache(sender, instance, created, **kwargs):

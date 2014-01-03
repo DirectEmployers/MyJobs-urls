@@ -132,7 +132,8 @@ class DestinationManipulationAdmin(admin.ModelAdmin):
 
 
 class ExcludedViewSourceAdmin(admin.ModelAdmin):
-    list_display = ['view_source']
+    list_display = ['get_vs_cell']
+    search_fields = ['=view_source']
 
 
 class ViewSourceAdmin(admin.ModelAdmin):
