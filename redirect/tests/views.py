@@ -11,10 +11,10 @@ from django.test.client import Client, RequestFactory
 from django.utils import timezone
 from django.utils.http import urlquote_plus
 
-from redirect import helpers
 from redirect.models import DestinationManipulation, ExcludedViewSource
 from redirect.tests.factories import (
-    RedirectFactory, CanonicalMicrositeFactory, DestinationManipulationFactory)
+    RedirectFactory, CanonicalMicrositeFactory, DestinationManipulationFactory,
+    CustomExcludedViewSourceFactory)
 from redirect.views import home
 
 
@@ -30,6 +30,12 @@ class ViewSourceViewTests(TestCase):
 
         self.factory = RequestFactory()
 
+    def tearDown(self):
+        """
+        The cache is not cleared between tests. We need to do it manually.
+        """
+        cache.clear()
+
     def test_get_with_bad_vsid(self):
         """
         If no view source id is provided or the given view source id does not
@@ -40,9 +46,10 @@ class ViewSourceViewTests(TestCase):
                                                args=[self.redirect_guid,
                                                      vsid]))
 
-            test_url = '%s%s/job/?vs=%s' % (self.microsite.canonical_microsite_url,
-                                           self.redirect.uid,
-                                           vsid or '0')
+            test_url = '%s%s/job/?vs=%s' % \
+                (self.microsite.canonical_microsite_url,
+                 self.redirect.uid,
+                 vsid or '0')
 
             self.assertEqual(response['Location'], test_url)
 
@@ -62,13 +69,15 @@ class ViewSourceViewTests(TestCase):
         self.redirect.save()
 
         with self.assertRaises(DestinationManipulation.DoesNotExist):
-            DestinationManipulation.objects.get(buid=self.manipulation.buid,
-                                                view_source=self.manipulation.view_source,
-                                                action_type=1)
+            DestinationManipulation.objects.get(
+                buid=self.manipulation.buid,
+                view_source=self.manipulation.view_source,
+                action_type=1)
 
-        response = self.client.get(reverse('home',
-                                           args=[self.redirect_guid,
-                                                 self.manipulation.view_source]))
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          self.manipulation.view_source]))
 
         self.assertEqual(response.status_code, 301)
         self.assertEqual(response['Location'],
@@ -88,7 +97,7 @@ class ViewSourceViewTests(TestCase):
         """
         Nonexistent jobs should display a 404 page.
         """
-        response = self.client.get(reverse('home', args=['1'*32]))
+        response = self.client.get(reverse('home', args=['1' * 32]))
         self.assertEqual(response.status_code, 404)
         self.assertTemplateUsed(response, '404.html')
         self.assertTrue('google-analytics' in response.content)
@@ -129,7 +138,7 @@ class ViewSourceViewTests(TestCase):
         """
         self.manipulation.action = 'sourcecodetag'
         self.manipulation.value_1 = '?src=foo'
-        self.manipulation.view_source=0
+        self.manipulation.view_source = 0
         self.manipulation.save()
 
         response = self.client.get(
@@ -510,9 +519,10 @@ class ViewSourceViewTests(TestCase):
             self.manipulation.value_1 = '&src=JB-DE'
             self.manipulation.save()
 
-            response = self.client.get(reverse('home',
-                                               args=[self.redirect_guid,
-                                                     self.manipulation.view_source]))
+            response = self.client.get(
+                reverse('home',
+                        args=[self.redirect_guid,
+                              self.manipulation.view_source]))
 
             self.assertTrue('src=de' not in response['Location'])
             self.assertTrue('src=JB-DE' in response['Location'])
@@ -526,13 +536,15 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.value_1 = '&src=with%20space'
         self.manipulation.save()
 
-        response = self.client.get(reverse('home',
-                                           args=[self.redirect_guid,
-                                                 self.manipulation.view_source]))
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          self.manipulation.view_source]))
 
         # We ensure that there is never a & without a preceding ? - that is
         # unlikely, however
-        self.assertTrue('?' + self.manipulation.value_1[1:] in response['Location'])
+        self.assertTrue('?' + self.manipulation.value_1[1:] in
+                        response['Location'])
 
     def test_invalid_sourcecodetag_redirect(self):
         """
@@ -543,9 +555,10 @@ class ViewSourceViewTests(TestCase):
         self.manipulation.value_1 = ''
         self.manipulation.save()
 
-        response = self.client.get(reverse('home',
-                                           args=[self.redirect_guid,
-                                                 self.manipulation.view_source]))
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          self.manipulation.view_source]))
 
         self.assertTrue(response['Location'].endswith(self.redirect.url))
 
@@ -554,7 +567,8 @@ class ViewSourceViewTests(TestCase):
         for path in paths:
             response = self.client.get(path, follow=True)
             self.assertEqual(response.status_code, 301)
-            self.assertTrue(response['Location'].startswith('http://www.my.jobs'))
+            self.assertTrue(response['Location'].startswith(
+                'http://www.my.jobs'))
 
     def test_debug_parameter(self):
         response = self.client.get(reverse('home',
@@ -608,9 +622,10 @@ class ViewSourceViewTests(TestCase):
         """
         self.redirect.url = 'example.com?%2b=%20%3d%2b'
         self.redirect.save()
-        response = self.client.get(reverse('home',
-                                           args=[self.redirect_guid,
-                                                 self.manipulation.view_source]))
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          self.manipulation.view_source]))
         self.assertTrue('%2b=%20%3d%2b' in response['Location'].lower())
 
     def test_cache_gets_set_on_view(self):
@@ -650,3 +665,16 @@ class ViewSourceViewTests(TestCase):
                                 args=[self.redirect_guid]))
 
         self.assertTrue(new_evs in cache.get(cache_key))
+
+    def test_custom_microsite_exclusion(self):
+        custom_exclusion = CustomExcludedViewSourceFactory()
+
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          custom_exclusion.view_source]))
+        self.assertTrue((custom_exclusion.buid,
+                         custom_exclusion.view_source) in
+                        settings.CUSTOM_EXCLUSIONS)
+        self.assertFalse(response['Location'].startswith(
+            self.microsite.canonical_microsite_url))

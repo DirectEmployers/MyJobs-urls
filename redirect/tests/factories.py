@@ -64,3 +64,10 @@ class DestinationManipulationFactory(factory.Factory):
     view_source = 10
     value_1 = '&codes=DEjn'
     value_2 = '&codes=ArmyRES'
+
+
+class CustomExcludedViewSourceFactory(factory.Factory):
+    FACTORY_FOR = models.CustomExcludedViewSource
+
+    buid = 0
+    view_source = 1

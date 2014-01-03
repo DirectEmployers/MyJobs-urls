@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 import uuid
 
 from django.conf import settings
-from django.core.cache import cache
 from django.http import *
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
@@ -117,9 +116,13 @@ def home(request, guid, vsid=None, debug=None):
                     # shouldn't with links, which is apparently quite common
                     pass
                 else:
-                    if (vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
-                            microsite is None) or skip_microsite or new_job:
-                        # vs_to_use in settings.EXCLUDED_VIEW_SOURCES
+                    if ((vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
+                            microsite is None or
+                            (guid_redirect.buid,
+                             vs_to_use) in settings.CUSTOM_EXCLUSIONS) or
+                            skip_microsite or new_job):
+                        # vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
+                        # (buid, vs_to_use) in settings.CUSTOM_EXCLUSIONS
                         #     The given view source should not redirect to a
                         #     microsite
                         # microsite is None
