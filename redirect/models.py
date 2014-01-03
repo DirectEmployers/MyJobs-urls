@@ -248,6 +248,15 @@ class CustomExcludedViewSource(models.Model):
         unique_together = (('buid', 'view_source'),)
         index_together = [['buid', 'view_source'],]
 
+    def get_vs_name(self):
+        try:
+            vs = ViewSource.objects.get(view_source_id=self.view_source)
+            tag = str(vs)
+        except ViewSource.DoesNotExist:
+            tag = str(self.view_source)
+        return tag
+    get_vs_name.short_description = 'view source'
+
 
 def clear_custom_vs_cache(sender, instance, created, **kwargs):
     cache_key = settings.CUSTOM_EXCLUSION_CACHE_KEY

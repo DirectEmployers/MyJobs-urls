@@ -137,7 +137,7 @@ class ExcludedViewSourceAdmin(admin.ModelAdmin):
 
 
 class CustomExcludedViewSourceAdmin(admin.ModelAdmin):
-    list_display = ['buid', 'view_source']
+    list_display = ['buid', 'get_vs_name']
     search_fields = ['buid', 'view_source']
 
 
