@@ -44,6 +44,7 @@ def replace_or_add_query(url, query):
     Outputs:
     :url: Input url with query string appended
     """
+    url = url.encode('utf-8')
     url = urlparse.urlparse(url)
     old_query = urlparse.parse_qsl(url.query, keep_blank_values=True)
     old_keys = [q[0] for q in old_query]
