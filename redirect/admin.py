@@ -133,7 +133,8 @@ class DestinationManipulationAdmin(admin.ModelAdmin):
 
 
 class ExcludedViewSourceAdmin(admin.ModelAdmin):
-    list_display = ['view_source']
+    list_display = ['get_vs_cell']
+    search_fields = ['=view_source']
 
 
 class CustomExcludedViewSourceAdmin(admin.ModelAdmin):
@@ -157,7 +158,13 @@ class ViewSourceAdmin(admin.ModelAdmin):
             return []
 
 
-admin.site.register(ViewSource, ViewSourceAdmin)
+class CanonicalMicrositeAdmin(admin.ModelAdmin):
+    list_display = ['buid', 'canonical_microsite_url']
+    search_fields = ['buid', 'canonical_microsite_url']
+
+
+admin.site.register(CanonicalMicrosite, CanonicalMicrositeAdmin)
+admin.site.register(CustomExcludedViewSource, CustomExcludedViewSourceAdmin)
 admin.site.register(DestinationManipulation, DestinationManipulationAdmin)
 admin.site.register(ExcludedViewSource, ExcludedViewSourceAdmin)
-admin.site.register(CustomExcludedViewSource, CustomExcludedViewSourceAdmin)
+admin.site.register(ViewSource, ViewSourceAdmin)
