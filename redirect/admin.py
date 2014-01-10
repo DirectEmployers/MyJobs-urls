@@ -128,11 +128,17 @@ class DestinationManipulationAdmin(admin.ModelAdmin):
                    BlankValue2ListFilter,
                    ExcludedViewSourceFilter]
     search_fields = ['=buid', '=view_source']
-    list_display = ['buid', 'get_view_source_name', 'action_type', 'action', 'value_1', 'value_2']
+    list_display = ['buid', 'get_view_source_name', 'action_type',
+                    'action', 'value_1', 'value_2']
 
 
 class ExcludedViewSourceAdmin(admin.ModelAdmin):
     list_display = ['view_source']
+
+
+class CustomExcludedViewSourceAdmin(admin.ModelAdmin):
+    list_display = ['buid', 'get_vs_name']
+    search_fields = ['buid', 'view_source']
 
 
 class ViewSourceAdmin(admin.ModelAdmin):
@@ -154,3 +160,4 @@ class ViewSourceAdmin(admin.ModelAdmin):
 admin.site.register(ViewSource, ViewSourceAdmin)
 admin.site.register(DestinationManipulation, DestinationManipulationAdmin)
 admin.site.register(ExcludedViewSource, ExcludedViewSourceAdmin)
+admin.site.register(CustomExcludedViewSource, CustomExcludedViewSourceAdmin)

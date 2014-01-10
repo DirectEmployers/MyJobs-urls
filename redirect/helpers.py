@@ -3,8 +3,6 @@ import urlparse
 
 from django.utils.http import urlquote_plus
 
-from redirect.models import *
-
 
 """
 
