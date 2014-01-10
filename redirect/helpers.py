@@ -42,6 +42,7 @@ def replace_or_add_query(url, query):
     Outputs:
     :url: Input url with query string appended
     """
+    query = query.encode('utf-8')
     url = url.encode('utf-8')
     url = urlparse.urlparse(url)
     old_query = urlparse.parse_qsl(url.query, keep_blank_values=True)
@@ -50,7 +51,7 @@ def replace_or_add_query(url, query):
     new_query = urlparse.parse_qsl(query)
 
     for new_index in range(len(new_query)):
-        if new_query[new_index][0] in old_keys:
+        if new_query[new_index][0].encode('utf-8') in old_keys:
             old_index = old_keys.index(new_query[new_index][0])
             old_query[old_index] = new_query[new_index]
         else:
@@ -91,7 +92,7 @@ def get_Post_a_Job_buid(redirect):
     :redirect: Redirect object associated with a given guid
 
     Outputs:
-    :buid: State-specific buid, if one exists
+    :buid: State-pecific buid, if one exists
     """
     buid = redirect.buid
     if buid == 1228:
