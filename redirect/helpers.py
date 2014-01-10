@@ -51,7 +51,7 @@ def replace_or_add_query(url, query):
     new_query = urlparse.parse_qsl(query)
 
     for new_index in range(len(new_query)):
-        if new_query[new_index][0].encode('utf-8') in old_keys:
+        if new_query[new_index][0] in old_keys:
             old_index = old_keys.index(new_query[new_index][0])
             old_query[old_index] = new_query[new_index]
         else:
