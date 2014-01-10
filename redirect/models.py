@@ -251,3 +251,40 @@ def clear_vs_cache(sender, instance, created, **kwargs):
 
 # Clears excluded view source cache when an instance is saved
 post_save.connect(clear_vs_cache, sender=ExcludedViewSource, dispatch_uid="clear_vs_cache")
+
+
+class CustomExcludedViewSource(models.Model):
+    """
+    Some companies want a given view source to not redirect to their microsite
+    but that should not be the case for everyone. This is a company-specific
+    exclusion.
+    """
+    buid = models.IntegerField(blank=False,
+                               help_text=_('Business unit id that wants '
+                                           'a custom exclusion'))
+    view_source = models.IntegerField(blank=False,
+                                      help_text=_('View source that should '
+                                                  'be excluded'))
+
+    class Meta:
+        unique_together = (('buid', 'view_source'),)
+        index_together = [['buid', 'view_source'],]
+
+    def get_vs_name(self):
+        try:
+            vs = ViewSource.objects.get(view_source_id=self.view_source)
+            tag = str(vs)
+        except ViewSource.DoesNotExist:
+            tag = str(self.view_source)
+        return tag
+    get_vs_name.short_description = 'view source'
+
+
+def clear_custom_vs_cache(sender, instance, created, **kwargs):
+    cache_key = settings.CUSTOM_EXCLUSION_CACHE_KEY
+    cache.delete(cache_key)
+
+
+# Clears excluded view source cache when an instance is saved
+post_save.connect(clear_custom_vs_cache, sender=CustomExcludedViewSource,
+                  dispatch_uid="clear_custom_vs_cache")
