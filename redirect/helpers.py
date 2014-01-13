@@ -92,7 +92,7 @@ def get_Post_a_Job_buid(redirect):
     :redirect: Redirect object associated with a given guid
 
     Outputs:
-    :buid: State-pecific buid, if one exists
+    :buid: State-specific buid, if one exists
     """
     buid = redirect.buid
     if buid == 1228:
