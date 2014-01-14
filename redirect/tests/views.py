@@ -620,13 +620,12 @@ class ViewSourceViewTests(TestCase):
         Ensure that query parameters retain their encoding when adding new
         parameters.
         """
-        self.redirect.url = 'example.com?%2b=%20%3d%2b'
+        self.redirect.url = 'example.com?%c3%81=%20%3d%2b'
         self.redirect.save()
-        response = self.client.get(
-            reverse('home',
-                    args=[self.redirect_guid,
-                          self.manipulation.view_source]))
-        self.assertTrue('%2b=%20%3d%2b' in response['Location'].lower())
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid,
+                                                 self.manipulation.view_source]))
+        self.assertTrue('%c3%81=%20%3d%2b' in response['Location'].lower())
 
     def test_cache_gets_set_on_view(self):
         """
