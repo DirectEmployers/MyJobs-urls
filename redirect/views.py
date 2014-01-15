@@ -135,23 +135,14 @@ def home(request, guid, vsid=None, debug=None):
                         #     microsites yet; skip microsite redirects
                         manipulations = DM.objects.filter(
                             buid=guid_redirect.buid,
-                            view_source=vs_to_use).order_by(
-                                'action_type').exclude(
-                                    action__in=['microsite',
-                                                'micrositetag'])
-                        if not manipulations and vs_to_use != 0 and \
-                                vs_to_use not in settings.EXCLUDED_VIEW_SOURCES:
+                            view_source=vs_to_use).order_by('action_type')
+                        if not manipulations and vs_to_use != 0:
                             # not manipulations and vs_to_use != 0
                             #     The view source passed via url resulted in no
                             #     manipulations; Try again with view source 0
-                            # vs_to_use not in settings.EXCLUDED_VIEW_SOURCES
-                            #     Implies skip_microsite or new_job
                             manipulations = DM.objects.filter(
                                 buid=guid_redirect.buid,
-                                view_source=0).order_by(
-                                    'action_type').exclude(
-                                        action__in=['microsite',
-                                                    'micrositetag'])
+                                view_source=0).order_by('action_type')
                     else:
                         # Everything prior is false; redirect to the microsite
                         redirect_url = '%s%s/job/?vs=%s' % \
@@ -160,14 +151,7 @@ def home(request, guid, vsid=None, debug=None):
                              vs_to_use)
 
                 if manipulations and not redirect_url:
-                    previous_manipulation = ''
                     for manipulation in manipulations:
-                        if (new_job and manipulation.action == 'microsite' and
-                                manipulation.action_type == 1):
-                            continue
-                        elif previous_manipulation == 'microsite':
-                            break
-                        previous_manipulation = manipulation.action
                         method_name = manipulation.action
                         if debug:
                             debug_content.append(
