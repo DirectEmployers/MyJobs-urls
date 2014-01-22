@@ -17,11 +17,14 @@ def home(request, guid, vsid=None, debug=None):
     if vsid is None:
         vsid = '0'
     guid = '{%s}' % uuid.UUID(guid)
+    custom = request.REQUEST.get('z') == '1'
     if debug:
         # On localhost ip will always be empty unless you've got a setup
         # that mirrors production
         debug_content = ['ip=%s' % request.META.get('HTTP_X_FORWARDED_FOR', ''),
                          'GUID=%s' % guid]
+        if custom:
+            debug_content.append('CustomOverrides: %s' % request.META.get('QUERY_STRING'))
 
     guid_redirect = get_object_or_404(Redirect,
                                       guid=guid)
@@ -29,6 +32,8 @@ def home(request, guid, vsid=None, debug=None):
         debug_content.append('RetLink(original)=%s' % guid_redirect.url)
 
     redirect_url = None
+    redirect_supports_custom_query = False
+    excluded_tags = ['vs', 'z']
     expired = False
     facebook = False
 
@@ -158,6 +163,8 @@ def home(request, guid, vsid=None, debug=None):
                             (microsite.canonical_microsite_url,
                              guid_redirect.uid,
                              vs_to_use)
+                        redirect_supports_custom_query = True
+                        excluded_tags = []
 
                 if manipulations and not redirect_url:
                     previous_manipulation = ''
@@ -189,12 +196,19 @@ def home(request, guid, vsid=None, debug=None):
                                  redirect_url,
                                  manipulation.view_source))
                         guid_redirect.url = redirect_url
+                    redirect_supports_custom_query = True
 
         if not redirect_url:
             redirect_url = guid_redirect.url
             if debug:
                 debug_content.append(
                     'ManipulatedLink(No Manipulation)=%s' % redirect_url)
+            redirect_supports_custom_query = True
+
+        if redirect_supports_custom_query:
+            redirect_url = helpers.replace_or_add_query(
+                redirect_url, request.META.get('QUERY_STRING'),
+                excluded_tags)
 
         redirect_url = helpers.get_hosted_state_url(guid_redirect,
                                                     redirect_url)

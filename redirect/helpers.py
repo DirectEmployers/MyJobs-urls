@@ -28,7 +28,7 @@ STATE_MAP = {
 }
 
 
-def replace_or_add_query(url, query):
+def replace_or_add_query(url, query, exclusions=None):
     """
     Adds field/value pair to the provided url as a query string if the
     key isn't already in the url, or replaces it otherwise.
@@ -38,24 +38,32 @@ def replace_or_add_query(url, query):
     Inputs:
     :url: URL that query string should be appended to
     :query: Query string(s) to add to :url:
+    :exclusions: List of keys that should not be copied; common keys
+        include 'vs' and 'z'
 
     Outputs:
     :url: Input url with query string appended
     """
+    if not exclusions:
+        exclusions = []
     query = query.encode('utf-8')
     url = url.encode('utf-8')
+    print url
     url = urlparse.urlparse(url)
     old_query = urlparse.parse_qsl(url.query, keep_blank_values=True)
     old_keys = [q[0] for q in old_query]
+    print old_query
+    print old_keys
 
     new_query = urlparse.parse_qsl(query)
 
     for new_index in range(len(new_query)):
-        if new_query[new_index][0] in old_keys:
-            old_index = old_keys.index(new_query[new_index][0])
-            old_query[old_index] = new_query[new_index]
-        else:
-            old_query.append(new_query[new_index])
+        if new_query[new_index][0] not in exclusions:
+            if new_query[new_index][0] in old_keys:
+                old_index = old_keys.index(new_query[new_index][0])
+                old_query[old_index] = new_query[new_index]
+            else:
+                old_query.append(new_query[new_index])
 
     # parse_qsl unencodes the query that you pass it; Re-encode the query
     # parameters when reconstructing the string.
