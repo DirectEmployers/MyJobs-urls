@@ -679,7 +679,7 @@ class ViewSourceViewTests(TestCase):
         self.assertFalse(response['Location'].startswith(
             self.microsite.canonical_microsite_url))
 
-    def test_custom_override(self):
+    def test_custom_parameters(self):
         CustomExcludedViewSourceFactory(
             view_source=self.manipulation.view_source)
         response = self.client.get(
@@ -691,7 +691,7 @@ class ViewSourceViewTests(TestCase):
                      self.manipulation.value_1[1:]]:
             self.assertTrue(part in response['Location'])
 
-    def test_override_on_microsite(self):
+    def test_custom_parameters_on_microsite(self):
         self.manipulation.view_source = 0
         self.manipulation.save()
         response = self.client.get(
@@ -710,7 +710,7 @@ class ViewSourceViewTests(TestCase):
                                       self.manipulation.value_1[1:])
         self.assertEqual(response['Location'], test_url)
 
-    def test_override_on_doubleclick(self):
+    def test_custom_parameters_on_doubleclick(self):
         self.manipulation.action = 'doubleclickwrap'
         self.manipulation.value_1 = 'http://ad.doubleclick.net/clk;2613;950;s?'
         self.manipulation.save()

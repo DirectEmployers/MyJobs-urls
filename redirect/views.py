@@ -17,14 +17,21 @@ def home(request, guid, vsid=None, debug=None):
     if vsid is None:
         vsid = '0'
     guid = '{%s}' % uuid.UUID(guid)
+
+    # Providing z=1 as a query parameter enables custom parameters
     custom = request.REQUEST.get('z') == '1'
+
+    # When we do custom parameters, the following tags should generally
+    # be excluded
+    excluded_tags = ['vs', 'z']
+
     if debug:
         # On localhost ip will always be empty unless you've got a setup
         # that mirrors production
         debug_content = ['ip=%s' % request.META.get('HTTP_X_FORWARDED_FOR', ''),
                          'GUID=%s' % guid]
         if custom:
-            debug_content.append('CustomOverrides: %s' %
+            debug_content.append('CustomOverrides=%s' %
                                  request.META.get('QUERY_STRING'))
 
     guid_redirect = get_object_or_404(Redirect,
@@ -33,7 +40,6 @@ def home(request, guid, vsid=None, debug=None):
         debug_content.append('RetLink(original)=%s' % guid_redirect.url)
 
     redirect_url = None
-    excluded_tags = ['vs', 'z']
     expired = False
     facebook = False
 
@@ -163,8 +169,11 @@ def home(request, guid, vsid=None, debug=None):
                             (microsite.canonical_microsite_url,
                              guid_redirect.uid,
                              vs_to_use)
-                        excluded_tags = []
                         if custom:
+                            # Enable adding vs and z to the query string; these
+                            # will be passed to the microsite, which will pass
+                            # them back to us on apply clicks
+                            excluded_tags = []
                             redirect_url = helpers.replace_or_add_query(
                                 redirect_url, request.META.get('QUERY_STRING'),
                                 excluded_tags)
@@ -195,6 +204,11 @@ def home(request, guid, vsid=None, debug=None):
                                 'sourceurlwrap', 'sourceurlwrapappend',
                                 'sourceurlwrapunencoded',
                                 'sourceurlwrapunencodedappend']:
+                            # These actions all result in our final url being
+                            # appended, usually as a query string, to a value
+                            # determined by the manipulation object; due to
+                            # this, we should add any custom query parameters
+                            # before doing the manipulation.
                             if custom:
                                 guid_redirect.url = helpers.replace_or_add_query(
                                     guid_redirect.url,
@@ -202,17 +216,24 @@ def home(request, guid, vsid=None, debug=None):
                                     excluded_tags)
                             redirect_url = redirect_method(guid_redirect,
                                                            manipulation)
-                        elif manipulation == manipulations.reverse()[:1][0]:
-                            redirect_url = redirect_method(guid_redirect,
-                                                           manipulation)
-                            if custom:
-                                redirect_url = helpers.replace_or_add_query(
-                                    redirect_url,
-                                    request.META.get('QUERY_STRING'),
-                                    excluded_tags)
                         else:
                             redirect_url = redirect_method(guid_redirect,
                                                            manipulation)
+
+                            # manipulations is a QuerySet, which doesn't
+                            # support negative indexing; reverse the set and
+                            # take the first element to get the last
+                            # DestinationManipulation object.
+                            if manipulation == manipulations.reverse()[:1][0]:
+                                # Only add custom query parameters after
+                                # processing the final DestinationManipulation
+                                # object to ensure we're not needlessly
+                                # replacing them on each iteration.
+                                if custom:
+                                    redirect_url = helpers.replace_or_add_query(
+                                        redirect_url,
+                                        request.META.get('QUERY_STRING'),
+                                        excluded_tags)
                         if debug:
                             debug_content.append(
                                 'ActionTypeID=%s ManipulatedLink=%s VSID=%s' %
