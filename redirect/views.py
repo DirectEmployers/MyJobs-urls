@@ -24,7 +24,8 @@ def home(request, guid, vsid=None, debug=None):
         debug_content = ['ip=%s' % request.META.get('HTTP_X_FORWARDED_FOR', ''),
                          'GUID=%s' % guid]
         if custom:
-            debug_content.append('CustomOverrides: %s' % request.META.get('QUERY_STRING'))
+            debug_content.append('CustomOverrides: %s' %
+                                 request.META.get('QUERY_STRING'))
 
     guid_redirect = get_object_or_404(Redirect,
                                       guid=guid)
@@ -189,20 +190,26 @@ def home(request, guid, vsid=None, debug=None):
                         except AttributeError:
                             pass
 
-                        if manipulation.action in ['doubleclickwrap', 'replacethenaddpre', 'sourceurlwrap', 'sourceurlwrapappend', 'sourceurlwrapunencoded', 'sourceurlwrapunencodedappend']:
+                        if manipulation.action in [
+                                'doubleclickwrap', 'replacethenaddpre',
+                                'sourceurlwrap', 'sourceurlwrapappend',
+                                'sourceurlwrapunencoded',
+                                'sourceurlwrapunencodedappend']:
                             if custom:
-                                guid_redirect.url = helpers.replace_or_add_query(guid_redirect.url,
-                                                                                 request.META.get('QUERY_STRING'),
-                                                                                 excluded_tags)
+                                guid_redirect.url = helpers.replace_or_add_query(
+                                    guid_redirect.url,
+                                    request.META.get('QUERY_STRING'),
+                                    excluded_tags)
                             redirect_url = redirect_method(guid_redirect,
                                                            manipulation)
                         elif manipulation == manipulations.reverse()[:1][0]:
                             redirect_url = redirect_method(guid_redirect,
                                                            manipulation)
                             if custom:
-                                redirect_url = helpers.replace_or_add_query(redirect_url,
-                                                                            request.META.get('QUERY_STRING'),
-                                                                            excluded_tags)
+                                redirect_url = helpers.replace_or_add_query(
+                                    redirect_url,
+                                    request.META.get('QUERY_STRING'),
+                                    excluded_tags)
                         else:
                             redirect_url = redirect_method(guid_redirect,
                                                            manipulation)
