@@ -32,7 +32,6 @@ def home(request, guid, vsid=None, debug=None):
         debug_content.append('RetLink(original)=%s' % guid_redirect.url)
 
     redirect_url = None
-    redirect_supports_custom_query = False
     excluded_tags = ['vs', 'z']
     expired = False
     facebook = False
@@ -163,8 +162,11 @@ def home(request, guid, vsid=None, debug=None):
                             (microsite.canonical_microsite_url,
                              guid_redirect.uid,
                              vs_to_use)
-                        redirect_supports_custom_query = True
                         excluded_tags = []
+                        if custom:
+                            redirect_url = helpers.replace_or_add_query(
+                                redirect_url, request.META.get('QUERY_STRING'),
+                                excluded_tags)
 
                 if manipulations and not redirect_url:
                     previous_manipulation = ''
@@ -187,8 +189,23 @@ def home(request, guid, vsid=None, debug=None):
                         except AttributeError:
                             pass
 
-                        redirect_url = redirect_method(guid_redirect,
-                                                       manipulation)
+                        if manipulation.action in ['doubleclickwrap', 'replacethenaddpre', 'sourceurlwrap', 'sourceurlwrapappend', 'sourceurlwrapunencoded', 'sourceurlwrapunencodedappend']:
+                            if custom:
+                                guid_redirect.url = helpers.replace_or_add_query(guid_redirect.url,
+                                                                                 request.META.get('QUERY_STRING'),
+                                                                                 excluded_tags)
+                            redirect_url = redirect_method(guid_redirect,
+                                                           manipulation)
+                        elif manipulation == manipulations.reverse()[:1][0]:
+                            redirect_url = redirect_method(guid_redirect,
+                                                           manipulation)
+                            if custom:
+                                redirect_url = helpers.replace_or_add_query(redirect_url,
+                                                                            request.META.get('QUERY_STRING'),
+                                                                            excluded_tags)
+                        else:
+                            redirect_url = redirect_method(guid_redirect,
+                                                           manipulation)
                         if debug:
                             debug_content.append(
                                 'ActionTypeID=%s ManipulatedLink=%s VSID=%s' %
@@ -196,20 +213,19 @@ def home(request, guid, vsid=None, debug=None):
                                  redirect_url,
                                  manipulation.view_source))
                         guid_redirect.url = redirect_url
-                    redirect_supports_custom_query = True
 
         if not redirect_url:
             redirect_url = guid_redirect.url
             if debug:
                 debug_content.append(
                     'ManipulatedLink(No Manipulation)=%s' % redirect_url)
-            redirect_supports_custom_query = True
-
-        if redirect_supports_custom_query:
-            redirect_url = helpers.replace_or_add_query(
-                redirect_url, request.META.get('QUERY_STRING'),
-                excluded_tags)
-
+            if custom:
+                redirect_url = helpers.replace_or_add_query(
+                    redirect_url, request.META.get('QUERY_STRING'),
+                    excluded_tags)
+                if debug:
+                    debug_content.append(
+                        'ManipulatedLink(Custom Parameters)=%s' % redirect_url)
         redirect_url = helpers.get_hosted_state_url(guid_redirect,
                                                     redirect_url)
 
