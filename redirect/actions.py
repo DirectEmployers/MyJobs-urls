@@ -1,4 +1,4 @@
-from redirect import helpers
+import redirect.helpers
 
 def micrositetag(redirect_obj, manipulation_obj):
     """
@@ -14,8 +14,9 @@ def microsite(redirect_obj, manipulation_obj):
     """
     url = manipulation_obj.value_1
     url = url.replace('[Unique_ID]', str(redirect_obj.uid))
-    url = helpers.replace_or_add_query(url,
-                                       'vs=%s' % manipulation_obj.view_source)
+    url = redirect.helpers.replace_or_add_query(url,
+                                                'vs=%s' %
+                                                manipulation_obj.view_source)
     return url
 
 
@@ -31,7 +32,7 @@ def sourcecodetag(redirect_obj, manipulation_obj):
         # our side, but that would make for an invalid parameter.
         if query[0] in ['?', '&']:
             query = query[1:]
-            url = helpers.replace_or_add_query(url, query)
+            url = redirect.helpers.replace_or_add_query(url, query)
         else:
             url = url + query
     return url
@@ -86,7 +87,7 @@ def sourceurlwrap(redirect_obj, manipulation_obj):
     """
     Encodes the url and prepends value_1 onto it
     """
-    url = helpers.quote_string(redirect_obj.url)
+    url = redirect.helpers.quote_string(redirect_obj.url)
     return manipulation_obj.value_1 + url
 
 
@@ -197,6 +198,6 @@ def cframe(redirect_obj, manipulation_obj):
     Redirects to the company frame denoted by value_1, appending the job url
     as the url query parameter
     """
-    url = helpers.quote_string(redirect_obj.url)
+    url = redirect.helpers.quote_string(redirect_obj.url)
     url = '%s?url=%s' % (manipulation_obj.value_1, url)
     return 'http://directemployers.us.jobs/companyframe/' + url
