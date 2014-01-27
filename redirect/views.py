@@ -8,6 +8,7 @@ from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils import timezone
 
+from redirect import actions
 from redirect.models import (
     Redirect, DestinationManipulation as DM, CanonicalMicrosite)
 from redirect import helpers
@@ -32,9 +33,7 @@ def home(request, guid, vsid=None, debug=None):
     expired = False
     facebook = False
 
-    clean_guid = guid_redirect.guid.replace("{", "")
-    clean_guid = clean_guid.replace("}", "")
-    clean_guid = clean_guid.replace("-", "")
+    cleaned_guid = helpers.clean_guid(guid_redirect.guid)
 
     redirect_user_agent = False
 
@@ -58,7 +57,7 @@ def home(request, guid, vsid=None, debug=None):
         company_name = helpers.quote_string(company_name)
         data = {'title': guid_redirect.job_title,
                 'company': company_name,
-                'guid': clean_guid,
+                'guid': cleaned_guid,
                 'vs': user_agent_vs}
         response = render_to_response('redirect/opengraph.html',
                                       data,
@@ -71,7 +70,7 @@ def home(request, guid, vsid=None, debug=None):
             company_name = helpers.quote_string(company_name)
             redirect_url = ('http://us.jobs/msccn-referral.asp?gi='
                             '%s%s&cp=%s&u=%s' %
-                            (clean_guid,
+                            (cleaned_guid,
                              vsid,
                              company_name,
                              guid_redirect.uid))
@@ -84,7 +83,7 @@ def home(request, guid, vsid=None, debug=None):
                 facebook = True
 
                 redirect_url = 'http://apps.facebook.com/us-jobs/?jvid=%s%s' % \
-                    (clean_guid, vsid)
+                    (cleaned_guid, vsid)
             else:
                 manipulations = None
                 # Check for a 'vs' request parameter. If it exists, this is an
@@ -176,7 +175,7 @@ def home(request, guid, vsid=None, debug=None):
                                  manipulation.action))
 
                         try:
-                            redirect_method = getattr(helpers, method_name)
+                            redirect_method = getattr(actions, method_name)
                         except AttributeError:
                             pass
 
