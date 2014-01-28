@@ -45,7 +45,101 @@ def clean_guid(guid):
     return cleaned_guid.replace("-", "")
 
 
+def do_manipulations(guid_redirect, manipulations, return_dict, debug_content):
+    """
+    Performs the manipulations denoted by :manipulations:
+
+    Inputs:
+    :guid_redirect: Redirect object for this job
+    :manipulations: List of DestinationManipulation objects
+    :return_dict: Dictionary of values used in all levels of the
+        main redirect view
+    :debug_content: List of strings that will be output on the debug page
+
+    Modifies:
+    :return_dict: Potentially modifies the redirect_url key
+    :debug_content: Potentially adds new debug strings
+    """
+    if manipulations and not return_dict['redirect_url']:
+        previous_manipulation = ''
+        for manipulation in manipulations:
+            if (return_dict.get('new_job') and
+                        manipulation.action == 'microsite' and
+                        manipulation.action_type == 1):
+                continue
+            elif previous_manipulation == 'microsite':
+                break
+            previous_manipulation = manipulation.action
+            method_name = manipulation.action
+            if debug_content:
+                debug_content.append(
+                    'ActionTypeID=%s Action=%s' %
+                    (manipulation.action_type,
+                     manipulation.action))
+
+            try:
+                redirect_method = getattr(redirect.actions, method_name)
+            except AttributeError:
+                pass
+            else:
+                if manipulations and not return_dict['redirect_url']:
+                    return_dict['redirect_url'] = redirect_method(guid_redirect,
+                                                                  manipulation)
+                    if debug_content:
+                        debug_content.append(
+                            'ActionTypeID=%s ManipulatedLink=%s VSID=%s' %
+                            (manipulation.action_type,
+                             return_dict['redirect_url'],
+                             manipulation.view_source))
+
+                    guid_redirect.url = return_dict['redirect_url']
+
+
+
+def get_manipulations(guid_redirect, vs_to_use):
+    """
+    Retrieves the set of DestinationManipulation objects, if any, for this
+    GUID and view source
+
+    Inputs:
+    :guid_redirect: Redirect object for this job
+    :vs_to_use: View source to retrieve manipulations for
+
+    Outputs:
+    :manipulations: List of DestinationManipulation objects, or None if none
+        exist
+    """
+    manipulations = DestinationManipulation.objects.filter(
+        buid=guid_redirect.buid,
+        view_source=vs_to_use).order_by(
+        'action_type').exclude(
+        action__in=['microsite',
+                    'micrositetag'])
+    if not manipulations and vs_to_use != 0 and \
+                    vs_to_use not in settings.EXCLUDED_VIEW_SOURCES:
+        manipulations = DestinationManipulation.objects.filter(
+            buid=guid_redirect.buid,
+            view_source=0).order_by(
+            'action_type').exclude(
+            action__in=['microsite',
+                        'micrositetag'])
+    return manipulations
+
+
 def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=[]):
+    """
+    Does the majority of the work in determining what url we should redirect to
+
+    Inputs:
+    :request: The current request
+    :guid_redirect: Redirect object for the current job
+    :vsid: View source for the current request
+    :guid: GUID cleared of all undesired characters
+    debug_content: List of strings that will be output on the debug page
+
+    Modifies:
+    :debug_content: Potentially adds new debug strings
+    """
     return_dict = {'redirect_url': None,
                    'expired': False,
                    'facebook': False}
@@ -89,83 +183,38 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=[]):
             # shouldn't with links, which is apparently quite common
             pass
         else:
-            if ((vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
-                         microsite is None or
-                         (guid_redirect.buid,
-                          vs_to_use) in settings.CUSTOM_EXCLUSIONS) or
-                    skip_microsite or new_job):
-                # vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
-                # (buid, vs_to_use) in settings.CUSTOM_EXCLUSIONS
-                #     The given view source should not redirect to a
-                #     microsite
-                # microsite is None
-                #     This business unit has no associated microsite
-                # skip_microsite:
-                #     Prevents microsite loops when the vs= parameter
-                #     is provided
-                # new_job
-                #     This job is new and may not have propagated to
-                #     microsites yet; skip microsite redirects
-                manipulations = DestinationManipulation.objects.filter(
-                    buid=guid_redirect.buid,
-                    view_source=vs_to_use).order_by(
-                    'action_type').exclude(
-                    action__in=['microsite',
-                                'micrositetag'])
-                if not manipulations and vs_to_use != 0 and \
-                                vs_to_use not in settings.EXCLUDED_VIEW_SOURCES:
-                    # not manipulations and vs_to_use != 0
-                    #     The view source passed via url resulted in no
-                    #     manipulations; Try again with view source 0
-                    # vs_to_use not in settings.EXCLUDED_VIEW_SOURCES
-                    #     Implies skip_microsite or new_job
-                    manipulations = DestinationManipulation.objects.filter(
-                        buid=guid_redirect.buid,
-                        view_source=0).order_by(
-                        'action_type').exclude(
-                        action__in=['microsite',
-                                    'micrositetag'])
+            # vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
+            # (buid, vs_to_use) in settings.CUSTOM_EXCLUSIONS
+            #     The given view source should not redirect to a
+            #     microsite
+            # microsite is None
+            #     This business unit has no associated microsite
+            # skip_microsite:
+            #     Prevents microsite loops when the vs= parameter
+            #     is provided
+            # new_job
+            #     This job is new and may not have propagated to
+            #     microsites yet; skip microsite redirects
+            try_manipulations = ((vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
+                (guid_redirect.buid, vs_to_use) in settings.CUSTOM_EXCLUSIONS or
+                microsite is None) or skip_microsite or new_job)
+            if try_manipulations:
+                manipulations = get_manipulations(guid_redirect,
+                                                  vs_to_use)
             else:
-                # Everything prior is false; redirect to the microsite
                 return_dict['redirect_url'] = '%s%s/job/?vs=%s' % \
                                               (microsite.canonical_microsite_url,
                                                guid_redirect.uid,
                                                vs_to_use)
 
-        if manipulations and not return_dict['redirect_url']:
-            previous_manipulation = ''
-            for manipulation in manipulations:
-                if (new_job and manipulation.action == 'microsite' and
-                            manipulation.action_type == 1):
-                    continue
-                elif previous_manipulation == 'microsite':
-                    break
-                previous_manipulation = manipulation.action
-                method_name = manipulation.action
-                if debug_content:
-                    debug_content.append(
-                        'ActionTypeID=%s Action=%s' %
-                        (manipulation.action_type,
-                         manipulation.action))
+            return_dict['new_job'] = new_job
+            do_manipulations(guid_redirect, manipulations,
+                             return_dict, debug_content)
 
-                try:
-                    redirect_method = getattr(redirect.actions, method_name)
-                except AttributeError:
-                    pass
-
-                return_dict['redirect_url'] = redirect_method(guid_redirect,
-                                                              manipulation)
-                if debug_content:
-                    debug_content.append(
-                        'ActionTypeID=%s ManipulatedLink=%s VSID=%s' %
-                        (manipulation.action_type,
-                         return_dict['redirect_url'],
-                         manipulation.view_source))
-                guid_redirect.url = return_dict['redirect_url']
     return return_dict
 
 
-def get_special_redirect(request, redirect, guid):
+def get_opengraph_redirect(request, redirect, guid):
     response = None
     user_agent_vs = None
     user_agent = request.META.get('HTTP_USER_AGENT', ''),

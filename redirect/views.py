@@ -1,16 +1,13 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import uuid
 
-from django.conf import settings
 from django.http import *
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from redirect import actions
-from redirect.models import (
-    Redirect, DestinationManipulation as DM, CanonicalMicrosite)
+from redirect.models import Redirect
 from redirect import helpers
 
 
@@ -29,7 +26,6 @@ def home(request, guid, vsid=None, debug=None):
     if debug:
         debug_content.append('RetLink(original)=%s' % guid_redirect.url)
 
-    redirect_url = None
     expired = False
     facebook = False
 
@@ -37,9 +33,9 @@ def home(request, guid, vsid=None, debug=None):
 
     redirect_user_agent = False
 
-    user_agent_vs, response = helpers.get_special_redirect(request,
-                                                           guid_redirect,
-                                                           cleaned_guid)
+    user_agent_vs, response = helpers.get_opengraph_redirect(request,
+                                                             guid_redirect,
+                                                             cleaned_guid)
 
     if user_agent_vs:
         pass
@@ -61,9 +57,9 @@ def home(request, guid, vsid=None, debug=None):
             if debug:
                 args['debug_content'] = debug_content
             returned_dict = helpers.get_redirect_url(**args)
-            redirect_url = returned_dict['redirect_url']
-            facebook = returned_dict['facebook']
-            expired = returned_dict['expired']
+            redirect_url = returned_dict.get('redirect_url', '')
+            facebook = returned_dict.get('facebook', False)
+            expired = returned_dict.get('expired', False)
         if not redirect_url:
             redirect_url = guid_redirect.url
             if debug:
