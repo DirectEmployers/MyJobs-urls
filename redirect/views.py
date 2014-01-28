@@ -37,9 +37,7 @@ def home(request, guid, vsid=None, debug=None):
                                                              guid_redirect,
                                                              cleaned_guid)
 
-    if user_agent_vs:
-        pass
-    else:
+    if not user_agent_vs:
         if vsid == '1604':
             # msccn redirect
 
