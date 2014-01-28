@@ -8,7 +8,7 @@ from django.core.cache import cache
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.test import TestCase
 from django.test.client import Client, RequestFactory
-from django.utils import timezone
+from django.utils import text, timezone
 from django.utils.http import urlquote_plus
 
 from redirect.models import DestinationManipulation, ExcludedViewSource
@@ -391,10 +391,7 @@ class ViewSourceViewTests(TestCase):
         self.assertTrue(self.redirect.url.replace('us.jobs', 'newyork.us.jobs')
                         in response['Location'])
 
-    def test_expired_facebook_job(self):
-        self.manipulation.view_source = 294
-        self.manipulation.save()
-
+    def test_expired_job(self):
         self.redirect.expired_date = datetime.datetime.now(tz=timezone.utc)
         self.redirect.save()
 
@@ -403,54 +400,13 @@ class ViewSourceViewTests(TestCase):
                                   self.manipulation.view_source]))
         self.assertEqual(response.status_code, 410)
         self.assertTemplateUsed(response, 'redirect/expired.html')
-        self.assertTrue('Please <a href="http://us.jobs/"' in response.content)
-        self.assertTrue('%s (%s)' %
-                        (self.redirect.job_title, self.redirect.job_location)
-                        in response.content)
-        self.assertTrue('facebook.com/us-jobs/?jvid=%s%s' %
-                        (self.redirect_guid, self.manipulation.view_source)
-                        in response.content)
-        self.assertFalse('National Labor Exchange' in response.content)
-        self.assertTrue('google-analytics' in response.content)
-
-    def test_expired_state_job(self):
-        self.manipulation.buid = self.redirect.buid = 1228
-        self.redirect.expired_date = datetime.datetime.now(tz=timezone.utc)
-        self.redirect.job_location = 'NY-Rochester'
-        self.manipulation.save()
-        self.redirect.save()
-
-        response = self.client.get(
-            reverse('home', args=[self.redirect_guid,
-                                  self.manipulation.view_source]))
-        self.assertEqual(response.status_code, 410)
-        self.assertTemplateUsed(response, 'redirect/expired.html')
-        self.assertTrue('Please <a href="#" onclick' in response.content)
+        self.assertTrue('View all current jobs for %s.' %
+                        self.redirect.company_name in
+                        response.content)
         self.assertTrue('%s (%s)' %
                         (self.redirect.job_title, self.redirect.job_location)
                         in response.content)
         self.assertTrue(self.redirect.url in response.content)
-        self.assertFalse('National Labor Exchange' in response.content)
-        self.assertTrue('google-analytics' in response.content)
-
-    def test_other_expired_job(self):
-        self.redirect.expired_date = datetime.datetime.now(tz=timezone.utc)
-        self.redirect.save()
-
-        response = self.client.get(
-            reverse('home', args=[self.redirect_guid,
-                                  self.manipulation.view_source]))
-        self.assertEqual(response.status_code, 410)
-        self.assertTemplateUsed(response, 'redirect/expired.html')
-        self.assertTrue('Please <a href="#" onclick' in response.content)
-        self.assertTrue('%s (%s)' %
-                        (self.redirect.job_title, self.redirect.job_location)
-                        in response.content)
-        self.assertTrue(self.redirect.url in response.content)
-        self.assertTrue('National Labor Exchange' in response.content)
-        self.assertTrue('bu=%s">%s' %
-                        (self.redirect.buid, self.redirect.company_name)
-                        in response.content)
         self.assertTrue('google-analytics' in response.content)
 
     def test_cookie_domains(self):
