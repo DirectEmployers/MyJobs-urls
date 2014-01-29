@@ -4,18 +4,15 @@
 {% endblock %}
 
 {% block content %}
-    <div id="expired-job" class="center">
+    <div id="expired-job">
         <h4>
             Job posting no longer exists!
         </h4>
-        <div style="margin-top:30px;font-weight:normal;font-size:14px;text-align:center">
-            <span style="font-weight:bold">{{ title }} ({{ location }})</span><br>
-            <a href="{{ url|safe }}">{{ expired_url }}</a>
-        </div>
-        <div style="margin-top:30px;font-weight:normal;font-size:14px;text-align:center">
-            <div style="width:370px;margin:auto;text-align:left">
-                We apologize, this job posting is no longer available as it was recently removed from the originating site.<br><br>
-
+        <div class="row">
+            <div class="span8">
+                <p><b>{{ title }} ({{ location }})</b></p>
+                <a href="{{ expired_url|safe }}" class="expired-link">{{ expired_url }}</a>
+                <p>We apologize, this job posting is no longer available as it was recently removed from the originating site.</p>
                 <a href="{{ browse_url }}">View all current jobs for {{ company_name }}.</a>
             </div>
         </div>
