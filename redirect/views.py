@@ -19,10 +19,6 @@ def home(request, guid, vsid=None, debug=None):
     # Providing z=1 as a query parameter enables custom parameters
     custom = request.REQUEST.get('z') == '1'
 
-    # When we do custom parameters, the following tags should generally
-    # be excluded
-    excluded_tags = ['vs', 'z']
-
     if debug:
         # On localhost ip will always be empty unless you've got a setup
         # that mirrors production

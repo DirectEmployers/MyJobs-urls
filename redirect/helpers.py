@@ -86,10 +86,11 @@ def do_manipulations(guid_redirect, manipulations, return_dict, debug_content=No
                     # this, we should add any custom query parameters
                     # before doing the manipulation.
                     if return_dict['custom']:
+                        excluded_tags = ['vs', 'z']
                         guid_redirect.url = replace_or_add_query(
                             guid_redirect.url,
                             return_dict.get('qs'),
-                            ['vs', 'z'])
+                            excluded_tags)
                     redirect_url = redirect_method(guid_redirect,
                                                    manipulation)
                 else:
@@ -106,10 +107,11 @@ def do_manipulations(guid_redirect, manipulations, return_dict, debug_content=No
                         # object to ensure we're not needlessly
                         # replacing them on each iteration.
                         if return_dict['custom']:
+                            excluded_tags = ['vs', 'z']
                             redirect_url = replace_or_add_query(
                                 redirect_url,
                                 return_dict['qs'],
-                                ['vs', 'z'])
+                                excluded_tags)
                 return_dict['redirect_url'] = redirect_url
 
                 if debug_content:
