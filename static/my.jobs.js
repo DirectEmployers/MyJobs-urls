@@ -32,7 +32,6 @@ function populate_toolbar(data) {
         nav_html += '</ul>';
         nav_html += '</li>';
 
-        console.log(user_gravatar);
         $("#nav").html(nav_html);
         $("#nav").removeClass("menu-login");
         if ($('.main-nav img').length) {
