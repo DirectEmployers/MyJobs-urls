@@ -29,7 +29,7 @@ def home(request, guid, vsid=None, debug=None):
         debug_content = ['ip=%s' % request.META.get('HTTP_X_FORWARDED_FOR', ''),
                          'GUID=%s' % guid]
         if custom:
-            debug_content.append('CustomOverrides=%s' %
+            debug_content.append('CustomParameters=%s' %
                                  request.META.get('QUERY_STRING'))
 
     guid_redirect = get_object_or_404(Redirect,
