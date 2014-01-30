@@ -61,15 +61,7 @@ def do_manipulations(guid_redirect, manipulations, return_dict, debug_content=No
     :debug_content: Potentially adds new debug strings
     """
     if manipulations and not return_dict['redirect_url']:
-        previous_manipulation = ''
         for manipulation in manipulations:
-            if (return_dict.get('new_job') and
-                        manipulation.action == 'microsite' and
-                        manipulation.action_type == 1):
-                continue
-            elif previous_manipulation == 'microsite':
-                break
-            previous_manipulation = manipulation.action
             method_name = manipulation.action
             if debug_content:
                 debug_content.append(
@@ -146,18 +138,12 @@ def get_manipulations(guid_redirect, vs_to_use):
     """
     manipulations = DestinationManipulation.objects.filter(
         buid=guid_redirect.buid,
-        view_source=vs_to_use).order_by(
-        'action_type').exclude(
-        action__in=['microsite',
-                    'micrositetag'])
+        view_source=vs_to_use).order_by('action_type')
     if not manipulations and vs_to_use != 0 and \
                     vs_to_use not in settings.EXCLUDED_VIEW_SOURCES:
         manipulations = DestinationManipulation.objects.filter(
             buid=guid_redirect.buid,
-            view_source=0).order_by(
-            'action_type').exclude(
-            action__in=['microsite',
-                        'micrositetag'])
+            view_source=0).order_by('action_type')
     return manipulations
 
 

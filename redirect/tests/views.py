@@ -131,10 +131,10 @@ class ViewSourceViewTests(TestCase):
 
     def test_microsite_redirect(self):
         """
-        Check view that manipulates a url with the microsite action creates
-        the correct redirect url similar to micrositetag but adds '?vs=' on
-        the end
-        example: http://cadence.jobs/noida-ind/smcs/37945336/job/?vs=274
+        Ensure that requests for a given GUID + view source redirect to a
+        microsite given two criteria:
+        - The view source is not an excluded view source
+        - The buid that owns the job has a microsite enabled.
         """
         self.manipulation.action = 'sourcecodetag'
         self.manipulation.value_1 = '?src=foo'
