@@ -1,14 +1,16 @@
+from datetime import datetime, timedelta
 import urllib
 import urlparse
 
+from django.conf import settings
+from django.shortcuts import render_to_response
+from django.template import RequestContext
+from django.utils import timezone
 from django.utils.http import urlquote_plus
 
+import redirect.actions
+from redirect.models import CanonicalMicrosite, DestinationManipulation
 
-"""
-
-Utility methods and constants
-
-"""
 
 STATE_MAP = {
     'ct-': {'buid': 2656,
@@ -26,6 +28,218 @@ STATE_MAP = {
     'gu-': {'buid': 2703,
             'site': 'guam.us.jobs'},
 }
+
+
+def clean_guid(guid):
+    """
+    Removes non-hex characters from the provided GUID.
+
+    Inputs:
+    :guid: GUID to be cleaned
+
+    Outputs:
+    :cleaned_guid: GUID with any offending characters removed
+    """
+    cleaned_guid = guid.replace("{", "")
+    cleaned_guid = cleaned_guid.replace("}", "")
+    return cleaned_guid.replace("-", "")
+
+
+def do_manipulations(guid_redirect, manipulations, return_dict, debug_content=None):
+    """
+    Performs the manipulations denoted by :manipulations:
+
+    Inputs:
+    :guid_redirect: Redirect object for this job
+    :manipulations: List of DestinationManipulation objects
+    :return_dict: Dictionary of values used in all levels of the
+        main redirect view
+    :debug_content: List of strings that will be output on the debug page
+
+    Modifies:
+    :return_dict: Potentially modifies the redirect_url key
+    :debug_content: Potentially adds new debug strings
+    """
+    if manipulations and not return_dict['redirect_url']:
+        previous_manipulation = ''
+        for manipulation in manipulations:
+            if (return_dict.get('new_job') and
+                        manipulation.action == 'microsite' and
+                        manipulation.action_type == 1):
+                continue
+            elif previous_manipulation == 'microsite':
+                break
+            previous_manipulation = manipulation.action
+            method_name = manipulation.action
+            if debug_content:
+                debug_content.append(
+                    'ActionTypeID=%s Action=%s' %
+                    (manipulation.action_type,
+                     manipulation.action))
+
+            try:
+                redirect_method = getattr(redirect.actions, method_name)
+            except AttributeError:
+                pass
+            else:
+                if manipulations and not return_dict['redirect_url']:
+                    return_dict['redirect_url'] = redirect_method(guid_redirect,
+                                                                  manipulation)
+                    if debug_content:
+                        debug_content.append(
+                            'ActionTypeID=%s ManipulatedLink=%s VSID=%s' %
+                            (manipulation.action_type,
+                             return_dict['redirect_url'],
+                             manipulation.view_source))
+
+                    guid_redirect.url = return_dict['redirect_url']
+
+
+
+def get_manipulations(guid_redirect, vs_to_use):
+    """
+    Retrieves the set of DestinationManipulation objects, if any, for this
+    GUID and view source
+
+    Inputs:
+    :guid_redirect: Redirect object for this job
+    :vs_to_use: View source to retrieve manipulations for
+
+    Outputs:
+    :manipulations: List of DestinationManipulation objects, or None if none
+        exist
+    """
+    manipulations = DestinationManipulation.objects.filter(
+        buid=guid_redirect.buid,
+        view_source=vs_to_use).order_by(
+        'action_type').exclude(
+        action__in=['microsite',
+                    'micrositetag'])
+    if not manipulations and vs_to_use != 0 and \
+                    vs_to_use not in settings.EXCLUDED_VIEW_SOURCES:
+        manipulations = DestinationManipulation.objects.filter(
+            buid=guid_redirect.buid,
+            view_source=0).order_by(
+            'action_type').exclude(
+            action__in=['microsite',
+                        'micrositetag'])
+    return manipulations
+
+
+def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
+    """
+    Does the majority of the work in determining what url we should redirect to
+
+    Inputs:
+    :request: The current request
+    :guid_redirect: Redirect object for the current job
+    :vsid: View source for the current request
+    :guid: GUID cleared of all undesired characters
+    debug_content: List of strings that will be output on the debug page
+
+    Modifies:
+    :debug_content: Potentially adds new debug strings
+    """
+    return_dict = {'redirect_url': None,
+                   'expired': False,
+                   'facebook': False}
+    if guid_redirect.expired_date:
+        return_dict['expired'] = True
+
+    if vsid == '294':
+        # facebook redirect
+        return_dict['facebook'] = True
+
+        return_dict['redirect_url'] = 'http://apps.facebook.com/us-jobs/?jvid=%s%s' % \
+                                      (guid, vsid)
+    else:
+        manipulations = None
+        # Check for a 'vs' request parameter. If it exists, this is an
+        # apply click and vs should be used in place of vsid
+        apply_vs = request.REQUEST.get('vs')
+        skip_microsite = False
+        vs_to_use = vsid
+        if apply_vs:
+            skip_microsite = True
+            vs_to_use = apply_vs
+
+        # Is this a new job (< 30 minutes old)? Used in conjunction
+        # with the set of excluded view sources to determine if we
+        # should redirect to a microsite
+        new_job = (guid_redirect.new_date + timedelta(minutes=30)) > \
+                  datetime.now(tz=timezone.utc)
+
+        try:
+            microsite = CanonicalMicrosite.objects.get(
+                buid=guid_redirect.buid)
+        except CanonicalMicrosite.DoesNotExist:
+            microsite = None
+
+        try:
+            vs_to_use = int(vs_to_use)
+        except ValueError:
+            # Should never happen unless someone manually types in the
+            # url and makes a typo or their browser does something it
+            # shouldn't with links, which is apparently quite common
+            pass
+        else:
+            # vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
+            # (buid, vs_to_use) in settings.CUSTOM_EXCLUSIONS
+            #     The given view source should not redirect to a
+            #     microsite
+            # microsite is None
+            #     This business unit has no associated microsite
+            # skip_microsite:
+            #     Prevents microsite loops when the vs= parameter
+            #     is provided
+            # new_job
+            #     This job is new and may not have propagated to
+            #     microsites yet; skip microsite redirects
+            try_manipulations = ((vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
+                (guid_redirect.buid, vs_to_use) in settings.CUSTOM_EXCLUSIONS or
+                microsite is None) or skip_microsite or new_job)
+            if try_manipulations:
+                manipulations = get_manipulations(guid_redirect,
+                                                  vs_to_use)
+            else:
+                return_dict['redirect_url'] = '%s%s/job/?vs=%s' % \
+                                              (microsite.canonical_microsite_url,
+                                               guid_redirect.uid,
+                                               vs_to_use)
+
+            return_dict['new_job'] = new_job
+            do_manipulations(guid_redirect, manipulations,
+                             return_dict, debug_content)
+
+    return return_dict
+
+
+def get_opengraph_redirect(request, redirect, guid):
+    response = None
+    user_agent_vs = None
+    user_agent = request.META.get('HTTP_USER_AGENT', ''),
+
+    # open graph bot redirect
+    if 'facebookexternalhit' in user_agent:
+        user_agent_vs = '1593'
+
+    elif 'twitterbot' in user_agent:
+        user_agent_vs = '1596'
+
+    elif 'linkedinbot' in user_agent:
+        user_agent_vs = '1548'
+
+    if user_agent_vs:
+        company_name = redirect.company_name
+        company_name = quote_string(company_name)
+        data = {'title': redirect.job_title,
+                'company': company_name,
+                'guid': guid,
+                'vs': user_agent_vs}
+        response = render_to_response('redirect/opengraph.html',
+                                      data,
+                                      context_instance=RequestContext(request))
+    return user_agent_vs, response
 
 
 def replace_or_add_query(url, query):
@@ -157,211 +371,3 @@ def set_aguid_cookie(response, host, aguid):
                             expires=365 * 24 * 60 * 60,
                             domain=domain)
     return response
-
-
-"""
-
-URL manipulation methods
-
-"""
-
-
-def micrositetag(redirect_obj, manipulation_obj):
-    """
-    Redirects to the url from redirect_obj.url
-    """
-    return redirect_obj.url
-
-
-def microsite(redirect_obj, manipulation_obj):
-    """
-    Redirects to the url from manipulation_obj.value_1 with a 'vs=' source code
-    appended
-    """
-    url = manipulation_obj.value_1
-    url = url.replace('[Unique_ID]', str(redirect_obj.uid))
-    url = replace_or_add_query(url, 'vs=%s' % manipulation_obj.view_source)
-    return url
-
-
-def sourcecodetag(redirect_obj, manipulation_obj):
-    """
-    Appends a query parameter to the redirect url
-    """
-    url = redirect_obj.url
-    query = manipulation_obj.value_1
-    if query and query.find('=') > 0:
-        # At first blush, this appears to be a valid part of a query string.
-        # Technically = being the first character would not cause any issues on
-        # our side, but that would make for an invalid parameter.
-        if query[0] in ['?', '&']:
-            query = query[1:]
-            url = replace_or_add_query(url, query)
-        else:
-            url = url + query
-    return url
-
-
-def doubleclickwrap(redirect_obj, manipulation_obj):
-    """
-    Routes url through doubleclick
-    """
-    return manipulation_obj.value_1 + redirect_obj.url
-
-
-def doubleclickunwind(redirect_obj, manipulation_obj):
-    """
-    Removes doubleclick redirect from url
-    """
-    url = redirect_obj.url.split('?')
-    return url[-1]
-
-
-def anchorredirectissue(redirect_obj, manipulation_obj):
-    """
-    Removes anchor and adds to query string
-
-    Needs work - query string value is added elsewhere (where?)
-    """
-    url = redirect_obj.url.split('#')
-    return url[0] + manipulation_obj.value_1
-
-
-def sourcecodeswitch(redirect_obj, manipulation_obj):
-    """
-    Switches all occurrences of value_1 with value_2
-
-    Works with more than source codes; Current uses: entire urls,
-    portions of urls, and source codes
-    """
-    return redirect_obj.url.replace(manipulation_obj.value_1,
-                                    manipulation_obj.value_2)
-
-
-def sourcecodeinsertion(redirect_obj, manipulation_obj):
-    """
-    Inserts value_1 into the url immediately before the anchor
-    """
-    url = redirect_obj.url.split('#')
-    url = ('%s#' % manipulation_obj.value_1).join(url)
-    return url
-
-
-def sourceurlwrap(redirect_obj, manipulation_obj):
-    """
-    Encodes the url and prepends value_1 onto it
-    """
-    url = quote_string(redirect_obj.url)
-    return manipulation_obj.value_1 + url
-
-
-def sourceurlwrapappend(redirect_obj, manipulation_obj):
-    """
-    sourceurlwrap with value_2 appended
-    """
-    url = sourceurlwrap(redirect_obj, manipulation_obj)
-    return url + manipulation_obj.value_2
-
-
-def sourceurlwrapunencoded(redirect_obj, manipulation_obj, value1=None):
-    """
-    Prepends value_1 onto the unencoded url
-    """
-    value1 = value1 or manipulation_obj.value_1
-    return value1 + redirect_obj.url
-
-
-def sourceurlwrapunencodedappend(redirect_obj, manipulation_obj):
-    """
-    sourceurlwrapunencoded with value_2 appended
-    """
-    url = sourceurlwrapunencoded(redirect_obj,
-                                 manipulation_obj,
-                                 manipulation_obj.value_1)
-    return url + manipulation_obj.value_2
-
-
-def urlswap(redirect_obj, manipulation_obj):
-    """
-    Swaps the url with value_1
-    """
-    return manipulation_obj.value_1
-
-
-def fixurl(redirect_obj, manipulation_obj):
-    """
-    Replaces value 1 with value 2
-    """
-    url = redirect_obj.url.replace(manipulation_obj.value_1,
-                                   manipulation_obj.value_2)
-    return url
-
-
-def amptoamp(redirect_obj, manipulation_obj):
-    """
-    Replaces the value before the first ampersand with value_1 and the value
-    after the second ampersand with value_2
-    """
-    url = redirect_obj.url.split('&')
-    return manipulation_obj.value_1 + url[1] + manipulation_obj.value_2
-
-
-def switchlastinstance(redirect_obj, manipulation_obj, old=None, new=None):
-    """
-    Replaces the last instance of one value with another
-
-    If called on its own, replaces value_1 with value_2; otherwise replaces
-    old with new
-    """
-    old = old or manipulation_obj.value_1
-    new = new or manipulation_obj.value_2
-    return new.join(redirect_obj.url.rsplit(old, 1))
-
-
-def switchlastthenadd(redirect_obj, manipulation_obj):
-    """
-    switchlastinstance with value_2 appended
-
-    The old and new values are '!!!!'-delimited and are stored in value_1
-    """
-    old, new = manipulation_obj.value_1.split('!!!!')
-    new_url = switchlastinstance(redirect_obj, manipulation_obj, old, new)
-    return new_url + manipulation_obj.value_2
-
-
-def replace(redirect_obj, manipulation_obj):
-    """
-    Utility function that is used in the replacethenadd* actions
-    """
-    old, new = manipulation_obj.value_1.split('!!!!')
-    return redirect_obj.url.replace(old, new)
-
-
-def replacethenadd(redirect_obj, manipulation_obj):
-    """
-    Replaces all instances of one value with another, then appends value_2
-
-    The values are '!!!!'-delimited and are stored in value_1
-    """
-    url = replace(redirect_obj, manipulation_obj)
-    return url + manipulation_obj.value_2
-
-
-def replacethenaddpre(redirect_obj, manipulation_obj):
-    """
-    Replaces all instances of one value with another, then prepends value_2
-
-    The values are '!!!!'-delimited and are stored in value_1
-    """
-    url = replace(redirect_obj, manipulation_obj)
-    return manipulation_obj.value_2 + url
-
-
-def cframe(redirect_obj, manipulation_obj):
-    """
-    Redirects to the company frame denoted by value_1, appending the job url
-    as the url query parameter
-    """
-    url = quote_string(redirect_obj.url)
-    url = '%s?url=%s' % (manipulation_obj.value_1, url)
-    return 'http://directemployers.us.jobs/companyframe/' + url
