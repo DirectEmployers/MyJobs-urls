@@ -155,3 +155,9 @@ CUSTOM_EXCLUSION_CACHE_KEY = 'custom_excluded_view_sources'
 COMPRESS_PRECOMPILERS = (
     ('text/less', 'lessc {infile} {outfile}'),
 )
+
+COMPRESS_CSS_HASHING_METHOD = 'hash'
+
+COMPRESS_OFFLINE = True
+
+COMPRESS_ENABLED = True
