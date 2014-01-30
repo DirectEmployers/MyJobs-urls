@@ -45,7 +45,7 @@ def clean_guid(guid):
     return cleaned_guid.replace("-", "")
 
 
-def do_manipulations(guid_redirect, manipulations, return_dict, debug_content):
+def do_manipulations(guid_redirect, manipulations, return_dict, debug_content=None):
     """
     Performs the manipulations denoted by :manipulations:
 
@@ -126,7 +126,7 @@ def get_manipulations(guid_redirect, vs_to_use):
     return manipulations
 
 
-def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=[]):
+def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
     """
     Does the majority of the work in determining what url we should redirect to
 
