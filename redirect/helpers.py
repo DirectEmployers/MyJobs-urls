@@ -45,7 +45,8 @@ def clean_guid(guid):
     return cleaned_guid.replace("-", "")
 
 
-def do_manipulations(guid_redirect, manipulations, return_dict, debug_content=None):
+def do_manipulations(guid_redirect, manipulations,
+                     return_dict, debug_content=None):
     """
     Performs the manipulations denoted by :manipulations:
 
@@ -76,10 +77,10 @@ def do_manipulations(guid_redirect, manipulations, return_dict, debug_content=No
             else:
 
                 if manipulation.action in [
-                    'doubleclickwrap', 'replacethenaddpre',
-                    'sourceurlwrap', 'sourceurlwrapappend',
-                    'sourceurlwrapunencoded',
-                    'sourceurlwrapunencodedappend']:
+                        'doubleclickwrap', 'replacethenaddpre',
+                        'sourceurlwrap', 'sourceurlwrapappend',
+                        'sourceurlwrapunencoded',
+                        'sourceurlwrapunencodedappend']:
                     # These actions all result in our final url being
                     # appended, usually as a query string, to a value
                     # determined by the manipulation object; due to
@@ -124,7 +125,6 @@ def do_manipulations(guid_redirect, manipulations, return_dict, debug_content=No
                 guid_redirect.url = return_dict['redirect_url']
 
 
-
 def get_manipulations(guid_redirect, vs_to_use):
     """
     Retrieves the set of DestinationManipulation objects, if any, for this
@@ -142,7 +142,7 @@ def get_manipulations(guid_redirect, vs_to_use):
         buid=guid_redirect.buid,
         view_source=vs_to_use).order_by('action_type')
     if not manipulations and vs_to_use != 0 and \
-                    vs_to_use not in settings.EXCLUDED_VIEW_SOURCES:
+            vs_to_use not in settings.EXCLUDED_VIEW_SOURCES:
         manipulations = DestinationManipulation.objects.filter(
             buid=guid_redirect.buid,
             view_source=0).order_by('action_type')
@@ -191,7 +191,7 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
         # with the set of excluded view sources to determine if we
         # should redirect to a microsite
         new_job = (guid_redirect.new_date + timedelta(minutes=30)) > \
-                  datetime.now(tz=timezone.utc)
+            datetime.now(tz=timezone.utc)
 
         try:
             microsite = CanonicalMicrosite.objects.get(
@@ -219,9 +219,10 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
             # new_job
             #     This job is new and may not have propagated to
             #     microsites yet; skip microsite redirects
-            try_manipulations = ((vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
-                (guid_redirect.buid, vs_to_use) in settings.CUSTOM_EXCLUSIONS or
-                microsite is None) or skip_microsite or new_job)
+            try_manipulations = (
+                (vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
+                 (guid_redirect.buid, vs_to_use) in settings.CUSTOM_EXCLUSIONS or
+                 microsite is None) or skip_microsite or new_job)
             if try_manipulations:
                 manipulations = get_manipulations(guid_redirect,
                                                   vs_to_use)
