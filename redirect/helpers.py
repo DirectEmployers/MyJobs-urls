@@ -45,7 +45,8 @@ def clean_guid(guid):
     return cleaned_guid.replace("-", "")
 
 
-def do_manipulations(guid_redirect, manipulations, return_dict, debug_content=None):
+def do_manipulations(guid_redirect, manipulations,
+                     return_dict, debug_content=None):
     """
     Performs the manipulations denoted by :manipulations:
 
@@ -74,18 +75,54 @@ def do_manipulations(guid_redirect, manipulations, return_dict, debug_content=No
             except AttributeError:
                 pass
             else:
-                if manipulations and not return_dict['redirect_url']:
-                    return_dict['redirect_url'] = redirect_method(guid_redirect,
-                                                                  manipulation)
-                    if debug_content:
-                        debug_content.append(
-                            'ActionTypeID=%s ManipulatedLink=%s VSID=%s' %
-                            (manipulation.action_type,
-                             return_dict['redirect_url'],
-                             manipulation.view_source))
 
-                    guid_redirect.url = return_dict['redirect_url']
+                if manipulation.action in [
+                        'doubleclickwrap', 'replacethenaddpre',
+                        'sourceurlwrap', 'sourceurlwrapappend',
+                        'sourceurlwrapunencoded',
+                        'sourceurlwrapunencodedappend']:
+                    # These actions all result in our final url being
+                    # appended, usually as a query string, to a value
+                    # determined by the manipulation object; due to
+                    # this, we should add any custom query parameters
+                    # before doing the manipulation.
+                    if return_dict['enable_custom_queries']:
+                        excluded_tags = ['vs', 'z']
+                        guid_redirect.url = replace_or_add_query(
+                            guid_redirect.url,
+                            return_dict.get('qs'),
+                            excluded_tags)
+                    redirect_url = redirect_method(guid_redirect,
+                                                   manipulation)
+                else:
+                    redirect_url = redirect_method(guid_redirect,
+                                                   manipulation)
 
+                    # manipulations is a QuerySet, which doesn't
+                    # support negative indexing; reverse the set and
+                    # take the first element to get the last
+                    # DestinationManipulation object.
+                    if manipulation == manipulations.reverse()[:1][0]:
+                        # Only add custom query parameters after
+                        # processing the final DestinationManipulation
+                        # object to ensure we're not needlessly
+                        # replacing them on each iteration.
+                        if return_dict['enable_custom_queries']:
+                            excluded_tags = ['vs', 'z']
+                            redirect_url = replace_or_add_query(
+                                redirect_url,
+                                return_dict['qs'],
+                                excluded_tags)
+                return_dict['redirect_url'] = redirect_url
+
+                if debug_content:
+                    debug_content.append(
+                        'ActionTypeID=%s ManipulatedLink=%s VSID=%s' %
+                        (manipulation.action_type,
+                         return_dict['redirect_url'],
+                         manipulation.view_source))
+
+                guid_redirect.url = return_dict['redirect_url']
 
 
 def get_manipulations(guid_redirect, vs_to_use):
@@ -105,7 +142,7 @@ def get_manipulations(guid_redirect, vs_to_use):
         buid=guid_redirect.buid,
         view_source=vs_to_use).order_by('action_type')
     if not manipulations and vs_to_use != 0 and \
-                    vs_to_use not in settings.EXCLUDED_VIEW_SOURCES:
+            vs_to_use not in settings.EXCLUDED_VIEW_SOURCES:
         manipulations = DestinationManipulation.objects.filter(
             buid=guid_redirect.buid,
             view_source=0).order_by('action_type')
@@ -153,7 +190,7 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
         # with the set of excluded view sources to determine if we
         # should redirect to a microsite
         new_job = (guid_redirect.new_date + timedelta(minutes=30)) > \
-                  datetime.now(tz=timezone.utc)
+            datetime.now(tz=timezone.utc)
 
         try:
             microsite = CanonicalMicrosite.objects.get(
@@ -181,18 +218,30 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
             # new_job
             #     This job is new and may not have propagated to
             #     microsites yet; skip microsite redirects
-            try_manipulations = ((vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
-                (guid_redirect.buid, vs_to_use) in settings.CUSTOM_EXCLUSIONS or
-                microsite is None) or skip_microsite or new_job)
+            try_manipulations = (
+                (vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
+                 (guid_redirect.buid, vs_to_use) in settings.CUSTOM_EXCLUSIONS or
+                 microsite is None) or skip_microsite or new_job)
             if try_manipulations:
                 manipulations = get_manipulations(guid_redirect,
                                                   vs_to_use)
-            else:
-                return_dict['redirect_url'] = '%s%s/job/?vs=%s' % \
-                                              (microsite.canonical_microsite_url,
-                                               guid_redirect.uid,
-                                               vs_to_use)
+            elif microsite:
+                redirect_url = '%s%s/job/?vs=%s' % \
+                               (microsite.canonical_microsite_url,
+                                guid_redirect.uid,
+                                vs_to_use)
+                if request.REQUEST.get('z') == '1':
+                    # Enable adding vs and z to the query string; these
+                    # will be passed to the microsite, which will pass
+                    # them back to us on apply clicks
+                    excluded_tags = []
+                    redirect_url = replace_or_add_query(
+                        redirect_url, request.META.get('QUERY_STRING'),
+                        excluded_tags)
+                return_dict['redirect_url'] = redirect_url
 
+            return_dict['enable_custom_queries'] = request.REQUEST.get('z') == '1'
+            return_dict['qs'] = request.META['QUERY_STRING']
             do_manipulations(guid_redirect, manipulations,
                              return_dict, debug_content)
 
@@ -227,7 +276,7 @@ def get_opengraph_redirect(request, redirect, guid):
     return user_agent_vs, response
 
 
-def replace_or_add_query(url, query):
+def replace_or_add_query(url, query, exclusions=None):
     """
     Adds field/value pair to the provided url as a query string if the
     key isn't already in the url, or replaces it otherwise.
@@ -237,10 +286,14 @@ def replace_or_add_query(url, query):
     Inputs:
     :url: URL that query string should be appended to
     :query: Query string(s) to add to :url:
+    :exclusions: List of keys that should not be copied; common keys
+        include 'vs' and 'z'
 
     Outputs:
     :url: Input url with query string appended
     """
+    if not exclusions:
+        exclusions = []
     query = query.encode('utf-8')
     url = url.encode('utf-8')
     url = urlparse.urlparse(url)
@@ -250,11 +303,12 @@ def replace_or_add_query(url, query):
     new_query = urlparse.parse_qsl(query)
 
     for new_index in range(len(new_query)):
-        if new_query[new_index][0] in old_keys:
-            old_index = old_keys.index(new_query[new_index][0])
-            old_query[old_index] = new_query[new_index]
-        else:
-            old_query.append(new_query[new_index])
+        if new_query[new_index][0] not in exclusions:
+            if new_query[new_index][0] in old_keys:
+                old_index = old_keys.index(new_query[new_index][0])
+                old_query[old_index] = new_query[new_index]
+            else:
+                old_query.append(new_query[new_index])
 
     # parse_qsl unencodes the query that you pass it; Re-encode the query
     # parameters when reconstructing the string.

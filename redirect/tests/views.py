@@ -622,9 +622,10 @@ class ViewSourceViewTests(TestCase):
         """
         self.redirect.url = 'example.com?%c3%81=%20%3d%2b'
         self.redirect.save()
-        response = self.client.get(reverse('home',
-                                           args=[self.redirect_guid,
-                                                 self.manipulation.view_source]))
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          self.manipulation.view_source]))
         self.assertTrue('%c3%81=%20%3d%2b' in response['Location'].lower())
 
     def test_cache_gets_set_on_view(self):
@@ -677,3 +678,47 @@ class ViewSourceViewTests(TestCase):
                         settings.CUSTOM_EXCLUSIONS)
         self.assertFalse(response['Location'].startswith(
             self.microsite.canonical_microsite_url))
+
+    def test_custom_parameters(self):
+        CustomExcludedViewSourceFactory(
+            view_source=self.manipulation.view_source)
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          self.manipulation.view_source]) + '?z=1&foo=bar')
+        for part in [self.redirect.url,
+                     'foo=bar',
+                     self.manipulation.value_1[1:]]:
+            self.assertTrue(part in response['Location'])
+
+    def test_custom_parameters_on_microsite(self):
+        self.manipulation.view_source = 0
+        self.manipulation.save()
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid]) + '?z=1&foo=bar')
+        test_url = '%s%s/job/?vs=%s&z=1&foo=bar' % \
+                   (self.microsite.canonical_microsite_url,
+                    self.redirect.uid,
+                    self.manipulation.view_source)
+        self.assertEqual(response['Location'], test_url)
+
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid]) + '?vs=0&z=1&foo=bar')
+        test_url = '%s?%s&foo=bar' % (self.redirect.url,
+                                      self.manipulation.value_1[1:])
+        self.assertEqual(response['Location'], test_url)
+
+    def test_custom_parameters_on_doubleclick(self):
+        self.manipulation.action = 'doubleclickwrap'
+        self.manipulation.value_1 = 'http://ad.doubleclick.net/clk;2613;950;s?'
+        self.manipulation.save()
+
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          self.manipulation.view_source]) + '?z=1&foo=bar')
+        test_url = '%s%s?foo=bar' % (self.manipulation.value_1,
+                                     self.redirect.url)
+        self.assertEqual(response['Location'], test_url)

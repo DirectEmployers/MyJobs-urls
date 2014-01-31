@@ -15,23 +15,25 @@ def home(request, guid, vsid=None, debug=None):
     if vsid is None:
         vsid = '0'
     guid = '{%s}' % uuid.UUID(guid)
+
+    # Providing z=1 as a query parameter enables custom parameters
+    enable_custom_queries = request.REQUEST.get('z') == '1'
+
     if debug:
         # On localhost ip will always be empty unless you've got a setup
         # that mirrors production
         debug_content = ['ip=%s' % request.META.get('HTTP_X_FORWARDED_FOR', ''),
                          'GUID=%s' % guid]
+        if enable_custom_queries:
+            debug_content.append('CustomParameters=%s' %
+                                 request.META.get('QUERY_STRING'))
 
     guid_redirect = get_object_or_404(Redirect,
                                       guid=guid)
     if debug:
         debug_content.append('RetLink(original)=%s' % guid_redirect.url)
 
-    expired = False
-    facebook = False
-
     cleaned_guid = helpers.clean_guid(guid_redirect.guid)
-
-    redirect_user_agent = False
 
     user_agent_vs, response = helpers.get_opengraph_redirect(request,
                                                              guid_redirect,
@@ -63,7 +65,13 @@ def home(request, guid, vsid=None, debug=None):
             if debug:
                 debug_content.append(
                     'ManipulatedLink(No Manipulation)=%s' % redirect_url)
-
+            if enable_custom_queries:
+                redirect_url = helpers.replace_or_add_query(
+                    redirect_url, request.META.get('QUERY_STRING'),
+                    excluded_tags)
+                if debug:
+                    debug_content.append(
+                        'ManipulatedLink(Custom Parameters)=%s' % redirect_url)
         redirect_url = helpers.get_hosted_state_url(guid_redirect,
                                                     redirect_url)
 
@@ -118,7 +126,7 @@ def home(request, guid, vsid=None, debug=None):
                                             request.get_host(),
                                             aguid)
 
-    if debug and not redirect_user_agent:
+    if debug and not user_agent_vs:
         data = {'debug_content': debug_content}
         return render_to_response('redirect/debug.html',
                                   data,
