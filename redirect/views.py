@@ -17,14 +17,14 @@ def home(request, guid, vsid=None, debug=None):
     guid = '{%s}' % uuid.UUID(guid)
 
     # Providing z=1 as a query parameter enables custom parameters
-    custom = request.REQUEST.get('z') == '1'
+    enable_custom_queries = request.REQUEST.get('z') == '1'
 
     if debug:
         # On localhost ip will always be empty unless you've got a setup
         # that mirrors production
         debug_content = ['ip=%s' % request.META.get('HTTP_X_FORWARDED_FOR', ''),
                          'GUID=%s' % guid]
-        if custom:
+        if enable_custom_queries:
             debug_content.append('CustomParameters=%s' %
                                  request.META.get('QUERY_STRING'))
 
@@ -65,7 +65,7 @@ def home(request, guid, vsid=None, debug=None):
             if debug:
                 debug_content.append(
                     'ManipulatedLink(No Manipulation)=%s' % redirect_url)
-            if custom:
+            if enable_custom_queries:
                 redirect_url = helpers.replace_or_add_query(
                     redirect_url, request.META.get('QUERY_STRING'),
                     excluded_tags)

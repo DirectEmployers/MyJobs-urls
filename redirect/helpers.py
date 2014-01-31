@@ -86,7 +86,7 @@ def do_manipulations(guid_redirect, manipulations,
                     # determined by the manipulation object; due to
                     # this, we should add any custom query parameters
                     # before doing the manipulation.
-                    if return_dict['custom']:
+                    if return_dict['enable_custom_queries']:
                         excluded_tags = ['vs', 'z']
                         guid_redirect.url = replace_or_add_query(
                             guid_redirect.url,
@@ -107,7 +107,7 @@ def do_manipulations(guid_redirect, manipulations,
                         # processing the final DestinationManipulation
                         # object to ensure we're not needlessly
                         # replacing them on each iteration.
-                        if return_dict['custom']:
+                        if return_dict['enable_custom_queries']:
                             excluded_tags = ['vs', 'z']
                             redirect_url = replace_or_add_query(
                                 redirect_url,
@@ -166,7 +166,6 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
     return_dict = {'redirect_url': None,
                    'expired': False,
                    'facebook': False}
-    custom = request.REQUEST.get('z') == '1'
     if guid_redirect.expired_date:
         return_dict['expired'] = True
 
@@ -231,7 +230,7 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
                                (microsite.canonical_microsite_url,
                                 guid_redirect.uid,
                                 vs_to_use)
-                if custom:
+                if request.REQUEST.get('z') == '1':
                     # Enable adding vs and z to the query string; these
                     # will be passed to the microsite, which will pass
                     # them back to us on apply clicks
@@ -241,7 +240,7 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
                         excluded_tags)
                 return_dict['redirect_url'] = redirect_url
 
-            return_dict['custom'] = custom
+            return_dict['enable_custom_queries'] = request.REQUEST.get('z') == '1'
             return_dict['qs'] = request.META['QUERY_STRING']
             do_manipulations(guid_redirect, manipulations,
                              return_dict, debug_content)
