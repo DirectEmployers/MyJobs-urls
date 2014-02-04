@@ -156,6 +156,10 @@ COMPRESS_PRECOMPILERS = (
     ('text/less', 'lessc {infile} {outfile}'),
 )
 
+COMPRESS_ROOT = join(ROOT_PATH, 'static')
+
+COMPRESS_OUTPUT_DIR = 'CACHE'
+
 COMPRESS_CSS_HASHING_METHOD = 'hash'
 
 COMPRESS_OFFLINE = True
