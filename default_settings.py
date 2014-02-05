@@ -58,6 +58,7 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 #    'django.contrib.staticfiles.finders.DefaultStorageFinder',
+    'compressor.finders.CompressorFinder',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS += (
@@ -103,6 +104,7 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
     'south',
+    'compressor',
 )
 
 PROJECT_APPS = ('redirect',)
@@ -149,3 +151,17 @@ NEW_RELIC_TRACKING = False
 EXCLUDED_VIEW_SOURCE_CACHE_KEY = 'excluded_view_sources'
 
 CUSTOM_EXCLUSION_CACHE_KEY = 'custom_excluded_view_sources'
+
+COMPRESS_PRECOMPILERS = (
+    ('text/less', 'lessc {infile} {outfile}'),
+)
+
+COMPRESS_ROOT = join(ROOT_PATH, 'static')
+
+COMPRESS_OUTPUT_DIR = 'CACHE'
+
+COMPRESS_CSS_HASHING_METHOD = 'hash'
+
+COMPRESS_OFFLINE = True
+
+COMPRESS_ENABLED = True

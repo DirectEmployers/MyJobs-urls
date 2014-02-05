@@ -198,6 +198,9 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
         except CanonicalMicrosite.DoesNotExist:
             microsite = None
 
+        if microsite and return_dict.get('expired'):
+            return_dict['browse_url'] = microsite.canonical_microsite_url
+
         try:
             vs_to_use = int(vs_to_use)
         except ValueError:
