@@ -141,8 +141,7 @@ def get_manipulations(guid_redirect, vs_to_use):
     manipulations = DestinationManipulation.objects.filter(
         buid=guid_redirect.buid,
         view_source=vs_to_use).order_by('action_type')
-    if not manipulations and vs_to_use != 0 and \
-            vs_to_use not in settings.EXCLUDED_VIEW_SOURCES:
+    if not manipulations and vs_to_use != 0:
         manipulations = DestinationManipulation.objects.filter(
             buid=guid_redirect.buid,
             view_source=0).order_by('action_type')
