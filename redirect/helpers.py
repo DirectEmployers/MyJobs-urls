@@ -139,8 +139,7 @@ def get_manipulations(guid_redirect, vs_to_use):
     manipulations = DestinationManipulation.objects.filter(
         buid=guid_redirect.buid,
         view_source=vs_to_use).order_by('action_type')
-    if not manipulations and vs_to_use != 0 and \
-            vs_to_use not in settings.EXCLUDED_VIEW_SOURCES:
+    if not manipulations and vs_to_use != 0:
         manipulations = DestinationManipulation.objects.filter(
             buid=guid_redirect.buid,
             view_source=0).order_by('action_type')
@@ -195,6 +194,9 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
                 buid=guid_redirect.buid)
         except CanonicalMicrosite.DoesNotExist:
             microsite = None
+
+        if microsite and return_dict.get('expired'):
+            return_dict['browse_url'] = microsite.canonical_microsite_url
 
         try:
             vs_to_use = int(vs_to_use)

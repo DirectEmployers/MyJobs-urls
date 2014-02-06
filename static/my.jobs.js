@@ -34,6 +34,10 @@ function populate_toolbar(data) {
 
         $("#nav").html(nav_html);
         $("#nav").removeClass("menu-login");
+        if ($('.main-nav img').length) {
+            $("#nav").addClass("gravatar");
+            $('.main-nav img').addClass('gravatar-info');
+        }
      }
      $("#account").removeClass("hidden");
 }

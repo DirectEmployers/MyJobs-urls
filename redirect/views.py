@@ -5,7 +5,7 @@ from django.http import HttpResponseGone, HttpResponsePermanentRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
-from django.utils import timezone
+from django.utils import text, timezone
 
 from redirect.models import Redirect
 from redirect import helpers
@@ -61,6 +61,7 @@ def home(request, guid, vsid=None, debug=None):
             redirect_url = returned_dict.get('redirect_url', '')
             facebook = returned_dict.get('facebook', False)
             expired = returned_dict.get('expired', False)
+            browse_url = returned_dict.get('browse_url', '')
         if not redirect_url:
             redirect_url = guid_redirect.url
             if debug:
@@ -82,24 +83,21 @@ def home(request, guid, vsid=None, debug=None):
         if expired:
             err = '&jcnlx.err=XIN'
             data = {'location': guid_redirect.job_location,
-                    'title': guid_redirect.job_title}
-            if facebook:
-                expired_context = 'facebook'
-            elif (guid_redirect.buid in [1228, 5480] or
+                    'title': guid_redirect.job_title,
+                    'company_name': guid_redirect.company_name}
+            if (guid_redirect.buid in [1228, 5480] or
                   2650 <= guid_redirect.buid <= 2703):
-                expired_context = 'special'
                 if guid_redirect.buid in [1228, 5480]:
                     err = '&jcnlx.err=XJC'
                 else:
                     err = '&jcnlx.err=XST'
-            else:
-                expired_context = 'default'
-                redirect_url = guid_redirect.url
-                data['buid'] = guid_redirect.buid
-                data['company_name'] = guid_redirect.company_name
 
-            data['expired_context'] = expired_context
-            data['url'] = redirect_url
+            data['expired_url'] = redirect_url
+            if browse_url:
+                data['browse_url'] = browse_url
+            else:
+                data['browse_url'] = 'http://www.my.jobs/%s/careers/' % \
+                    text.slugify(guid_redirect.company_name)
             response = HttpResponseGone(
                 render_to_string('redirect/expired.html', data))
         else:
