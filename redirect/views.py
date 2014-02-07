@@ -1,7 +1,7 @@
 from datetime import datetime
 import uuid
 
-from django.http import *
+from django.http import HttpResponseGone, HttpResponsePermanentRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
@@ -18,6 +18,7 @@ def home(request, guid, vsid=None, debug=None):
 
     # Providing z=1 as a query parameter enables custom parameters
     enable_custom_queries = request.REQUEST.get('z') == '1'
+    expired = False
 
     if debug:
         # On localhost ip will always be empty unless you've got a setup
@@ -69,7 +70,7 @@ def home(request, guid, vsid=None, debug=None):
             if enable_custom_queries:
                 redirect_url = helpers.replace_or_add_query(
                     redirect_url, request.META.get('QUERY_STRING'),
-                    ['vs', 'z'])
+                    exclusions=['vs', 'z'])
                 if debug:
                     debug_content.append(
                         'ManipulatedLink(Custom Parameters)=%s' % redirect_url)
