@@ -104,7 +104,7 @@ def home(request, guid, vsid=None, debug=None):
             response = HttpResponsePermanentRedirect(redirect_url)
 
         aguid = request.COOKIES.get('aguid') or \
-            helpers.quote_string('{%s}' % str(uuid.uuid4()))
+            uuid.uuid4().hex
         myguid = request.COOKIES.get('myguid', '')
         buid = helpers.get_Post_a_Job_buid(guid_redirect)
         qs = 'jcnlx.ref=%s&jcnlx.url=%s&jcnlx.buid=%s&jcnlx.vsid=%s&jcnlx.aguid=%s&jcnlx.myguid=%s'
