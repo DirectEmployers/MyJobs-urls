@@ -1,4 +1,5 @@
 from datetime import datetime
+from urllib import unquote
 import uuid
 
 from django.http import HttpResponseGone, HttpResponsePermanentRedirect
@@ -104,7 +105,9 @@ def home(request, guid, vsid=None, debug=None):
             response = HttpResponsePermanentRedirect(redirect_url)
 
         aguid = request.COOKIES.get('aguid') or \
-            helpers.quote_string('{%s}' % str(uuid.uuid4()))
+            uuid.uuid4().hex
+        if '%' in aguid:
+            aguid = uuid.UUID(unquote(aguid)).hex
         myguid = request.COOKIES.get('myguid', '')
         buid = helpers.get_Post_a_Job_buid(guid_redirect)
         qs = 'jcnlx.ref=%s&jcnlx.url=%s&jcnlx.buid=%s&jcnlx.vsid=%s&jcnlx.aguid=%s&jcnlx.myguid=%s'
