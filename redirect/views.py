@@ -1,14 +1,18 @@
 from datetime import datetime
+import json
 from urllib import unquote
 import uuid
 
-from django.http import HttpResponseGone, HttpResponsePermanentRedirect
+from django.conf import settings
+from django.http import (HttpResponseGone, HttpResponsePermanentRedirect,
+                         HttpResponse)
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils import text, timezone
 
-from redirect.models import Redirect
+from redirect.models import (Redirect, CanonicalMicrosite,
+                             DestinationManipulation)
 from redirect import helpers
 
 
@@ -140,3 +144,64 @@ def home(request, guid, vsid=None, debug=None):
 def myjobs_redirect(request):
     return HttpResponsePermanentRedirect(
         'http://www.my.jobs' + request.get_full_path())
+
+
+def update_buid(request):
+
+    old = request.GET.get('old_buid', None)
+    new = request.GET.get('new_buid', None)
+    key = request.GET.get('key', None)
+
+    data = {'error': ''}
+
+    if settings.BUID_API_KEY != key:
+        data['error'] = 'Unauthorized'
+        return HttpResponse(json.dumps(data),
+                            content_type='application/json',
+                            status=401)
+
+    try:
+        old = int(request.GET.get('old_buid', None))
+    except (ValueError, TypeError):
+        data = {'error': 'Invalid format for old business unit'}
+        return HttpResponse(json.dumps(data),
+                            content_type='application/json',
+                            status=400)
+
+    try:
+        new = int(request.GET.get('new_buid', None))
+    except (ValueError, TypeError):
+        data = {'error': 'Invalid format for new business unit'}
+        return HttpResponse(json.dumps(data),
+                            content_type='application/json',
+                            status=400)
+
+    if CanonicalMicrosite.objects.filter(buid=new) or \
+         DestinationManipulation.objects.filter(buid=new):
+        data = {'error': 'New business unit already exists'}
+        return HttpResponse(json.dumps(data),
+                            content_type='application/json',
+                            status=400)
+
+    try:
+        cm = CanonicalMicrosite.objects.get(buid=old)
+    except CanonicalMicrosite.DoesNotExist:
+        num_instances = 0
+    else:
+        num_instances = 1
+        cm.buid = new
+        cm.save()
+
+    dms = DestinationManipulation.objects.filter(buid=old)
+    for dm in dms:
+        dm.pk = None
+        dm.id = None
+        dm.buid = new
+        dm.save()
+    num_instances += dms.count()
+
+    data.pop('error')
+    data['updated'] = num_instances
+    data['new_bu'] = new
+    return HttpResponse(json.dumps(data),
+                        content_type='application/json')

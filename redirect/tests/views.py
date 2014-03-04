@@ -1,4 +1,5 @@
 import datetime
+import json
 import re
 from urllib import unquote
 import uuid
@@ -678,3 +679,44 @@ class ViewSourceViewTests(TestCase):
         test_url = '%s%s?foo=bar' % (self.manipulation.value_1,
                                      self.redirect.url)
         self.assertEqual(response['Location'], test_url)
+
+
+class UpdateBUIDTests(TestCase):
+    def setUp(self):
+        self.key = settings.BUID_API_KEY
+        self.cm = CanonicalMicrositeFactory(buid=1)
+        self.dm = DestinationManipulationFactory(buid=1)
+
+    def test_key(self):
+        resp = self.client.get(reverse('update_buid'))
+        self.assertEqual(resp.status_code, 401)
+
+        bad_key = '12345'
+        resp = self.client.get(reverse('update_buid') + '?key=%s' % bad_key)
+        self.assertEqual(resp.status_code, 401)
+
+        resp = self.client.get(reverse('update_buid') + '?key=%s' % self.key)
+        self.assertEqual(resp.content, '{"error": "Invalid format for old business unit"}')
+
+    def test_no_new_buid(self):
+        resp = self.client.get(reverse('update_buid') + '?key=%s&old_buid=%s' % (
+            self.key, self.cm.buid))
+        self.assertEqual(resp.content, '{"error": "Invalid format for new business unit"}')
+
+    def test_existing_buid(self):
+        resp = self.client.get(reverse('update_buid') + \
+                               '?key=%s&old_buid=%s&new_buid=%s' % \
+                               (self.key, self.cm.buid, self.cm.buid))
+        self.assertEqual(resp.content, '{"error": "New business unit already exists"}')
+
+    def test_no_old_buid(self):
+        resp = self.client.get(reverse('update_buid') + '?key=%s&new_buid=%s' % \
+                               (self.key, self.cm.buid + 1))
+        self.assertEqual(resp.content, '{"error": "Invalid format for old business unit"}')
+
+    def test_new_buid(self):
+        resp = self.client.get(reverse('update_buid') + '?key=%s&old_buid=%s&new_buid=%s' % \
+                               (self.key, self.cm.buid, self.cm.buid + 1))
+        content = json.loads(resp.content)
+        self.assertEqual(content['new_bu'], self.cm.buid + 1)
+        self.assertEqual(content['updated'], 2)
