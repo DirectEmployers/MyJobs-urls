@@ -147,7 +147,9 @@ def myjobs_redirect(request):
 
 
 def update_buid(request):
-
+    """
+    API for updating business units
+    """
     old = request.GET.get('old_buid', None)
     new = request.GET.get('new_buid', None)
     key = request.GET.get('key', None)
