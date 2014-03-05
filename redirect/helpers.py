@@ -3,10 +3,13 @@ import urllib
 import urlparse
 
 from django.conf import settings
+from django.core.mail import EmailMessage
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.utils import timezone
 from django.utils.http import urlquote_plus
+from jira.client import JIRA
+from jira.exceptions import JIRAError
 
 import redirect.actions
 from redirect.models import CanonicalMicrosite, DestinationManipulation
@@ -409,3 +412,46 @@ def set_aguid_cookie(response, host, aguid):
                             expires=365 * 24 * 60 * 60,
                             domain=domain)
     return response
+
+
+def log_failure(from_, to, message):
+    """
+    Logs failures in redirecting job@my.jobs emails
+
+    Inputs:
+    :from_: From address
+    :to: To address
+    :message: Issue that occurred
+    """
+    if settings.DEBUG:
+        jira = []
+    else:
+        try:
+            jira = JIRA(options=settings.JIRA_OPTIONS,
+                        basic_auth=settings.JIRA_AUTH)
+        except JIRAError:
+            jira = []
+
+    fail_body = """
+                From: %s
+                To: %s
+
+                Reason:
+                %s
+                """ % (from_, to,
+                       message)
+    if jira:
+        project = jira.project('MJA')
+        issue = {
+            'project': {'key': project.key},
+            'summary': 'Redirect email failure',
+            'description': fail_body,
+            'issuetype': {'name': 'Bug'}
+        }
+        jira.create_issue(fields=issue)
+    else:
+        fail_subject = ('Redirect email failure')
+        fail_email = EmailMessage(
+            fail_subject, fail_body, from_,
+            [settings.EMAIL_TO_ADMIN])
+        fail_email.send()

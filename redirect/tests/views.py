@@ -3,6 +3,8 @@ import re
 from urllib import unquote
 import uuid
 
+from jira.client import JIRA
+
 from django.conf import settings
 from django.core.cache import cache
 from django.core.urlresolvers import reverse, NoReverseMatch
@@ -678,3 +680,7 @@ class ViewSourceViewTests(TestCase):
         test_url = '%s%s?foo=bar' % (self.manipulation.value_1,
                                      self.redirect.url)
         self.assertEqual(response['Location'], test_url)
+
+    def test_jira_login(self):
+        jira = JIRA(options=settings.JIRA_OPTIONS, basic_auth=settings.JIRA_AUTH)
+        self.assertIsNotNone(jira)

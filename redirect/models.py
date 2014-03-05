@@ -302,3 +302,11 @@ class CompanyEmail(models.Model):
     email = models.EmailField()
 
     objects = CompanyEmailManager()
+
+
+class EmailRedirectLog(models.Model):
+    from_addr = models.EmailField()
+    to_guid = models.CharField(max_length=38)
+    buid = models.IntegerField()
+    to_addr = models.EmailField()
+    sent = models.DateTimeField(auto_now_add=True)

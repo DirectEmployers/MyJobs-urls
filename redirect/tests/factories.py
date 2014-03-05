@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 import factory
 
+from django.contrib.auth.models import User
 from django.utils import timezone
 
 from redirect import models
