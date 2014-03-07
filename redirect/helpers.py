@@ -3,6 +3,7 @@ import urllib
 import urlparse
 
 from django.conf import settings
+from django.core import mail
 from django.core.mail import EmailMessage
 from django.shortcuts import render_to_response
 from django.template import RequestContext
@@ -423,7 +424,7 @@ def log_failure(from_, to, message):
     :to: To address
     :message: Issue that occurred
     """
-    if settings.DEBUG:
+    if settings.DEBUG or hasattr(mail, 'outbox'):
         jira = []
     else:
         try:
@@ -450,8 +451,21 @@ def log_failure(from_, to, message):
         }
         jira.create_issue(fields=issue)
     else:
-        fail_subject = ('Redirect email failure')
+        fail_subject = 'Redirect email failure'
         fail_email = EmailMessage(
-            fail_subject, fail_body, from_,
-            [settings.EMAIL_TO_ADMIN])
+            subject=fail_subject,
+            body=fail_body,
+            from_email=from_,
+            to=[settings.EMAIL_TO_ADMIN])
         fail_email.send()
+
+
+def send_response_to_sender(from_, to, response_type):
+    email = EmailMessage(from_email=from_,
+                         to=to,
+                         subject='Error sending email')
+    if response_type == 'no_match':
+        email.body = 'TODO: Create template for this (does not match job)'
+    else:
+        email.body = 'TODO: Create template for this (matches job)'
+    email.send()

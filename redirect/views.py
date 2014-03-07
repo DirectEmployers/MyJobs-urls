@@ -2,6 +2,7 @@ import base64
 from datetime import datetime
 import urllib2
 import uuid
+from django.core.mail import EmailMessage, EmailMultiAlternatives
 
 import sendgrid
 
@@ -180,8 +181,7 @@ def email_redirect(request):
                     if user is not None and user == target:
                         try:
                             to_email = request.POST['to']
-                            # Unused currently but is always sent
-                            #headers = request.POST['headers']
+                            headers = request.POST['headers']
                             body = request.POST['text']
                             html_body = request.POST['html']
                             from_email = request.POST['from']
@@ -203,11 +203,15 @@ def email_redirect(request):
                         try:
                             to_guid = '{%s}' % uuid.UUID(to_guid)
                             job = Redirect.objects.get(guid=to_guid)
-                        except ValueError, e:
+                        except ValueError as e:
                             helpers.log_failure(from_=from_email, to=to_email,
-                                                message=e.message)
+                                                message=e.args[0])
                             return HttpResponse(status=200)
                         except Redirect.DoesNotExist:
+                            helpers.send_response_to_sender(
+                                from_=settings.DEFAULT_FROM_EMAIL,
+                                to=[from_email],
+                                response_type='no_match')
                             return HttpResponse(status=200)
 
                         try:
@@ -235,24 +239,18 @@ def email_redirect(request):
                                 return HttpResponse(status=200)
                             name = file_.name
                             content = file_.read()
-                            attachment_data.append((name, content))
+                            content_type = file_.content_type
+                            attachment_data.append((name, content, content_type))
 
                         # We reached this point; the data should be good
-                        email = sendgrid.Mail(to=new_to, subject=subject,
-                                              html=html_body, text=body,
-                                              from_email=from_email, bcc=cc)
-                        for addr in cc:
-                            # the sendgrid library supports bcc but not cc;
-                            # add anyone who was cc'd to the 'to' portion
-                            email.add_to(addr)
+                        email = EmailMultiAlternatives(
+                            to=new_to, from_email=from_email, subject=subject,
+                            body=body, cc=cc, headers=headers)
+                        email.attach_alternative(html_body, 'text/html')
                         for attachment in attachment_data:
-                            email.add_attachment_stream(*attachment)
-                        email.add_category('My.jobs email redirect')
-
-                        sg = sendgrid.SendGridClient(
-                            settings.EMAIL_HOST_USER,
-                            settings.EMAIL_HOST_PASSWORD)
-                        status, msg = sg.send(email)
+                            email.attach_file(*attachment)
+                        #email.add_category('My.jobs email redirect')
+                        email.send()
 
                         log = {'from_addr': from_email,
                                'to_guid': to_guid,
@@ -260,8 +258,8 @@ def email_redirect(request):
                                'to_addr': new_to}
                         EmailRedirectLog.objects.create(**log)
 
-                        if status != 200:
-                            helpers.log_failure(from_=from_email, to=new_to,
-                                                message=msg)
+                        #if status != 200:
+                        #    helpers.log_failure(from_=from_email, to=[new_to],
+                        #                        message=msg)
                         return HttpResponse(status=200)
     return HttpResponse(status=403)
