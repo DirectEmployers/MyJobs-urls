@@ -287,21 +287,9 @@ post_save.connect(clear_custom_vs_cache, sender=CustomExcludedViewSource,
                   dispatch_uid="clear_custom_vs_cache")
 
 
-class CompanyEmailManager(models.Manager):
-    def get_from_job(self, job_guid):
-        try:
-            job = Redirect.objects.get(guid=job_guid)
-        except Redirect.DoesNotExist:
-            return None
-        else:
-            return self.get(buid=job.buid)
-
-
 class CompanyEmail(models.Model):
     buid = models.IntegerField(primary_key=True)
     email = models.EmailField()
-
-    objects = CompanyEmailManager()
 
 
 class EmailRedirectLog(models.Model):
