@@ -2,13 +2,12 @@ import base64
 from datetime import datetime
 import urllib2
 import uuid
-from django.core.mail import EmailMessage, EmailMultiAlternatives
-
-import sendgrid
+import json
 
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.core.mail import EmailMultiAlternatives
 from django.http import (HttpResponseGone, HttpResponsePermanentRedirect,
                          HttpResponse)
 from django.shortcuts import get_object_or_404, render_to_response
@@ -181,11 +180,12 @@ def email_redirect(request):
                     if user is not None and user == target:
                         try:
                             to_email = request.POST['to']
-                            headers = request.POST['headers']
+                            # Unused, but could be useful sometime
+                            #headers = request.POST['headers']
                             body = request.POST['text']
                             html_body = request.POST['html']
                             from_email = request.POST['from']
-                            cc = request.POST['cc']
+                            cc = request.POST.get('cc', [])
                             subject = request.POST['subject']
                             num_attachments = int(request.POST['attachments'])
                         except (KeyError, ValueError):
@@ -221,19 +221,20 @@ def email_redirect(request):
                             return HttpResponse(status=200)
 
                         file_names = []
+                        if num_attachments:
+                            files = json.loads(request.POST['attachment-info'])
                         try:
                             for file_num in range(1, num_attachments+1):
-                                file_names.append(getattr(request.POST,
-                                                          'attachment%s' % (
-                                                              file_num,)))
+                                file_names.append(files.get(
+                                    'attachment%s' % (file_num,)))
                         except AttributeError:
                             # getattr could not find an expected attachment
                             return HttpResponse(status=200)
 
                         attachment_data = []
-                        for file_name in file_names:
+                        for file_number in range(1, num_attachments+1):
                             try:
-                                file_ = request.FILES[file_name]
+                                file_ = request.FILES['attachment%s' % file_number]
                             except KeyError:
                                 # Upload problem?
                                 return HttpResponse(status=200)
@@ -242,13 +243,17 @@ def email_redirect(request):
                             content_type = file_.content_type
                             attachment_data.append((name, content, content_type))
 
+                        sg_headers = {
+                            'X-SMTPAPI': '{"category": "My.jobs email redirect"}'
+                        }
+
                         # We reached this point; the data should be good
                         email = EmailMultiAlternatives(
-                            to=new_to, from_email=from_email, subject=subject,
-                            body=body, cc=cc, headers=headers)
+                            to=[new_to], from_email=from_email, subject=subject,
+                            body=body, cc=cc, headers=sg_headers)
                         email.attach_alternative(html_body, 'text/html')
                         for attachment in attachment_data:
-                            email.attach_file(*attachment)
+                            email.attach(*attachment)
                         #email.add_category('My.jobs email redirect')
                         email.send()
 

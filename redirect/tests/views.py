@@ -709,11 +709,11 @@ class EmailForwardTests(TestCase):
                 'Basic %s' % base64.b64encode('%s:%s' % (self.user.username.\
                                                          replace('@', '%40'),
                                                          self.password))}
-        self.post_dict = {'to': 'to@example.com',
+        self.post_dict = {'to': ['to@example.com'],
                           'from': 'from@example.com',
                           'text': 'This address does not contain a valid guid',
                           'html': '',
-                          'cc': '',
+                          'cc': [''],
                           'subject': 'Bad Email',
                           'attachments': 0}
 
@@ -741,11 +741,12 @@ class EmailForwardTests(TestCase):
 
     def test_bad_email(self):
         auth = self.auth.get('good')
-        self.client.post(reverse('email_redirect'),
-                         HTTP_AUTHORIZATION=auth,
-                         data=self.post_dict)
+        response = self.client.post(reverse('email_redirect'),
+                                    HTTP_AUTHORIZATION=auth,
+                                    data=self.post_dict)
+        self.assertEqual(response.status_code, 200)
         email = mail.outbox.pop()
-        for field in [self.post_dict['to'], self.post_dict['from'],
+        for field in [self.post_dict['to'][0], self.post_dict['from'],
                       'badly formed hexadecimal UUID string']:
             self.assertTrue(field in email.body)
 
@@ -758,9 +759,10 @@ class EmailForwardTests(TestCase):
         self.post_dict['text'] = 'This address is not in the database'
 
         auth = self.auth.get('good')
-        self.client.post(reverse('email_redirect'),
-                         HTTP_AUTHORIZATION=auth,
-                         data=self.post_dict)
+        response = self.client.post(reverse('email_redirect'),
+                                    HTTP_AUTHORIZATION=auth,
+                                    data=self.post_dict)
+        self.assertEqual(response.status_code, 200)
 
         email = mail.outbox.pop()
         self.assertEqual(email.to, [self.post_dict['from']])
@@ -774,9 +776,10 @@ class EmailForwardTests(TestCase):
         self.post_dict['subject'] = 'Compliance'
 
         auth = self.auth.get('good')
-        self.client.post(reverse('email_redirect'),
-                         HTTP_AUTHORIZATION=auth,
-                         data=self.post_dict)
+        response = self.client.post(reverse('email_redirect'),
+                                    HTTP_AUTHORIZATION=auth,
+                                    data=self.post_dict)
+        self.assertEqual(response.status_code, 200)
 
         email = mail.outbox.pop()
         self.assertEqual(email.from_email, self.post_dict['from'])
