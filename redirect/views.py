@@ -1,9 +1,10 @@
 import base64
 from email.utils import getaddresses
 from datetime import datetime
+import json
+from urllib import unquote
 import urllib2
 import uuid
-import json
 
 from django.conf import settings
 from django.contrib.auth import authenticate
@@ -17,7 +18,8 @@ from django.template.loader import render_to_string
 from django.utils import text, timezone
 from django.views.decorators.csrf import csrf_exempt
 
-from redirect.models import Redirect, CompanyEmail, EmailRedirectLog
+from redirect.models import (Redirect, CanonicalMicrosite,
+    DestinationManipulation, CompanyEmail, EmailRedirectLog)
 from redirect import helpers
 
 
@@ -114,7 +116,9 @@ def home(request, guid, vsid=None, debug=None):
             response = HttpResponsePermanentRedirect(redirect_url)
 
         aguid = request.COOKIES.get('aguid') or \
-            helpers.quote_string('{%s}' % str(uuid.uuid4()))
+            uuid.uuid4().hex
+        if '%' in aguid:
+            aguid = uuid.UUID(unquote(aguid)).hex
         myguid = request.COOKIES.get('myguid', '')
         buid = helpers.get_Post_a_Job_buid(guid_redirect)
         qs = 'jcnlx.ref=%s&jcnlx.url=%s&jcnlx.buid=%s&jcnlx.vsid=%s&jcnlx.aguid=%s&jcnlx.myguid=%s'
@@ -264,3 +268,66 @@ def email_redirect(request):
 
                         return HttpResponse(status=200)
     return HttpResponse(status=403)
+
+
+def update_buid(request):
+    """
+    API for updating business units
+    """
+    old = request.GET.get('old_buid', None)
+    new = request.GET.get('new_buid', None)
+    key = request.GET.get('key', None)
+
+    data = {'error': ''}
+
+    if settings.BUID_API_KEY != key:
+        data['error'] = 'Unauthorized'
+        return HttpResponse(json.dumps(data),
+                            content_type='application/json',
+                            status=401)
+
+    try:
+        old = int(request.GET.get('old_buid', None))
+    except (ValueError, TypeError):
+        data = {'error': 'Invalid format for old business unit'}
+        return HttpResponse(json.dumps(data),
+                            content_type='application/json',
+                            status=400)
+
+    try:
+        new = int(request.GET.get('new_buid', None))
+    except (ValueError, TypeError):
+        data = {'error': 'Invalid format for new business unit'}
+        return HttpResponse(json.dumps(data),
+                            content_type='application/json',
+                            status=400)
+
+    if CanonicalMicrosite.objects.filter(buid=new) or \
+         DestinationManipulation.objects.filter(buid=new):
+        data = {'error': 'New business unit already exists'}
+        return HttpResponse(json.dumps(data),
+                            content_type='application/json',
+                            status=400)
+
+    try:
+        cm = CanonicalMicrosite.objects.get(buid=old)
+    except CanonicalMicrosite.DoesNotExist:
+        num_instances = 0
+    else:
+        num_instances = 1
+        cm.buid = new
+        cm.save()
+
+    dms = DestinationManipulation.objects.filter(buid=old)
+    for dm in dms:
+        dm.pk = None
+        dm.id = None
+        dm.buid = new
+        dm.save()
+    num_instances += dms.count()
+
+    data.pop('error')
+    data['updated'] = num_instances
+    data['new_bu'] = new
+    return HttpResponse(json.dumps(data),
+                        content_type='application/json')

@@ -1,7 +1,7 @@
 from django.conf.urls import patterns, include, url
 from django.views.generic.base import RedirectView
 
-from redirect.views import myjobs_redirect, home, email_redirect
+from redirect.views import myjobs_redirect, home, email_redirect, update_buid
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -19,6 +19,9 @@ urlpatterns = patterns('',
 
     # Email Redirect view
     url(r'^email$', email_redirect, name='email_redirect'),
+
+    # View for updating buids
+    url(r'^update_buid/$', update_buid, name='update_buid'),
 
     # Potential www.my.jobs redirect, catches root and anything not caught
     # previously
