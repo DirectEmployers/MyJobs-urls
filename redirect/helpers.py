@@ -451,7 +451,7 @@ def log_failure(from_, to, message):
         }
         jira.create_issue(fields=issue)
     else:
-        fail_subject = 'Redirect email failure'
+        fail_subject = 'My.jobs email redirect failure'
         fail_email = EmailMessage(
             subject=fail_subject,
             body=fail_body,
