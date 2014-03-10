@@ -752,10 +752,10 @@ class EmailForwardTests(TestCase):
 
         self.assertEqual(email.from_email, self.post_dict['from'])
         self.assertEqual(email.to, [settings.EMAIL_TO_ADMIN])
-        self.assertEqual(email.subject, 'Redirect email failure')
+        self.assertEqual(email.subject, 'My.jobs email redirect failure')
 
     def test_bad_guid_email(self):
-        self.post_dict['to'] = '%s@my.jobs' % ('1'*32)
+        self.post_dict['to'] = ['%s@my.jobs' % ('1'*32)]
         self.post_dict['text'] = 'This address is not in the database'
 
         auth = self.auth.get('good')
@@ -763,15 +763,10 @@ class EmailForwardTests(TestCase):
                                     HTTP_AUTHORIZATION=auth,
                                     data=self.post_dict)
         self.assertEqual(response.status_code, 200)
-
-        email = mail.outbox.pop()
-        self.assertEqual(email.to, [self.post_dict['from']])
-        self.assertEqual(email.from_email, settings.DEFAULT_FROM_EMAIL)
-        self.assertEqual(email.subject, 'Error sending email')
-        self.assertTrue('does not match job' in email.body)
+        # TODO: Test that an email gets sent once that functionality is added
 
     def test_good_guid_email(self):
-        self.post_dict['to'] = self.redirect_guid
+        self.post_dict['to'] = ['%s@my.jobs' % self.redirect_guid]
         self.post_dict['text'] = 'Questions about stuff and things'
         self.post_dict['subject'] = 'Compliance'
 
@@ -786,3 +781,16 @@ class EmailForwardTests(TestCase):
         self.assertEqual(email.to, [self.contact.email])
         self.assertEqual(email.subject, self.post_dict['subject'])
         self.assertEqual(email.body, self.post_dict['text'])
+
+    def test_email_with_name(self):
+        self.post_dict['to'] = ['User <%s@my.jobs>' % self.redirect_guid]
+        self.post_dict['text'] = 'Questions about stuff and things'
+        self.post_dict['subject'] = 'Compliance'
+
+        auth = self.auth.get('good')
+        response = self.client.post(reverse('email_redirect'),
+                                    HTTP_AUTHORIZATION=auth,
+                                    data=self.post_dict)
+        self.assertEqual(response.status_code, 200)
+
+        email = mail.outbox.pop()

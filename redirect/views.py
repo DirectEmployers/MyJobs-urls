@@ -1,4 +1,5 @@
 import base64
+from email.utils import getaddresses
 from datetime import datetime
 import urllib2
 import uuid
@@ -194,7 +195,14 @@ def email_redirect(request):
                             #     to int
                             return HttpResponse(status=200)
 
-                        to_guid = to_email.split('@')[0]
+                        if type(to_email) != list:
+                            to_email = [to_email]
+                        if len(to_email) > 1:
+                            # maybe not a My.jobs redirect
+                            return HttpResponse(status=200)
+                        else:
+                            split_addr = getaddresses(to_email)
+                        to_guid = split_addr[0][1].split('@')[0]
 
                         # shouldn't happen, but if someone somehow sends an
                         # email with a view source attached, we should
