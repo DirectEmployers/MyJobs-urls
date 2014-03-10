@@ -208,28 +208,20 @@ def email_redirect(request):
                                                 message=e.args[0])
                             return HttpResponse(status=200)
                         except Redirect.DoesNotExist:
-                            helpers.send_response_to_sender(
-                                from_=settings.DEFAULT_FROM_EMAIL,
-                                to=[from_email],
-                                response_type='no_match')
+                            # TODO: improve copy for send_response_to_sender
+                            # TODO: and send an error email to the sender
                             return HttpResponse(status=200)
+
+                        # TODO: Create/match My.jobs account
 
                         try:
                             ce = CompanyEmail.objects.get(buid=job.buid)
                             new_to = ce.email
                         except CompanyEmail.DoesNotExist:
+                            # TODO: send job description to sender
                             return HttpResponse(status=200)
 
-                        file_names = []
-                        if num_attachments:
-                            files = json.loads(request.POST['attachment-info'])
-                        try:
-                            for file_num in range(1, num_attachments+1):
-                                file_names.append(files.get(
-                                    'attachment%s' % (file_num,)))
-                        except AttributeError:
-                            # getattr could not find an expected attachment
-                            return HttpResponse(status=200)
+                        # TODO: send job description and forward note to sender
 
                         attachment_data = []
                         for file_number in range(1, num_attachments+1):
@@ -254,7 +246,6 @@ def email_redirect(request):
                         email.attach_alternative(html_body, 'text/html')
                         for attachment in attachment_data:
                             email.attach(*attachment)
-                        #email.add_category('My.jobs email redirect')
                         email.send()
 
                         log = {'from_addr': from_email,
@@ -263,8 +254,5 @@ def email_redirect(request):
                                'to_addr': new_to}
                         EmailRedirectLog.objects.create(**log)
 
-                        #if status != 200:
-                        #    helpers.log_failure(from_=from_email, to=[new_to],
-                        #                        message=msg)
                         return HttpResponse(status=200)
     return HttpResponse(status=403)
