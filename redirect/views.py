@@ -191,6 +191,8 @@ def email_redirect(request):
                             html_body = request.POST['html']
                             from_email = request.POST['from']
                             cc = request.POST.get('cc', [])
+                            if type(cc) != list:
+                                cc = [cc]
                             subject = request.POST['subject']
                             num_attachments = int(request.POST['attachments'])
                         except (KeyError, ValueError):
