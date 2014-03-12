@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import urllib
+import urllib2
 import urlparse
 
 from django.conf import settings
@@ -469,3 +470,32 @@ def send_response_to_sender(from_, to, response_type):
     else:
         email.body = 'TODO: Create template for this (matches job)'
     email.send()
+
+
+def create_myjobs_account(from_email):
+    """
+    Creates a My.jobs account for a given email if one does not exist
+
+    Inputs:
+    :from_email: Email address that will be associated with the new
+        My.jobs account
+
+    Returns:
+    Response from My.jobs (or an error) if tests are not being run
+    My.jobs url if tests are being run
+    """
+    mj_url = 'http://secure.my.jobs:80/api/v1/user/'
+    mj_url = urlparse.urlparse(mj_url)
+    qs = {'username': settings.MJ_API['username'],
+          'api_key': settings.MJ_API['key'],
+          'email': from_email,}
+    qs = urllib.urlencode(qs)
+    mj_url = mj_url._replace(query=qs).geturl()
+    if hasattr(mail, 'outbox'):
+        return mj_url
+
+    try:
+        contents = urllib2.urlopen(mj_url).read()
+    except urllib2.URLError as e:
+        contents = '{"error":"%s"}' % e.args[0]
+    return contents

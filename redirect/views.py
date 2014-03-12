@@ -226,7 +226,7 @@ def email_redirect(request):
                             # TODO: and send an error email to the sender
                             return HttpResponse(status=200)
 
-                        # TODO: Create/match My.jobs account
+                        helpers.create_myjobs_account(from_email)
 
                         try:
                             ce = CompanyEmail.objects.get(buid=job.buid)

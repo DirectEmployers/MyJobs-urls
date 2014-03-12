@@ -17,6 +17,7 @@ from django.test.client import Client, RequestFactory
 from django.utils import text, timezone
 from django.utils.http import urlquote_plus
 
+from redirect import helpers
 from redirect.models import DestinationManipulation, ExcludedViewSource, CompanyEmail
 from redirect.tests.factories import (
     RedirectFactory, CanonicalMicrositeFactory, DestinationManipulationFactory,
@@ -795,6 +796,13 @@ class EmailForwardTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         email = mail.outbox.pop()
+
+    def test_creating_mj_user(self):
+        response = helpers.create_myjobs_account(self.user.username)
+        for parameter in ['username=%s' % settings.MJ_API['username'].replace('@', '%40'),
+                          'api_key=%s' % settings.MJ_API['key'],
+                          'email=%s' % self.user.username.replace('@', '%40')]:
+            self.assertTrue(parameter in response)
 
 
 class UpdateBUIDTests(TestCase):
