@@ -35,6 +35,16 @@ STATE_MAP = {
 }
 
 
+NEW_MJ_CUSTOM_MSG = """
+Thank you for your message. We will forward it to the appropriate party in
+short order. However, before we do so we need you to verify your email by
+activating your my.jobs account. This allows us to verify that you are human
+and gives you access to the tools on my.jobs.<br><br>
+To activate your account for %s, just click the link below to verify you own
+this email address.
+"""
+
+
 def clean_guid(guid):
     """
     Removes non-hex characters from the provided GUID.
@@ -488,7 +498,9 @@ def create_myjobs_account(from_email):
     mj_url = urlparse.urlparse(mj_url)
     qs = {'username': settings.MJ_API['username'],
           'api_key': settings.MJ_API['key'],
-          'email': from_email,}
+          'email': from_email,
+          'user_type': 'redirect',
+          'custom_msg': NEW_MJ_CUSTOM_MSG % from_email}
     qs = urllib.urlencode(qs)
     mj_url = mj_url._replace(query=qs).geturl()
     if hasattr(mail, 'outbox'):
