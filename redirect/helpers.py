@@ -521,6 +521,7 @@ def repost_to_mj(post):
     Inputs:
     :post: dictionary to be posted
     """
+    post['key'] = settings.EMAIL_KEY
     mj_url = 'https://secure.my.jobs/prm/email'
     if not hasattr(mail, 'outbox'):
         urllib2.urlopen(mj_url, data=post).read()

@@ -206,7 +206,7 @@ def email_redirect(request):
                             addresses = getaddresses(to_email)
                         if 'prm@my.jobs' in [addr[1] for addr in addresses]:
                             # post to my.jobs
-                            helpers.repost_to_mj(request.POST)
+                            helpers.repost_to_mj(request.POST.copy())
                             return HttpResponse(status=200)
                         if len(addresses) > 1:
                             # maybe not a My.jobs redirect
