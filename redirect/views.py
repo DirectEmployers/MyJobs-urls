@@ -184,16 +184,16 @@ def email_redirect(request):
                     target = User.objects.get(username='accounts@my.jobs')
                     if user is not None and user == target:
                         try:
-                            to_email = request.POST['to']
+                            to_email = request.POST.get('to', '')
                             # Unused, but could be useful sometime
                             #headers = request.POST['headers']
-                            body = request.POST['text']
-                            html_body = request.POST['html']
-                            from_email = request.POST['from']
+                            body = request.POST.get('text', '')
+                            html_body = request.POST.get('html', '')
+                            from_email = request.POST.get('from', '')
                             cc = request.POST.get('cc', [])
                             if type(cc) != list:
                                 cc = [cc]
-                            subject = request.POST['subject']
+                            subject = request.POST.get('subject', '')
                             num_attachments = int(request.POST['attachments'])
                         except (KeyError, ValueError):
                             # KeyError: key was not in POST dict
@@ -203,12 +203,15 @@ def email_redirect(request):
 
                         if type(to_email) != list:
                             to_email = [to_email]
-                        if len(to_email) > 1:
+                            addresses = getaddresses(to_email)
+                        if 'prm@my.jobs' in [addr[1] for addr in addresses]:
+                            # post to my.jobs
+                            helpers.repost_to_mj(request.POST)
+                            return HttpResponse(status=200)
+                        if len(addresses) > 1:
                             # maybe not a My.jobs redirect
                             return HttpResponse(status=200)
-                        else:
-                            split_addr = getaddresses(to_email)
-                        to_guid = split_addr[0][1].split('@')[0]
+                        to_guid = addresses[0][1].split('@')[0]
 
                         # shouldn't happen, but if someone somehow sends an
                         # email with a view source attached, we should

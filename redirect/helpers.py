@@ -511,3 +511,15 @@ def create_myjobs_account(from_email):
     except urllib2.URLError as e:
         contents = '{"error":"%s"}' % e.args[0]
     return contents
+
+
+def repost_to_mj(post):
+    """
+    Repost a parsed email to secure.my.jobs
+
+    Inputs:
+    :post: dictionary to be posted
+    """
+    mj_url = 'https://secure.my.jobs/prm/email'
+    if not hasattr(mail, 'outbox'):
+        urllib2.urlopen(mj_url, data=post).read()
