@@ -1,6 +1,7 @@
 import base64
 from email.utils import getaddresses
 from datetime import datetime
+from itertools import chain
 import json
 from urllib import unquote
 import urllib2
@@ -185,14 +186,18 @@ def email_redirect(request):
                     if user is not None and user == target:
                         try:
                             to_email = request.POST.get('to', '')
+                            if type(to_email) != list:
+                                to_email = [to_email]
                             # Unused, but could be useful sometime
                             #headers = request.POST['headers']
                             body = request.POST.get('text', '')
                             html_body = request.POST.get('html', '')
                             from_email = request.POST.get('from', '')
                             cc = request.POST.get('cc', [])
-                            if type(cc) != list:
+                            if cc and type(cc) != list:
                                 cc = [cc]
+                            elif not cc:
+                                cc = []
                             subject = request.POST.get('subject', '')
                             num_attachments = int(request.POST['attachments'])
                         except (KeyError, ValueError):
@@ -201,15 +206,21 @@ def email_redirect(request):
                             #     to int
                             return HttpResponse(status=200)
 
-                        if type(to_email) != list:
-                            to_email = [to_email]
-                            addresses = getaddresses(to_email)
-                        if 'prm@my.jobs' in [addr[1] for addr in addresses]:
+                        addresses = getaddresses(to_email + cc)
+                        individual = [addr[1] for addr in addresses]
+
+                        if 'prm@my.jobs' in individual:
                             # post to my.jobs
                             helpers.repost_to_mj(request.POST.copy())
                             return HttpResponse(status=200)
-                        if len(addresses) > 1:
-                            # maybe not a My.jobs redirect
+                        if len(individual) != 1:
+                            # >1 recipients
+                            # or 0 recipients (everyone is bcc)
+                            # Probably not a guid@my.jobs email
+                            message = 'Multiple addresses found; expected ' +\
+                                '1, got %s' % len(addresses)
+                            helpers.log_failure(from_=from_email, to=to_email,
+                                                message=message)
                             return HttpResponse(status=200)
                         to_guid = addresses[0][1].split('@')[0]
 

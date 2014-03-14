@@ -445,6 +445,9 @@ def log_failure(from_, to, message):
         except JIRAError:
             jira = []
 
+    if type(to) == list:
+        to = ', '.join(to)
+
     fail_body = """
                 From: %s
                 To: %s
