@@ -711,11 +711,10 @@ class EmailForwardTests(TestCase):
                 'Basic %s' % base64.b64encode('%s:%s' % (self.user.username.\
                                                          replace('@', '%40'),
                                                          self.password))}
-        self.post_dict = {'to': ['to@example.com'],
+        self.post_dict = {'to': 'to@example.com',
                           'from': 'from@example.com',
                           'text': 'This address does not contain a valid guid',
                           'html': '',
-                          'cc': [''],
                           'subject': 'Bad Email',
                           'attachments': 0}
 
@@ -757,7 +756,7 @@ class EmailForwardTests(TestCase):
         self.assertEqual(email.subject, 'My.jobs email redirect failure')
 
     def test_bad_guid_email(self):
-        self.post_dict['to'] = ['%s@my.jobs' % ('1'*32)]
+        self.post_dict['to'] = '%s@my.jobs' % ('1'*32)
         self.post_dict['text'] = 'This address is not in the database'
 
         auth = self.auth.get('good')
@@ -785,7 +784,7 @@ class EmailForwardTests(TestCase):
         self.assertEqual(email.body, self.post_dict['text'])
 
     def test_email_with_name(self):
-        self.post_dict['to'] = ['User <%s@my.jobs>' % self.redirect_guid]
+        self.post_dict['to'] = 'User <%s@my.jobs>' % self.redirect_guid
         self.post_dict['text'] = 'Questions about stuff and things'
         self.post_dict['subject'] = 'Compliance'
 
@@ -803,6 +802,30 @@ class EmailForwardTests(TestCase):
                           'api_key=%s' % settings.MJ_API['key'],
                           'email=%s' % self.user.username.replace('@', '%40')]:
             self.assertTrue(parameter in response)
+
+    def test_no_emails(self):
+        self.post_dict.pop('to')
+        auth = self.auth.get('good')
+        response = self.client.post(reverse('email_redirect'),
+                                    HTTP_AUTHORIZATION=auth,
+                                    data=self.post_dict)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+
+        email = mail.outbox.pop()
+        self.assertTrue('Bad address count: expected 1, got 0' in email.body)
+
+    def test_too_many_emails(self):
+        self.post_dict['to'] = 'test@example.com, foo@mail.my.jobs'
+        auth = self.auth.get('good')
+        response = self.client.post(reverse('email_redirect'),
+                                    HTTP_AUTHORIZATION=auth,
+                                    data=self.post_dict)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+
+        email = mail.outbox.pop()
+        self.assertTrue('Bad address count: expected 1, got 2' in email.body)
 
 
 class UpdateBUIDTests(TestCase):

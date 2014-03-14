@@ -185,15 +185,17 @@ def email_redirect(request):
                     target = User.objects.get(username='accounts@my.jobs')
                     if user is not None and user == target:
                         try:
-                            to_email = request.POST.get('to', '')
-                            if type(to_email) != list:
+                            to_email = request.POST.get('to', None)
+                            if to_email and type(to_email) != list:
                                 to_email = [to_email]
+                            elif not to_email:
+                                to_email = []
                             # Unused, but could be useful sometime
                             #headers = request.POST['headers']
                             body = request.POST.get('text', '')
                             html_body = request.POST.get('html', '')
                             from_email = request.POST.get('from', '')
-                            cc = request.POST.get('cc', [])
+                            cc = request.POST.get('cc', None)
                             if cc and type(cc) != list:
                                 cc = [cc]
                             elif not cc:
@@ -217,7 +219,7 @@ def email_redirect(request):
                             # >1 recipients
                             # or 0 recipients (everyone is bcc)
                             # Probably not a guid@my.jobs email
-                            message = 'Multiple addresses found; expected ' +\
+                            message = 'Bad address count: expected ' +\
                                 '1, got %s' % len(addresses)
                             helpers.log_failure(from_=from_email, to=to_email,
                                                 message=message)
