@@ -1,12 +1,17 @@
 from datetime import datetime, timedelta
 import urllib
+import urllib2
 import urlparse
 
 from django.conf import settings
+from django.core import mail
+from django.core.mail import EmailMessage
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.utils import timezone
 from django.utils.http import urlquote_plus
+from jira.client import JIRA
+from jira.exceptions import JIRAError
 
 import redirect.actions
 from redirect.models import CanonicalMicrosite, DestinationManipulation
@@ -28,6 +33,17 @@ STATE_MAP = {
     'gu-': {'buid': 2703,
             'site': 'guam.us.jobs'},
 }
+
+
+NEW_MJ_CUSTOM_MSG = """
+Thank you for your message. We will forward it to the appropriate party in
+short order. However, before we do so we need you to verify your email by
+activating your my.jobs account. This allows us to verify that you are human
+and gives you access to the tools on my.jobs.
+
+To activate your account for %s, just click the link below to verify you own
+this email address.
+"""
 
 
 def clean_guid(guid):
@@ -409,3 +425,106 @@ def set_aguid_cookie(response, host, aguid):
                             expires=365 * 24 * 60 * 60,
                             domain=domain)
     return response
+
+
+def log_failure(from_, to, message):
+    """
+    Logs failures in redirecting job@my.jobs emails
+
+    Inputs:
+    :from_: From address
+    :to: To address
+    :message: Issue that occurred
+    """
+    if settings.DEBUG or hasattr(mail, 'outbox'):
+        jira = []
+    else:
+        try:
+            jira = JIRA(options=settings.JIRA_OPTIONS,
+                        basic_auth=settings.JIRA_AUTH)
+        except JIRAError:
+            jira = []
+
+    if type(to) == list:
+        to = ', '.join(to)
+
+    fail_body = """
+                From: %s
+                To: %s
+
+                Reason:
+                %s
+                """ % (from_, to,
+                       message)
+    if jira:
+        project = jira.project('MJA')
+        issue = {
+            'project': {'key': project.key},
+            'summary': 'Redirect email failure',
+            'description': fail_body,
+            'issuetype': {'name': 'Bug'}
+        }
+        jira.create_issue(fields=issue)
+    else:
+        fail_subject = 'My.jobs email redirect failure'
+        fail_email = EmailMessage(
+            subject=fail_subject,
+            body=fail_body,
+            from_email=from_,
+            to=[settings.EMAIL_TO_ADMIN])
+        fail_email.send()
+
+
+def send_response_to_sender(from_, to, response_type):
+    email = EmailMessage(from_email=from_,
+                         to=to,
+                         subject='Error sending email')
+    if response_type == 'no_match':
+        email.body = 'TODO: Create template for this (does not match job)'
+    else:
+        email.body = 'TODO: Create template for this (matches job)'
+    email.send()
+
+
+def create_myjobs_account(from_email):
+    """
+    Creates a My.jobs account for a given email if one does not exist
+
+    Inputs:
+    :from_email: Email address that will be associated with the new
+        My.jobs account
+
+    Returns:
+    Response from My.jobs (or an error) if tests are not being run
+    My.jobs url if tests are being run
+    """
+    mj_url = 'http://secure.my.jobs:80/api/v1/user/'
+    mj_url = urlparse.urlparse(mj_url)
+    qs = {'username': settings.MJ_API['username'],
+          'api_key': settings.MJ_API['key'],
+          'email': from_email,
+          'user_type': 'redirect',
+          'custom_msg': NEW_MJ_CUSTOM_MSG % from_email}
+    qs = urllib.urlencode(qs)
+    mj_url = mj_url._replace(query=qs).geturl()
+    if hasattr(mail, 'outbox'):
+        return mj_url
+
+    try:
+        contents = urllib2.urlopen(mj_url).read()
+    except urllib2.URLError as e:
+        contents = '{"error":"%s"}' % e.args[0]
+    return contents
+
+
+def repost_to_mj(post):
+    """
+    Repost a parsed email to secure.my.jobs
+
+    Inputs:
+    :post: dictionary to be posted
+    """
+    post['key'] = settings.EMAIL_KEY
+    mj_url = 'https://secure.my.jobs/prm/email'
+    if not hasattr(mail, 'outbox'):
+        urllib2.urlopen(mj_url, data=post).read()

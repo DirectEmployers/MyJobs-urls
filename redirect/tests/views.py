@@ -1,10 +1,15 @@
+import base64
 import datetime
 import json
 import re
 from urllib import unquote
 import uuid
+from django.contrib.auth.models import User
+
+from jira.client import JIRA
 
 from django.conf import settings
+from django.core import mail
 from django.core.cache import cache
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.test import TestCase
@@ -12,22 +17,24 @@ from django.test.client import Client, RequestFactory
 from django.utils import text, timezone
 from django.utils.http import urlquote_plus
 
-from redirect.models import DestinationManipulation, ExcludedViewSource
+from redirect import helpers
+from redirect.models import DestinationManipulation, ExcludedViewSource, CompanyEmail
 from redirect.tests.factories import (
     RedirectFactory, CanonicalMicrositeFactory, DestinationManipulationFactory,
     CustomExcludedViewSourceFactory)
 from redirect.views import home
 
+GUID_RE = re.compile(r'([{\-}])')
+
 
 class ViewSourceViewTests(TestCase):
-    guid_re = re.compile(r'([{\-}])')
 
     def setUp(self):
         self.client = Client()
         self.redirect = RedirectFactory()
         self.microsite = CanonicalMicrositeFactory()
         self.manipulation = DestinationManipulationFactory()
-        self.redirect_guid = self.guid_re.sub('', self.redirect.guid)
+        self.redirect_guid = GUID_RE.sub('', self.redirect.guid)
 
         self.factory = RequestFactory()
 
@@ -679,6 +686,146 @@ class ViewSourceViewTests(TestCase):
         test_url = '%s%s?foo=bar' % (self.manipulation.value_1,
                                      self.redirect.url)
         self.assertEqual(response['Location'], test_url)
+
+
+class EmailForwardTests(TestCase):
+    def setUp(self):
+        self.redirect = RedirectFactory(buid=1)
+        self.redirect_guid = GUID_RE.sub('', self.redirect.guid)
+
+        self.password = 'secret'
+        self.user = User.objects.create(username='accounts@my.jobs')
+        self.user.set_password(self.password)
+        self.user.save()
+
+        self.contact = CompanyEmail.objects.create(
+            buid=self.redirect.buid,
+            email=self.user.username)
+
+        self.email = self.user.username.replace('@', '%40')
+        self.auth = {
+            'bad': [
+                '',
+                'Basic %s' % base64.b64encode('bad%40email:wrong_pass')],
+            'good':
+                'Basic %s' % base64.b64encode('%s:%s' % (self.user.username.\
+                                                         replace('@', '%40'),
+                                                         self.password))}
+        self.post_dict = {'to': 'to@example.com',
+                          'from': 'from@example.com',
+                          'text': 'This address does not contain a valid guid',
+                          'html': '',
+                          'subject': 'Bad Email',
+                          'attachments': 0}
+
+
+    def test_jira_login(self):
+        jira = JIRA(options=settings.JIRA_OPTIONS, basic_auth=settings.JIRA_AUTH)
+        self.assertIsNotNone(jira)
+
+    def test_bad_authorization(self):
+        for auth in self.auth.get('bad'):
+            kwargs = {}
+            if auth:
+                # auth_value has a value, so we can pass an HTTP_AUTHORIZATION
+                #    header
+                kwargs['HTTP_AUTHORIZATION'] = auth
+            response = self.client.post(reverse('email_redirect'),
+                                        **kwargs)
+            self.assertTrue(response.status_code, 403)
+
+    def test_good_authorization(self):
+        auth_value = self.auth.get('good')
+        response = self.client.post(reverse('email_redirect'),
+                                    HTTP_AUTHORIZATION=auth_value)
+        self.assertEqual(response.status_code, 200)
+
+    def test_bad_email(self):
+        auth = self.auth.get('good')
+        response = self.client.post(reverse('email_redirect'),
+                                    HTTP_AUTHORIZATION=auth,
+                                    data=self.post_dict)
+        self.assertEqual(response.status_code, 200)
+        email = mail.outbox.pop()
+        for field in [self.post_dict['to'][0], self.post_dict['from'],
+                      'badly formed hexadecimal UUID string']:
+            self.assertTrue(field in email.body)
+
+        self.assertEqual(email.from_email, self.post_dict['from'])
+        self.assertEqual(email.to, [settings.EMAIL_TO_ADMIN])
+        self.assertEqual(email.subject, 'My.jobs email redirect failure')
+
+    def test_bad_guid_email(self):
+        self.post_dict['to'] = '%s@my.jobs' % ('1'*32)
+        self.post_dict['text'] = 'This address is not in the database'
+
+        auth = self.auth.get('good')
+        response = self.client.post(reverse('email_redirect'),
+                                    HTTP_AUTHORIZATION=auth,
+                                    data=self.post_dict)
+        self.assertEqual(response.status_code, 200)
+        # TODO: Test that an email gets sent once that functionality is added
+
+    def test_good_guid_email(self):
+        self.post_dict['to'] = ['%s@my.jobs' % self.redirect_guid]
+        self.post_dict['text'] = 'Questions about stuff and things'
+        self.post_dict['subject'] = 'Compliance'
+
+        auth = self.auth.get('good')
+        response = self.client.post(reverse('email_redirect'),
+                                    HTTP_AUTHORIZATION=auth,
+                                    data=self.post_dict)
+        self.assertEqual(response.status_code, 200)
+
+        email = mail.outbox.pop()
+        self.assertEqual(email.from_email, self.post_dict['from'])
+        self.assertEqual(email.to, [self.contact.email])
+        self.assertEqual(email.subject, self.post_dict['subject'])
+        self.assertEqual(email.body, self.post_dict['text'])
+
+    def test_email_with_name(self):
+        self.post_dict['to'] = 'User <%s@my.jobs>' % self.redirect_guid
+        self.post_dict['text'] = 'Questions about stuff and things'
+        self.post_dict['subject'] = 'Compliance'
+
+        auth = self.auth.get('good')
+        response = self.client.post(reverse('email_redirect'),
+                                    HTTP_AUTHORIZATION=auth,
+                                    data=self.post_dict)
+        self.assertEqual(response.status_code, 200)
+
+        email = mail.outbox.pop()
+
+    def test_creating_mj_user(self):
+        response = helpers.create_myjobs_account(self.user.username)
+        for parameter in ['username=%s' % settings.MJ_API['username'].replace('@', '%40'),
+                          'api_key=%s' % settings.MJ_API['key'],
+                          'email=%s' % self.user.username.replace('@', '%40')]:
+            self.assertTrue(parameter in response)
+
+    def test_no_emails(self):
+        self.post_dict.pop('to')
+        auth = self.auth.get('good')
+        response = self.client.post(reverse('email_redirect'),
+                                    HTTP_AUTHORIZATION=auth,
+                                    data=self.post_dict)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+
+        email = mail.outbox.pop()
+        self.assertTrue('Bad address count: expected 1, got 0' in email.body)
+
+    def test_too_many_emails(self):
+        self.post_dict['to'] = 'test@example.com, foo@mail.my.jobs'
+        auth = self.auth.get('good')
+        response = self.client.post(reverse('email_redirect'),
+                                    HTTP_AUTHORIZATION=auth,
+                                    data=self.post_dict)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+
+        email = mail.outbox.pop()
+        self.assertTrue('Bad address count: expected 1, got 2' in email.body)
 
 
 class UpdateBUIDTests(TestCase):

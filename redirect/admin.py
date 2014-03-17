@@ -164,6 +164,7 @@ class CanonicalMicrositeAdmin(admin.ModelAdmin):
 
 
 admin.site.register(CanonicalMicrosite, CanonicalMicrositeAdmin)
+admin.site.register(CompanyEmail)
 admin.site.register(CustomExcludedViewSource, CustomExcludedViewSourceAdmin)
 admin.site.register(DestinationManipulation, DestinationManipulationAdmin)
 admin.site.register(ExcludedViewSource, ExcludedViewSourceAdmin)
