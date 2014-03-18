@@ -747,13 +747,13 @@ class EmailForwardTests(TestCase):
                                     data=self.post_dict)
         self.assertEqual(response.status_code, 200)
         email = mail.outbox.pop()
-        for field in [self.post_dict['to'][0], self.post_dict['from'],
-                      'badly formed hexadecimal UUID string']:
+        for field in [self.post_dict['to'][0], self.post_dict['from']]:
             self.assertTrue(field in email.body)
 
         self.assertEqual(email.from_email, self.post_dict['from'])
         self.assertEqual(email.to, [settings.EMAIL_TO_ADMIN])
-        self.assertEqual(email.subject, 'My.jobs email redirect failure')
+        self.assertEqual(email.subject, 'My.jobs contact email')
+        self.assertTrue(self.post_dict['text'] in email.body)
 
     def test_bad_guid_email(self):
         self.post_dict['to'] = '%s@my.jobs' % ('1'*32)
@@ -813,7 +813,7 @@ class EmailForwardTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
 
         email = mail.outbox.pop()
-        self.assertTrue('Bad address count: expected 1, got 0' in email.body)
+        self.assertTrue('My.jobs contact email' in email.subject)
 
     def test_too_many_emails(self):
         self.post_dict['to'] = 'test@example.com, foo@mail.my.jobs'
@@ -825,7 +825,7 @@ class EmailForwardTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
 
         email = mail.outbox.pop()
-        self.assertTrue('Bad address count: expected 1, got 2' in email.body)
+        self.assertTrue('My.jobs contact email' in email.subject)
 
 
 class UpdateBUIDTests(TestCase):

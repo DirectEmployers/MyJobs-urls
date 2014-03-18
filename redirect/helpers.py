@@ -427,15 +427,35 @@ def set_aguid_cookie(response, host, aguid):
     return response
 
 
-def log_failure(from_, to, message):
+def add_part(body, part, value, join_str):
     """
-    Logs failures in redirecting job@my.jobs emails
+    Constructs parts of a JIRA ticket (or email) body,  bit by bit.
 
     Inputs:
-    :from_: From address
-    :to: To address
-    :message: Issue that occurred
+    :body: Current body that we will append to
+    :part: Name of the current thing we are appending
+    :value: What we are going to append
+    :join_str: String that will be used to join the value together if
+        it is a list
+
+    Outputs:
+    :body: Input body with a name and value appended to it
     """
+    if type(value) == list:
+        value = join_str.join(value)
+    body += '%s: %s\n' % (part, value)
+    return body
+
+
+def log_failure(post):
+    """
+    Logs failures in redirecting job@my.jobs emails. This does not mean literal
+    failure, but the email in question is not a guid@my.jobs email and should be forwarded.
+
+    Inputs:
+    :post: copy of request.POST QueryDict
+    """
+
     if settings.DEBUG or hasattr(mail, 'outbox'):
         jira = []
     else:
@@ -445,34 +465,38 @@ def log_failure(from_, to, message):
         except JIRAError:
             jira = []
 
-    if type(to) == list:
-        to = ', '.join(to)
+    # Pop from and headers from the post dict; from is used in a few places
+    from_ = post.pop('from', '')
+    if type(from_) == list:
+        from_ = from_[0]
+    headers = post.pop('headers', '')
+    body = add_part('', 'from', from_, '')
+    for part in ['to', 'cc', 'subject', 'spam_score', 'spam_report']:
+        body = add_part(body, part, post.pop(part, ''), ', ')
 
-    fail_body = """
-                From: %s
-                To: %s
+    for item in post.items():
+        if not item[0].startswith('attachment'):
+            body = add_part(body, item[0], item[1], ', ')
 
-                Reason:
-                %s
-                """ % (from_, to,
-                       message)
+    body = add_part(body, 'headers', headers, '\n')
+
+    subject = 'My.jobs contact email'
     if jira:
         project = jira.project('MJA')
         issue = {
             'project': {'key': project.key},
-            'summary': 'Redirect email failure',
-            'description': fail_body,
-            'issuetype': {'name': 'Bug'}
+            'summary': subject,
+            'description': body,
+            'issuetype': {'name': 'Task'}
         }
         jira.create_issue(fields=issue)
     else:
-        fail_subject = 'My.jobs email redirect failure'
-        fail_email = EmailMessage(
-            subject=fail_subject,
-            body=fail_body,
+        email = EmailMessage(
+            subject=subject,
+            body=body,
             from_email=from_,
             to=[settings.EMAIL_TO_ADMIN])
-        fail_email.send()
+        email.send()
 
 
 def send_response_to_sender(from_, to, response_type):
