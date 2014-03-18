@@ -291,6 +291,9 @@ class CompanyEmail(models.Model):
     buid = models.IntegerField(primary_key=True)
     email = models.EmailField()
 
+    def __unicode__(self):
+        return '%s: %s' % (self.email, self.buid)
+
 
 class EmailRedirectLog(models.Model):
     from_addr = models.EmailField()
