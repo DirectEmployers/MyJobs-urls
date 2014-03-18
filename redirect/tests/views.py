@@ -4,11 +4,11 @@ import json
 import re
 from urllib import unquote
 import uuid
-from django.contrib.auth.models import User
 
 from jira.client import JIRA
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.core import mail
 from django.core.cache import cache
 from django.core.urlresolvers import reverse, NoReverseMatch

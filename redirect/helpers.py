@@ -443,7 +443,11 @@ def add_part(body, part, value, join_str):
     """
     if type(value) == list:
         value = join_str.join(value)
-    body += '%s: %s\n' % (part, value)
+    if join_str == '\n':
+        body_part = '%s:\n%s\n'
+    else:
+        body_part = '%s: %s\n'
+    body += body_part % (part, value)
     return body
 
 
@@ -466,13 +470,22 @@ def log_failure(post):
             jira = []
 
     # Pop from and headers from the post dict; from is used in a few places
+    # and headers, text, and html need a small bit of special handling
     from_ = post.pop('from', '')
     if type(from_) == list:
         from_ = from_[0]
     headers = post.pop('headers', '')
+    text = post.pop('text', '')
+    html = post.pop('html', '')
     body = add_part('', 'from', from_, '')
+
+    # These are likely to be the most important, so we can put them first
     for part in ['to', 'cc', 'subject', 'spam_score', 'spam_report']:
         body = add_part(body, part, post.pop(part, ''), ', ')
+
+    # Add email body (text and html versions)
+    body = add_part(body, 'text', text, '\n')
+    body = add_part(body, 'html', html, '\n')
 
     for item in post.items():
         if not item[0].startswith('attachment'):
