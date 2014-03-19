@@ -211,13 +211,13 @@ def email_redirect(request):
 
                         if 'prm@my.jobs' in individual:
                             # post to my.jobs
-                            helpers.repost_to_mj(request.POST.copy())
+                            helpers.repost_to_mj(request.POST.dict())
                             return HttpResponse(status=200)
                         if len(individual) != 1:
                             # >1 recipients
                             # or 0 recipients (everyone is bcc)
                             # Probably not a guid@my.jobs email
-                            helpers.log_failure(request.POST.copy())
+                            helpers.log_failure(request.POST.dict())
                             return HttpResponse(status=200)
                         to_guid = addresses[0][1].split('@')[0]
 
@@ -229,7 +229,7 @@ def email_redirect(request):
                             to_guid = '{%s}' % uuid.UUID(to_guid)
                             job = Redirect.objects.get(guid=to_guid)
                         except ValueError:
-                            helpers.log_failure(request.POST.copy())
+                            helpers.log_failure(request.POST.dict())
                             return HttpResponse(status=200)
                         except Redirect.DoesNotExist:
                             # TODO: improve copy for send_response_to_sender
