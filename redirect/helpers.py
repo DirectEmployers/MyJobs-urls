@@ -564,4 +564,5 @@ def repost_to_mj(post):
     post['key'] = settings.EMAIL_KEY
     mj_url = 'https://secure.my.jobs/prm/email'
     if not hasattr(mail, 'outbox'):
+        post = urllib.urlencode(post)
         urllib2.urlopen(mj_url, data=post).read()
