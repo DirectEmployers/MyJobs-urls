@@ -190,8 +190,6 @@ def email_redirect(request):
                                 to_email = [to_email]
                             elif not to_email:
                                 to_email = []
-                            # Unused, but could be useful sometime
-                            #headers = request.POST['headers']
                             body = request.POST.get('text', '')
                             html_body = request.POST.get('html', '')
                             from_email = request.POST.get('from', '')
@@ -213,16 +211,13 @@ def email_redirect(request):
 
                         if 'prm@my.jobs' in individual:
                             # post to my.jobs
-                            helpers.repost_to_mj(request.POST.copy())
+                            helpers.repost_to_mj(request.POST.dict())
                             return HttpResponse(status=200)
                         if len(individual) != 1:
                             # >1 recipients
                             # or 0 recipients (everyone is bcc)
                             # Probably not a guid@my.jobs email
-                            message = 'Bad address count: expected ' +\
-                                '1, got %s' % len(addresses)
-                            helpers.log_failure(from_=from_email, to=to_email,
-                                                message=message)
+                            helpers.log_failure(request.POST.dict())
                             return HttpResponse(status=200)
                         to_guid = addresses[0][1].split('@')[0]
 
@@ -233,9 +228,8 @@ def email_redirect(request):
                         try:
                             to_guid = '{%s}' % uuid.UUID(to_guid)
                             job = Redirect.objects.get(guid=to_guid)
-                        except ValueError as e:
-                            helpers.log_failure(from_=from_email, to=to_email,
-                                                message=e.args[0])
+                        except ValueError:
+                            helpers.log_failure(request.POST.dict())
                             return HttpResponse(status=200)
                         except Redirect.DoesNotExist:
                             # TODO: improve copy for send_response_to_sender
