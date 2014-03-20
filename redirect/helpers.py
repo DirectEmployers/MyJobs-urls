@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from email.utils import getaddresses
 import urllib
 import urllib2
 import urlparse
@@ -535,6 +536,12 @@ def create_myjobs_account(from_email):
     Response from My.jobs (or an error) if tests are not being run
     My.jobs url if tests are being run
     """
+    if type(from_email) != list:
+        from_email = [from_email]
+    # getaddresses returns a list of tuples
+    # ['name@example.com'] parses to [('', 'name@example.com')]
+    # ['Name <name@example.com>'] parses to [('Name', 'name@example.com')]
+    from_email = getaddresses(from_email)[0][1]
     mj_url = 'http://secure.my.jobs:80/api/v1/user/'
     mj_url = urlparse.urlparse(mj_url)
     qs = {'username': settings.MJ_API['username'],
