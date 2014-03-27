@@ -827,6 +827,22 @@ class EmailForwardTests(TestCase):
         email = mail.outbox.pop()
         self.assertTrue('My.jobs contact email' in email.subject)
 
+    def test_prm_email(self):
+        """
+        If prm@my.jobs is included as a recipient, we repost this email to
+        My.jobs. This is a straight post, which we don't want to do in a
+        testing environment. If we receive a 200 status code and no emails
+        were sent, this was reasonably likely to have completed successfully.
+        """
+        for email in ['prm@my.jobs', 'PRM@my.jobs']:
+            self.post_dict['to'] = email
+            auth = self.auth.get('good')
+            response = self.client.post(reverse('email_redirect'),
+                                        HTTP_AUTHORIZATION=auth,
+                                        data=self.post_dict)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(len(mail.outbox), 0)
+
 
 class UpdateBUIDTests(TestCase):
     def setUp(self):

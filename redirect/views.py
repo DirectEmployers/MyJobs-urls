@@ -207,7 +207,7 @@ def email_redirect(request):
                             return HttpResponse(status=200)
 
                         addresses = getaddresses(to_email + cc)
-                        individual = [addr[1] for addr in addresses]
+                        individual = [addr[1].lower() for addr in addresses]
 
                         if 'prm@my.jobs' in individual:
                             # post to my.jobs
