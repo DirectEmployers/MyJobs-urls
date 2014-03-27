@@ -834,7 +834,7 @@ class EmailForwardTests(TestCase):
         testing environment. If we receive a 200 status code and no emails
         were sent, this was reasonably likely to have completed successfully.
         """
-        for email in ['prm@my.jobs', 'PRM@my.jobs']:
+        for email in ['prm@my.jobs', 'PRM@MY.JOBS']:
             self.post_dict['to'] = email
             auth = self.auth.get('good')
             response = self.client.post(reverse('email_redirect'),
