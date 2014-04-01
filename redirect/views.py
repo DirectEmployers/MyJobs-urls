@@ -206,12 +206,27 @@ def email_redirect(request):
                             #     to int
                             return HttpResponse(status=200)
 
+                        attachment_data = []
+                        for file_number in range(1, num_attachments+1):
+                            try:
+                                file_ = request.FILES['attachment%s' % file_number]
+                            except KeyError:
+                                # Upload problem?
+                                helpers.log_failure(request.POST.copy(),
+                                                    'My.jobs Attachment Failure')
+                                return HttpResponse(status=200)
+                            name = file_.name
+                            content = file_.read()
+                            content_type = file_.content_type
+                            attachment_data.append((name, content, content_type))
+
                         addresses = getaddresses(to_email + cc)
                         individual = [addr[1].lower() for addr in addresses]
 
                         if 'prm@my.jobs' in individual:
                             # post to my.jobs
-                            helpers.repost_to_mj(request.POST.dict())
+                            helpers.repost_to_mj(request.POST.copy(),
+                                                 attachment_data)
                             return HttpResponse(status=200)
                         if len(individual) != 1:
                             # >1 recipients
@@ -246,18 +261,6 @@ def email_redirect(request):
                             return HttpResponse(status=200)
 
                         # TODO: send job description and forward note to sender
-
-                        attachment_data = []
-                        for file_number in range(1, num_attachments+1):
-                            try:
-                                file_ = request.FILES['attachment%s' % file_number]
-                            except KeyError:
-                                # Upload problem?
-                                return HttpResponse(status=200)
-                            name = file_.name
-                            content = file_.read()
-                            content_type = file_.content_type
-                            attachment_data.append((name, content, content_type))
 
                         sg_headers = {
                             'X-SMTPAPI': '{"category": "My.jobs email redirect"}'
