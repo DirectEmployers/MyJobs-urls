@@ -1,5 +1,6 @@
 {% load i18n %}
 {% load staticfiles %}
+{% load compress %}
 <!DOCTYPE html>
 <html>
 <head {% block head_attributes %}{% endblock %}>
@@ -7,7 +8,9 @@
     {% endblock %}
 
     {% block meta %}
-    <link href="{% static "my.jobs.css" %}" rel="stylesheet" type="text/css">
+    {% compress css %}
+    <link href="{% static "my.jobs.less" %}" rel="stylesheet" type="text/less">
+    {% endcompress %}
     <script src="//d2e48ltfsb5exy.cloudfront.net/framework/v2/secure/js/def.ui.core.js"></script>
     <script src="{% static "my.jobs.js" %}"></script>
     {% endblock %}

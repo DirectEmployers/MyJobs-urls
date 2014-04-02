@@ -5,9 +5,9 @@ from django.db.models.signals import post_save
 from django.utils.translation import ugettext_lazy as _
 
 
-CHOICES = ['sourcecodetag', 'microsite', 'micrositetag', 'amptoamp', 'cframe',
-           'anchorredirectissue', 'urlswap', 'replacethenadd',
-           'replacethenaddpre', 'sourceurlwrapappend', 'sourcecodeinsertion',
+CHOICES = ['sourcecodetag', 'amptoamp', 'cframe', 'anchorredirectissue',
+           'urlswap', 'replacethenadd', 'replacethenaddpre',
+           'sourceurlwrapappend', 'sourcecodeinsertion',
            'sourceurlwrapunencoded', 'sourceurlwrapunencodedappend',
            'switchlastinstance', 'switchlastthenadd', 'sourcecodeswitch',
            'doubleclickunwind', 'fixurl']
@@ -129,19 +129,16 @@ class RedirectAction(models.Model):
     # Too manual? To add another action, add it to this list and
     # increment the value in the call to range, then add it to the
     # ACTION_CHOICES tuple
-    (SOURCECODETAG_ACTION, MICROSITE_ACTION, MICROSITETAG_ACTION,
-        AMPTOAMP_ACTION, CFRAME_ACTION, ANCHORREDIRECTISSUE_ACTION,
-        URLSWAP_ACTION, REPLACETHENADD_ACTION, REPLACETHENADDPRE_ACTION,
-        SOURCEURLWRAPAPPEND_ACTION, SOURCECODEINSERTION_ACTION,
-        SOURCEURLWRAPUNENCODED_ACTION, SOURCEURLWRAPUNENCODEDAPPEND_ACTION,
-        SWITCHLASTINSTANCE_ACTION, SWITCHLASTTHENADD_ACTION,
-        SOURCECODESWITCH_ACTION, DOUBLECLICKUNWIND_ACTION,
-        FIXURL_ACTION,) = range(18)
+    (SOURCECODETAG_ACTION, AMPTOAMP_ACTION, CFRAME_ACTION,
+        ANCHORREDIRECTISSUE_ACTION, URLSWAP_ACTION, REPLACETHENADD_ACTION,
+        REPLACETHENADDPRE_ACTION, SOURCEURLWRAPAPPEND_ACTION,
+        SOURCECODEINSERTION_ACTION, SOURCEURLWRAPUNENCODED_ACTION,
+        SOURCEURLWRAPUNENCODEDAPPEND_ACTION, SWITCHLASTINSTANCE_ACTION,
+        SWITCHLASTTHENADD_ACTION, SOURCECODESWITCH_ACTION,
+        DOUBLECLICKUNWIND_ACTION, FIXURL_ACTION,) = range(16)
 
     ACTION_CHOICES = (
         (SOURCECODETAG_ACTION, 'sourcecodetag'),
-        (MICROSITE_ACTION, 'microsite'),
-        (MICROSITETAG_ACTION, 'micrositetag'),
         (AMPTOAMP_ACTION, 'amptoamp'),
         (CFRAME_ACTION, 'cframe'),
         (ANCHORREDIRECTISSUE_ACTION, 'anchorredirectissue'),
@@ -288,3 +285,19 @@ def clear_custom_vs_cache(sender, instance, created, **kwargs):
 # Clears excluded view source cache when an instance is saved
 post_save.connect(clear_custom_vs_cache, sender=CustomExcludedViewSource,
                   dispatch_uid="clear_custom_vs_cache")
+
+
+class CompanyEmail(models.Model):
+    buid = models.IntegerField(primary_key=True)
+    email = models.EmailField()
+
+    def __unicode__(self):
+        return '%s: %s' % (self.email, self.buid)
+
+
+class EmailRedirectLog(models.Model):
+    from_addr = models.EmailField()
+    to_guid = models.CharField(max_length=38)
+    buid = models.IntegerField()
+    to_addr = models.EmailField()
+    sent = models.DateTimeField(auto_now_add=True)

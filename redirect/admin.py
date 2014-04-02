@@ -3,7 +3,14 @@ from django.contrib import admin
 from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 
-from redirect.models import *
+from redirect.models import (CanonicalMicrosite, CompanyEmail,
+    CustomExcludedViewSource, DestinationManipulation, EmailRedirectLog,
+    ExcludedViewSource, ViewSource)
+
+
+#
+# Admin Filters
+#
 
 
 class MultiSearchFilter(admin.FieldListFilter):
@@ -121,6 +128,26 @@ class ExcludedViewSourceFilter(admin.SimpleListFilter):
             return queryset
 
 
+#
+# Model Admins
+#
+
+
+class CanonicalMicrositeAdmin(admin.ModelAdmin):
+    list_display = ['buid', 'canonical_microsite_url']
+    search_fields = ['buid', 'canonical_microsite_url']
+
+
+class CompanyEmailAdmin(admin.ModelAdmin):
+    list_display = ['buid', 'email']
+    search_fields = ['=buid', 'email']
+
+
+class CustomExcludedViewSourceAdmin(admin.ModelAdmin):
+    list_display = ['buid', 'get_vs_name']
+    search_fields = ['buid', 'view_source']
+
+
 class DestinationManipulationAdmin(admin.ModelAdmin):
     list_filter = ['action_type',
                    ('action', MultiSearchFilter),
@@ -131,15 +158,14 @@ class DestinationManipulationAdmin(admin.ModelAdmin):
     list_display = ['buid', 'get_view_source_name', 'action_type',
                     'action', 'value_1', 'value_2']
 
+class EmailRedirectLogAdmin(admin.ModelAdmin):
+    list_display = ['buid', 'from_addr', 'to_addr', 'sent']
+    search_fields = ['=buid', 'from_addr', 'to_addr']
+
 
 class ExcludedViewSourceAdmin(admin.ModelAdmin):
     list_display = ['get_vs_cell']
     search_fields = ['=view_source']
-
-
-class CustomExcludedViewSourceAdmin(admin.ModelAdmin):
-    list_display = ['buid', 'get_vs_name']
-    search_fields = ['buid', 'view_source']
 
 
 class ViewSourceAdmin(admin.ModelAdmin):
@@ -158,13 +184,10 @@ class ViewSourceAdmin(admin.ModelAdmin):
             return []
 
 
-class CanonicalMicrositeAdmin(admin.ModelAdmin):
-    list_display = ['buid', 'canonical_microsite_url']
-    search_fields = ['buid', 'canonical_microsite_url']
-
-
 admin.site.register(CanonicalMicrosite, CanonicalMicrositeAdmin)
+admin.site.register(CompanyEmail, CompanyEmailAdmin)
 admin.site.register(CustomExcludedViewSource, CustomExcludedViewSourceAdmin)
 admin.site.register(DestinationManipulation, DestinationManipulationAdmin)
+admin.site.register(EmailRedirectLog, EmailRedirectLogAdmin)
 admin.site.register(ExcludedViewSource, ExcludedViewSourceAdmin)
 admin.site.register(ViewSource, ViewSourceAdmin)
