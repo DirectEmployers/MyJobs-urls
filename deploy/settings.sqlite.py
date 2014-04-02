@@ -22,3 +22,7 @@ ALLOWED_HOSTS = []
 # Uncomment for Django Debug Toolbar
 #MIDDLEWARE_CLASSES += ('debug_toolbar.middleware.DebugToolbarMiddleware',)
 #INSTALLED_APPS += ('debug_toolbar',)
+
+SOLR = {
+    'default': 'http://localhost:8983/solr'
+}
