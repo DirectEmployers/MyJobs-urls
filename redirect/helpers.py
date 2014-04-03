@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from email.utils import getaddresses
+import requests
 import urllib
 import urllib2
 import urlparse
@@ -452,7 +453,7 @@ def add_part(body, part, value, join_str):
     return body
 
 
-def log_failure(post):
+def log_failure(post, subject=None):
     """
     Logs failures in redirecting job@my.jobs emails. This does not mean literal
     failure, but the email in question is not a guid@my.jobs email and should be forwarded.
@@ -494,7 +495,8 @@ def log_failure(post):
 
     body = add_part(body, 'headers', headers, '\n')
 
-    subject = 'My.jobs contact email'
+    if subject is None:
+        subject = 'My.jobs contact email'
     if jira:
         project = jira.project('MJA')
         issue = {
@@ -561,15 +563,21 @@ def create_myjobs_account(from_email):
     return contents
 
 
-def repost_to_mj(post):
+def repost_to_mj(post, files):
     """
     Repost a parsed email to secure.my.jobs
 
     Inputs:
     :post: dictionary to be posted
+    :files: list containing filename, contents, and content type of files
+        to be posted
     """
     post['key'] = settings.EMAIL_KEY
     mj_url = 'https://secure.my.jobs/prm/email'
     if not hasattr(mail, 'outbox'):
-        post = urllib.urlencode(post)
-        urllib2.urlopen(mj_url, data=post).read()
+        new_files = {}
+        for index in range(len(files)):
+            # This fails when we include content type for some reason;
+            # Don't send content type
+            new_files['attachment%s' % (index+1, )] = files[index][:2]
+        r = requests.post(mj_url, data=post, files=new_files)
