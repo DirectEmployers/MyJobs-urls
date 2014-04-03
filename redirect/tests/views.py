@@ -8,7 +8,6 @@ import uuid
 from jira.client import JIRA
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.core import mail
 from django.core.cache import cache
 from django.core.urlresolvers import reverse, NoReverseMatch
@@ -17,6 +16,7 @@ from django.test.client import Client, RequestFactory
 from django.utils import text, timezone
 from django.utils.http import urlquote_plus
 
+from myjobs.models import User
 from redirect import helpers
 from redirect.models import DestinationManipulation, ExcludedViewSource, CompanyEmail
 from redirect.tests.factories import (
@@ -694,7 +694,7 @@ class EmailForwardTests(TestCase):
         self.redirect_guid = GUID_RE.sub('', self.redirect.guid)
 
         self.password = 'secret'
-        self.user = get_user_model().objects.create(email='accounts@my.jobs')
+        self.user = User.objects.create(email='accounts@my.jobs')
         self.user.set_password(self.password)
         self.user.save()
 
