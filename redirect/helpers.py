@@ -569,12 +569,15 @@ def repost_to_mj(post, files):
 
     Inputs:
     :post: dictionary to be posted
-    :files: dictionary-like object containing files to be reposted
+    :files: list containing filename, contents, and content type of files
+        to be posted
     """
     post['key'] = settings.EMAIL_KEY
     mj_url = 'https://secure.my.jobs/prm/email'
     if not hasattr(mail, 'outbox'):
         new_files = {}
         for index in range(len(files)):
+            # This fails when we include content type for some reason;
+            # Don't send content type
             new_files['attachment%s' % (index+1, )] = files[index][:2]
         r = requests.post(mj_url, data=post, files=new_files)
