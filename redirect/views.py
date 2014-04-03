@@ -8,8 +8,7 @@ import urllib2
 import uuid
 
 from django.conf import settings
-from django.contrib.auth import authenticate
-from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, get_user_model
 from django.core.mail import EmailMultiAlternatives
 from django.http import (HttpResponseGone, HttpResponsePermanentRedirect,
                          HttpResponse)
@@ -182,7 +181,7 @@ def email_redirect(request):
                     login_info[0] = urllib2.unquote(login_info[0])
                     user = authenticate(username=login_info[0],
                                         password=login_info[1])
-                    target = User.objects.get(username='accounts@my.jobs')
+                    target = get_user_model().objects.get(email='accounts@my.jobs')
                     if user is not None and user == target:
                         try:
                             to_email = request.POST.get('to', None)
