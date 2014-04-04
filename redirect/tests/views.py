@@ -687,6 +687,22 @@ class ViewSourceViewTests(TestCase):
                                      self.redirect.url)
         self.assertEqual(response['Location'], test_url)
 
+    def test_source_codes_with_hit_key(self):
+        self.manipulation.action = 'replacethenadd'
+        self.manipulation.value_1 = '/job!!!!/apply'
+        self.manipulation.value_2 = '&src=foo'
+        self.manipulation.save()
+
+        self.redirect.url = 'http://www.directemployers.org/job#hit-key'
+        self.redirect.save()
+
+        expected = '/apply?src=bar#hit-key'
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          self.manipulation.view_source]) + '?z=1&src=bar')
+        self.assertTrue(response['Location'].endswith(expected))
+
 
 class EmailForwardTests(TestCase):
     def setUp(self):

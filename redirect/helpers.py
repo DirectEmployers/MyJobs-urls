@@ -336,7 +336,9 @@ def replace_or_add_query(url, query, exclusions=None):
         url = url._replace(query=old_query)
         url = urlparse.urlunparse(url)
     else:
-        url += query
+        parts = url.split('#')
+        parts[0] += query
+        url = '#'.join(parts)
     return url
 
 
