@@ -245,7 +245,7 @@ class ViewSourceViewTests(TestCase):
                                   self.manipulation.view_source]))
         old, new = self.manipulation.value_1.split('!!!!')
         test_url = 'http://testserver/%s%s' % \
-            (self.redirect.url, self.manipulation.value_2)
+            (self.redirect.url, self.manipulation.value_2.replace('&', '?'))
         self.assertEqual(response['Location'], test_url)
 
     def test_replacethenaddpre_redirect(self):
