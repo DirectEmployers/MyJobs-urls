@@ -106,7 +106,8 @@ def do_manipulations(guid_redirect, manipulations,
                     # before doing the manipulation.
                     if return_dict['enable_custom_queries']:
                         guid_redirect.url = replace_or_add_query(
-                            guid_redirect.url, return_dict.get('qs'),
+                            guid_redirect.url,
+                            '&%s' % return_dict.get('qs'),
                             exclusions=['vs', 'z'])
                     redirect_url = redirect_method(guid_redirect,
                                                    manipulation)
@@ -126,7 +127,7 @@ def do_manipulations(guid_redirect, manipulations,
                         if return_dict['enable_custom_queries']:
                             redirect_url = replace_or_add_query(
                                 redirect_url,
-                                return_dict['qs'],
+                                '&%s' % return_dict.get('qs'),
                                 exclusions=['vs', 'z'])
                 return_dict['redirect_url'] = redirect_url
 
@@ -257,7 +258,7 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
                 return_dict['redirect_url'] = redirect_url
 
             return_dict['enable_custom_queries'] = request.REQUEST.get('z') == '1'
-            return_dict['qs'] = '&%s' % request.META['QUERY_STRING']
+            return_dict['qs'] = request.META['QUERY_STRING']
             do_manipulations(guid_redirect, manipulations,
                              return_dict, debug_content)
 
