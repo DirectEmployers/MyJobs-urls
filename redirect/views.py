@@ -10,6 +10,7 @@ import uuid
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.core import mail
 from django.core.mail import EmailMultiAlternatives
 from django.http import (HttpResponseGone, HttpResponsePermanentRedirect,
                          HttpResponse)
@@ -223,10 +224,28 @@ def email_redirect(request):
                         addresses = getaddresses(to_email + cc)
                         individual = [addr[1].lower() for addr in addresses]
 
-                        if 'prm@my.jobs' in individual:
+                        prm_bcc = False
+                        try:
+                            # prm@my.jobs appears in the 'envelope' parameter
+                            # posted from SendGrid if prm@my.jobs was added
+                            # via BCC
+                            envelope = json.loads(request.POST.get('envelope',
+                                                                   ''))
+                        except ValueError:
+                            # envelope was not valid JSON or was not provided
+                            pass
+                        else:
+                            if 'prm@my.jobs' in [env_email.lower()
+                                                 for env_email
+                                                 in envelope.get('to', [])]:
+                                prm_bcc = True
+
+                        if prm_bcc or 'prm@my.jobs' in individual:
                             # post to my.jobs
                             helpers.repost_to_mj(request.POST.copy(),
                                                  attachment_data)
+                            if hasattr(mail, 'outbox'):
+                                return HttpResponse(content='reposted')
                             return HttpResponse(status=200)
                         if len(individual) != 1:
                             # >1 recipients
