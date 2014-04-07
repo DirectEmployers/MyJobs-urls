@@ -81,8 +81,9 @@ def home(request, guid, vsid=None, debug=None):
                 debug_content.append(
                     'ManipulatedLink(No Manipulation)=%s' % redirect_url)
             if enable_custom_queries:
+                custom_queries = '&%s' % request.META.get('QUERY_STRING')
                 redirect_url = helpers.replace_or_add_query(
-                    redirect_url, request.META.get('QUERY_STRING'),
+                    redirect_url, custom_queries,
                     exclusions=['vs', 'z'])
                 if debug:
                     debug_content.append(
