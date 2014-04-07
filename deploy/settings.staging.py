@@ -12,7 +12,7 @@ DATABASES = {
         'PASSWORD': PROD_DB_PASSWD,
         'HOST': 'db-redirectstaging.c9shuxvtcmer.us-east-1.rds.amazonaws.com',
         'PORT': '3306',
-        }
+    }
 }
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False

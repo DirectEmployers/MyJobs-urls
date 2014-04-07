@@ -8,7 +8,6 @@ import uuid
 from jira.client import JIRA
 
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core import mail
 from django.core.cache import cache
 from django.core.urlresolvers import reverse, NoReverseMatch
@@ -17,6 +16,7 @@ from django.test.client import Client, RequestFactory
 from django.utils import text, timezone
 from django.utils.http import urlquote_plus
 
+from myjobs.models import User
 from redirect import helpers
 from redirect.models import DestinationManipulation, ExcludedViewSource, CompanyEmail
 from redirect.tests.factories import (
@@ -694,21 +694,21 @@ class EmailForwardTests(TestCase):
         self.redirect_guid = GUID_RE.sub('', self.redirect.guid)
 
         self.password = 'secret'
-        self.user = User.objects.create(username='accounts@my.jobs')
+        self.user = User.objects.create(email='accounts@my.jobs')
         self.user.set_password(self.password)
         self.user.save()
 
         self.contact = CompanyEmail.objects.create(
             buid=self.redirect.buid,
-            email=self.user.username)
+            email=self.user.email)
 
-        self.email = self.user.username.replace('@', '%40')
+        self.email = self.user.email.replace('@', '%40')
         self.auth = {
             'bad': [
                 '',
                 'Basic %s' % base64.b64encode('bad%40email:wrong_pass')],
             'good':
-                'Basic %s' % base64.b64encode('%s:%s' % (self.user.username.\
+                'Basic %s' % base64.b64encode('%s:%s' % (self.user.email.\
                                                          replace('@', '%40'),
                                                          self.password))}
         self.post_dict = {'to': 'to@example.com',
@@ -797,10 +797,10 @@ class EmailForwardTests(TestCase):
         email = mail.outbox.pop()
 
     def test_creating_mj_user(self):
-        response = helpers.create_myjobs_account(self.user.username)
+        response = helpers.create_myjobs_account(self.user.email)
         for parameter in ['username=%s' % settings.MJ_API['username'].replace('@', '%40'),
                           'api_key=%s' % settings.MJ_API['key'],
-                          'email=%s' % self.user.username.replace('@', '%40')]:
+                          'email=%s' % self.user.email.replace('@', '%40')]:
             self.assertTrue(parameter in response)
 
     def test_no_emails(self):
