@@ -9,7 +9,6 @@ import uuid
 
 from django.conf import settings
 from django.contrib.auth import authenticate
-from django.contrib.auth.models import User
 from django.core import mail
 from django.core.mail import EmailMultiAlternatives
 from django.http import (HttpResponseGone, HttpResponsePermanentRedirect,
@@ -20,6 +19,7 @@ from django.template.loader import render_to_string
 from django.utils import text, timezone
 from django.views.decorators.csrf import csrf_exempt
 
+from myjobs.models import User
 from redirect.models import (Redirect, CanonicalMicrosite,
     DestinationManipulation, CompanyEmail, EmailRedirectLog)
 from redirect import helpers
@@ -82,8 +82,9 @@ def home(request, guid, vsid=None, debug=None):
                 debug_content.append(
                     'ManipulatedLink(No Manipulation)=%s' % redirect_url)
             if enable_custom_queries:
+                custom_queries = '&%s' % request.META.get('QUERY_STRING')
                 redirect_url = helpers.replace_or_add_query(
-                    redirect_url, request.META.get('QUERY_STRING'),
+                    redirect_url, custom_queries,
                     exclusions=['vs', 'z'])
                 if debug:
                     debug_content.append(
@@ -183,7 +184,7 @@ def email_redirect(request):
                     login_info[0] = urllib2.unquote(login_info[0])
                     user = authenticate(username=login_info[0],
                                         password=login_info[1])
-                    target = User.objects.get(username='accounts@my.jobs')
+                    target = User.objects.get(email='accounts@my.jobs')
                     if user is not None and user == target:
                         try:
                             to_email = request.POST.get('to', None)

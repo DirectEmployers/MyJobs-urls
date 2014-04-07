@@ -107,7 +107,7 @@ def do_manipulations(guid_redirect, manipulations,
                     if return_dict['enable_custom_queries']:
                         guid_redirect.url = replace_or_add_query(
                             guid_redirect.url,
-                            return_dict.get('qs'),
+                            '&%s' % return_dict.get('qs'),
                             exclusions=['vs', 'z'])
                     redirect_url = redirect_method(guid_redirect,
                                                    manipulation)
@@ -127,7 +127,7 @@ def do_manipulations(guid_redirect, manipulations,
                         if return_dict['enable_custom_queries']:
                             redirect_url = replace_or_add_query(
                                 redirect_url,
-                                return_dict['qs'],
+                                '&%s' % return_dict.get('qs'),
                                 exclusions=['vs', 'z'])
                 return_dict['redirect_url'] = redirect_url
 
@@ -253,7 +253,7 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
                     # will be passed to the microsite, which will pass
                     # them back to us on apply clicks
                     redirect_url = replace_or_add_query(
-                        redirect_url, request.META.get('QUERY_STRING'),
+                        redirect_url, '&%s' % request.META.get('QUERY_STRING'),
                         exclusions=[])
                 return_dict['redirect_url'] = redirect_url
 
@@ -311,28 +311,35 @@ def replace_or_add_query(url, query, exclusions=None):
     """
     if not exclusions:
         exclusions = []
-    query = query.encode('utf-8')
-    url = url.encode('utf-8')
-    url = urlparse.urlparse(url)
-    old_query = urlparse.parse_qsl(url.query, keep_blank_values=True)
-    old_keys = [q[0] for q in old_query]
+    if query[0] in ['?', '&']:
+        query = query[1:]
+        query = query.encode('utf-8')
+        url = url.encode('utf-8')
+        url = urlparse.urlparse(url)
+        old_query = urlparse.parse_qsl(url.query, keep_blank_values=True)
+        old_keys = [q[0] for q in old_query]
 
-    new_query = urlparse.parse_qsl(query)
+        new_query = urlparse.parse_qsl(query)
 
-    for new_index in range(len(new_query)):
-        if new_query[new_index][0] not in exclusions:
-            if new_query[new_index][0] in old_keys:
-                old_index = old_keys.index(new_query[new_index][0])
-                old_query[old_index] = new_query[new_index]
-            else:
-                old_query.append(new_query[new_index])
+        for new_index in range(len(new_query)):
+            if new_query[new_index][0] not in exclusions:
+                if new_query[new_index][0] in old_keys:
+                    old_index = old_keys.index(new_query[new_index][0])
+                    old_query[old_index] = new_query[new_index]
+                else:
+                    old_query.append(new_query[new_index])
 
-    # parse_qsl unencodes the query that you pass it; Re-encode the query
-    # parameters when reconstructing the string.
-    old_query = '&'.join(['='.join([urllib.quote(k), urllib.quote(v)])
-                         for k, v in old_query])
-    url = url._replace(query=old_query)
-    return urlparse.urlunparse(url)
+        # parse_qsl unencodes the query that you pass it; Re-encode the query
+        # parameters when reconstructing the string.
+        old_query = '&'.join(['='.join([urllib.quote(k), urllib.quote(v)])
+                             for k, v in old_query])
+        url = url._replace(query=old_query)
+        url = urlparse.urlunparse(url)
+    else:
+        parts = url.split('#')
+        parts[0] += query
+        url = '#'.join(parts)
+    return url
 
 
 def get_hosted_state_url(redirect, url):

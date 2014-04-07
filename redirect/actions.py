@@ -11,11 +11,7 @@ def sourcecodetag(redirect_obj, manipulation_obj):
         # At first blush, this appears to be a valid part of a query string.
         # Technically = being the first character would not cause any issues on
         # our side, but that would make for an invalid parameter.
-        if query[0] in ['?', '&']:
-            query = query[1:]
-            url = redirect.helpers.replace_or_add_query(url, query)
-        else:
-            url = url + query
+        url = redirect.helpers.replace_or_add_query(url, query)
     return url
 
 
@@ -161,7 +157,9 @@ def replacethenadd(redirect_obj, manipulation_obj):
     The values are '!!!!'-delimited and are stored in value_1
     """
     url = replace(redirect_obj, manipulation_obj)
-    return url + manipulation_obj.value_2
+    add = manipulation_obj.value_2
+    url = redirect.helpers.replace_or_add_query(url, add)
+    return url
 
 
 def replacethenaddpre(redirect_obj, manipulation_obj):

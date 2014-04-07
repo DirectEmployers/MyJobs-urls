@@ -44,6 +44,8 @@ STATIC_ROOT = ''
 # Example: "http://example.com/static/", "http://static.example.com/"
 STATIC_URL = '/static/'
 
+AUTH_USER_MODEL = 'myjobs.User'
+
 # Additional locations of static files
 STATICFILES_DIRS = (
     join(ROOT_PATH, 'static'),
@@ -107,7 +109,7 @@ INSTALLED_APPS = (
     'compressor',
 )
 
-PROJECT_APPS = ('redirect',)
+PROJECT_APPS = ('redirect', 'myjobs')
 
 INSTALLED_APPS += PROJECT_APPS
 
