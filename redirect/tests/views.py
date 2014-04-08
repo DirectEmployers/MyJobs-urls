@@ -703,6 +703,27 @@ class ViewSourceViewTests(TestCase):
                           self.manipulation.view_source]) + '?z=1&src=bar')
         self.assertTrue(response['Location'].endswith(expected))
 
+    def test_bad_query_value(self):
+        """
+        A few replacethenadd instances were found that had blank values
+        for the "add" portion. They have been fixed, but we should ensure that
+        this doesn't 500 in the event that more are added.
+        """
+        self.manipulation.action = 'replacethenadd'
+        self.manipulation.value_1 = '/jobdetail.ftl!!!!/jobapply.ftl'
+        self.manipulation.value_2 = ''
+        self.manipulation.save()
+
+        self.redirect.url = 'http://directemployers.org/jobdetail.ftl'
+        self.redirect.save()
+
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          self.manipulation.view_source]))
+        self.assertTrue(response['Location'].endswith('/jobapply.ftl'))
+        self.assertFalse('/jobdetail.ftl' in response['Location'])
+
 
 class EmailForwardTests(TestCase):
     def setUp(self):
