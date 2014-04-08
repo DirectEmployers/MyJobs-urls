@@ -850,13 +850,26 @@ class EmailForwardTests(TestCase):
         testing environment. If we receive a 200 status code and no emails
         were sent, this was reasonably likely to have completed successfully.
         """
-        for email in ['prm@my.jobs', 'PRM@MY.JOBS']:
-            self.post_dict['to'] = email
-            auth = self.auth.get('good')
+        prm_list = ['prm@my.jobs', 'PRM@MY.JOBS']
+        auth = self.auth.get('good')
+
+        for email in prm_list:
+            self.post_dict['envelope'] = '{"to":["%s"]}' % email
             response = self.client.post(reverse('email_redirect'),
                                         HTTP_AUTHORIZATION=auth,
                                         data=self.post_dict)
             self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.content, 'reposted')
+            self.assertEqual(len(mail.outbox), 0)
+        del self.post_dict['envelope']
+
+        for email in prm_list:
+            self.post_dict['to'] = email
+            response = self.client.post(reverse('email_redirect'),
+                                        HTTP_AUTHORIZATION=auth,
+                                        data=self.post_dict)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.content, 'reposted')
             self.assertEqual(len(mail.outbox), 0)
 
 
