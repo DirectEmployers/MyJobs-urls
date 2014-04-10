@@ -311,7 +311,7 @@ def replace_or_add_query(url, query, exclusions=None):
     """
     if not exclusions:
         exclusions = []
-    if query[0] in ['?', '&']:
+    if len(query) > 1 and query[0] in ['?', '&']:
         query = query[1:]
         query = query.encode('utf-8')
         url = url.encode('utf-8')
