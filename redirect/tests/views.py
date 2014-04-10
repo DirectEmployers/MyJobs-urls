@@ -781,7 +781,7 @@ class EmailForwardTests(TestCase):
                                     data=self.post_dict)
         self.assertEqual(response.status_code, 200)
         email = mail.outbox.pop()
-        self.assertEqual(email.subject, 'Job does not exist')
+        self.assertEqual(email.subject, 'Email forward failure')
         self.assertTrue('There is no job associated with this address'
                         in email.body)
 

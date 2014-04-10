@@ -241,23 +241,29 @@ def email_redirect(request):
         # Probably not a guid@my.jobs email
         helpers.log_failure(request.POST.dict())
         return HttpResponse(status=200)
-    to_guid = addresses[0][1].split('@')[0]
+    hex_guid = addresses[0][1].split('@')[0]
 
     # shouldn't happen, but if someone somehow sends an
     # email with a view source attached, we should
     # remove it
-    to_guid = to_guid[:32]
+    hex_guid = hex_guid[:32]
+
+    email_dict = {'new_to': from_email,
+                  'old_to': to_email,
+                  'guid': hex_guid}
+
     try:
-        to_guid = '{%s}' % uuid.UUID(to_guid)
+        to_guid = '{%s}' % uuid.UUID(hex_guid)
         job = Redirect.objects.get(guid=to_guid)
     except ValueError:
         helpers.log_failure(request.POST.dict())
         return HttpResponse(status=200)
     except Redirect.DoesNotExist:
-        helpers.send_response_to_sender(from_email, to_email, 'no_match')
-        # TODO: improve copy for send_response_to_sender
-        # TODO: and send an error email to the sender
+        email_dict['email_type'] = 'no_job'
+        helpers.send_response_to_sender(**email_dict)
         return HttpResponse(status=200)
+
+    email_dict['job'] = job
 
     helpers.create_myjobs_account(from_email)
 
@@ -265,10 +271,12 @@ def email_redirect(request):
         ce = CompanyEmail.objects.get(buid=job.buid)
         new_to = ce.email
     except CompanyEmail.DoesNotExist:
-        # TODO: send job description to sender
+        email_dict['email_type'] = 'no_contact'
+        helpers.send_response_to_sender(**email_dict)
         return HttpResponse(status=200)
 
-    # TODO: send job description and forward note to sender
+    email_dict['email_type'] = 'contact'
+    helpers.send_response_to_sender(**email_dict)
 
     sg_headers = {
         'X-SMTPAPI': '{"category": "My.jobs email redirect"}'

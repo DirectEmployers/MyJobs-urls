@@ -1,0 +1,11 @@
+{% if solr_job %}
+{{solr_job.title}}
+
+{{solr_job.description}}
+{% else %}
+{{job.job_title}}
+{% endif %}
+
+{% if success %}
+Your email was forwarded successfully.
+{% endif %}
