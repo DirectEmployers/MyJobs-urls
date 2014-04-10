@@ -780,7 +780,10 @@ class EmailForwardTests(TestCase):
                                     HTTP_AUTHORIZATION=auth,
                                     data=self.post_dict)
         self.assertEqual(response.status_code, 200)
-        # TODO: Test that an email gets sent once that functionality is added
+        email = mail.outbox.pop()
+        self.assertEqual(email.subject, 'Job does not exist')
+        self.assertTrue('There is no job associated with this address'
+                        in email.body)
 
     def test_good_guid_email(self):
         self.post_dict['to'] = ['%s@my.jobs' % self.redirect_guid]
