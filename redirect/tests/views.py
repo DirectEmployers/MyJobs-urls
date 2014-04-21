@@ -7,6 +7,7 @@ from urllib import unquote
 import uuid
 
 from jira.client import JIRA
+from testfixtures import Replacer
 
 from django.conf import settings
 from django.core import mail
@@ -16,7 +17,6 @@ from django.test import TestCase
 from django.test.client import Client, RequestFactory
 from django.utils import timezone
 from django.utils.http import urlquote_plus
-import pysolr
 
 from myjobs.models import User
 from redirect import helpers
@@ -29,9 +29,37 @@ from redirect.views import home
 
 GUID_RE = re.compile(r'([{\-}])')
 
+JOB = {
+    'guid': '2' * 32,
+    'buid': 0,
+    'title': 'Underwater Basket Weaver',
+    'description':
+    '''Qualifications:
+    10+ years prior experience weaving baskets underwater
+    BS/MS Underwater Basket Weaving preferable
+    '''
+}
+
+
+def mock_search(self, q=None, kwargs=None):
+    """
+    Helper method that mocks a solr search result
+    """
+    class Result(object):
+        def __init__(self, job):
+            self.docs = job
+            self.hits = len(job)
+
+    job = []
+    if q is not None:
+        q = q.split(':')
+        if q[0] == 'guid' and q[1] == JOB['guid']:
+            job = [JOB]
+
+    return Result(job)
+
 
 class ViewSourceViewTests(TestCase):
-
     def setUp(self):
         self.client = Client()
         self.redirect = RedirectFactory()
@@ -709,11 +737,8 @@ class ViewSourceViewTests(TestCase):
 
 class EmailForwardTests(TestCase):
     def setUp(self):
-        self.solr = pysolr.Solr(settings.SOLR['default'])
-        self.job = self.solr.search(q='*:*').docs[0]
-
-        self.redirect_guid = self.job['guid']
-        self.redirect = RedirectFactory(buid=self.job['buid'],
+        self.redirect_guid = JOB['guid']
+        self.redirect = RedirectFactory(buid=JOB['buid'],
                                         guid='{%s}' %
                                              uuid.UUID(self.redirect_guid))
 
@@ -742,6 +767,11 @@ class EmailForwardTests(TestCase):
                           'subject': 'Bad Email',
                           'attachments': 0}
 
+        self.r = Replacer()
+        self.r.replace('pysolr.Solr.search', mock_search)
+
+    def tearDown(self):
+        self.r.restore()
 
     def submit_email(self, use_data=True):
         """
@@ -764,9 +794,9 @@ class EmailForwardTests(TestCase):
 
         return response
 
-    def ensure_guid_email_responses_are_correct(self,
-                                       redirect,
-                                       job=None):
+    def assert_guid_email_responses_are_correct(self,
+                                                redirect,
+                                                job=None):
         """
         Helper method for validating parsed guid@my.jobs emails.
 
@@ -838,7 +868,7 @@ class EmailForwardTests(TestCase):
         self.post_dict['subject'] = 'Email forward success'
 
         self.submit_email()
-        self.ensure_guid_email_responses_are_correct(self.redirect, self.job)
+        self.assert_guid_email_responses_are_correct(self.redirect, JOB)
 
     def test_good_guid_email_new_job_no_user(self):
         self.contact.delete()
@@ -848,8 +878,7 @@ class EmailForwardTests(TestCase):
         self.post_dict['subject'] = 'Email forward success'
 
         self.submit_email()
-        self.ensure_guid_email_responses_are_correct(self.redirect,
-                                            self.job)
+        self.assert_guid_email_responses_are_correct(self.redirect, JOB)
 
     def test_good_guid_email_old_job(self):
         guid = '1'*32
@@ -861,7 +890,7 @@ class EmailForwardTests(TestCase):
         self.post_dict['subject'] = 'Email forward success'
 
         self.submit_email()
-        self.ensure_guid_email_responses_are_correct(redirect)
+        self.assert_guid_email_responses_are_correct(redirect)
 
     def test_good_guid_email_old_job_no_user(self):
         self.contact.delete()
@@ -875,7 +904,7 @@ class EmailForwardTests(TestCase):
         self.post_dict['subject'] = 'Email forward success'
 
         self.submit_email()
-        self.ensure_guid_email_responses_are_correct(redirect)
+        self.assert_guid_email_responses_are_correct(redirect)
 
     def test_email_with_name(self):
         self.post_dict['to'] = 'User <%s@my.jobs>' % self.redirect_guid

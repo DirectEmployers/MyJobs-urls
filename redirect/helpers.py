@@ -571,7 +571,7 @@ def send_response_to_sender(new_to, old_to, email_type, guid='', job=None):
         solr_job = get_job_from_solr(guid)
         render_dict = {'job': job,
                        'solr_job': solr_job,
-                       'success': email_type == 'contact' }
+                       'success': email_type == 'contact'}
         email.body = render_to_string('redirect/email/job_exists.html',
                                       render_dict)
         email.subject = 'Email forward success'
