@@ -39,3 +39,7 @@ CACHES = {
 NEW_RELIC_TRACKING = True
 
 MIDDLEWARE_CLASSES += ('redirect.middleware.MyJobsRedirectMiddleware',)
+
+SOLR = {
+    'default': 'http://solr_server/solr'
+}
