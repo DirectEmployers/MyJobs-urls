@@ -1,19 +1,25 @@
+import base64
 from datetime import datetime, timedelta
 from email.utils import getaddresses
-import requests
 import urllib
 import urllib2
 import urlparse
 
+import pysolr
+import requests
+
 from django.conf import settings
+from django.contrib.auth import authenticate
 from django.core import mail
 from django.core.mail import EmailMessage
 from django.shortcuts import render_to_response
 from django.template import RequestContext
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.http import urlquote_plus
 from jira.client import JIRA
 from jira.exceptions import JIRAError
+from myjobs.models import User
 
 import redirect.actions
 from redirect.models import CanonicalMicrosite, DestinationManipulation
@@ -463,7 +469,8 @@ def add_part(body, part, value, join_str):
 def log_failure(post, subject=None):
     """
     Logs failures in redirecting job@my.jobs emails. This does not mean literal
-    failure, but the email in question is not a guid@my.jobs email and should be forwarded.
+    failure, but the email in question is not a guid@my.jobs email and should
+    be forwarded.
 
     Inputs:
     :post: copy of request.POST QueryDict
@@ -522,14 +529,52 @@ def log_failure(post, subject=None):
         email.send()
 
 
-def send_response_to_sender(from_, to, response_type):
-    email = EmailMessage(from_email=from_,
-                         to=to,
-                         subject='Error sending email')
-    if response_type == 'no_match':
-        email.body = 'TODO: Create template for this (does not match job)'
+def get_job_from_solr(guid):
+    """
+    Retrieves a job from Solr via job GUID
+
+    Inputs:
+    :guid: job guid to search for in Solr
+
+    Outputs:
+    Job dict or None
+    """
+    if len(guid) == 32:
+        solr = pysolr.Solr(settings.SOLR['default'])
+        results = solr.search(q='guid:%s' % guid.upper())
+        if results.hits == 1:
+            return results.docs[0]
+    return None
+
+
+def send_response_to_sender(new_to, old_to, email_type, guid='', job=None):
+    """
+    Send response to guid@my.jobs emails
+
+    Inputs:
+    :new_to:
+    :old_to:
+    :email_type:
+    :guid:
+    """
+    if not isinstance(new_to, (list, set)):
+        new_to = [new_to]
+    if isinstance(old_to, (list, set)):
+        old_to = old_to[0]
+    email = EmailMessage(from_email=settings.DEFAULT_FROM_EMAIL,
+                         to=new_to)
+    if email_type == 'no_job':
+        email.subject = 'Email forward failure'
+        email.body = render_to_string('redirect/email/no_job.html',
+                                      {'to': old_to})
     else:
-        email.body = 'TODO: Create template for this (matches job)'
+        solr_job = get_job_from_solr(guid)
+        render_dict = {'job': job,
+                       'solr_job': solr_job,
+                       'success': email_type == 'contact'}
+        email.body = render_to_string('redirect/email/job_exists.html',
+                                      render_dict)
+        email.subject = 'Email forward success'
     email.send()
 
 
@@ -588,3 +633,19 @@ def repost_to_mj(post, files):
             # Don't send content type
             new_files['attachment%s' % (index+1, )] = files[index][:2]
         r = requests.post(mj_url, data=post, files=new_files)
+
+
+def is_authorized(request):
+    if request.method == 'POST':
+        if 'HTTP_AUTHORIZATION' in request.META:
+            method, details = request.META['HTTP_AUTHORIZATION'].split()
+            if method.lower() == 'basic':
+                login_info = base64.b64decode(details).split(':')
+                if len(login_info) == 2:
+                    login_info[0] = urllib2.unquote(login_info[0])
+                    user = authenticate(username=login_info[0],
+                                        password=login_info[1])
+                    target = User.objects.get(email='accounts@my.jobs')
+                    if user is not None and user == target:
+                        return True
+    return False

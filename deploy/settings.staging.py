@@ -24,3 +24,8 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
     }
 }
+
+SOLR = {
+    'default': 'http://23.21.242.45:8983/solr'
+}
+
