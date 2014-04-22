@@ -43,30 +43,43 @@ body {
         }
     }
 
-    .side-cap {
+    .side-cap() {
         border-left: 1px solid #BBB;
         border-right: 1px solid #BBB;
         border-radius: 4px;
     }
 
-    & .upper-cap {
-        @media screen and (min-width: 501px) {
-            .side-cap;
-            border-top: 1px solid #BBB;
-            border-bottom-left-radius: 0;
-            border-bottom-right-radius: 0;
-            padding: 5px 5px 0 5px;
+    .upper-cap() {
+        .side-cap;
+        border-top: 1px solid #BBB;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        padding: 5px 5px 0 5px;
+
+    }
+
+    .lower-cap() {
+        .side-cap;
+        border-bottom: 1px solid #BBB;
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+    }
+
+    @media screen and (min-width: 501px) {
+        & .upper-cap {
+            .upper-cap;
+        }
+
+        & .lower-cap {
+            .lower-cap;
+        }
+
+        & .bordered {
+            .upper-cap;
+            .lower-cap;
         }
     }
 
-    & .lower-cap {
-        @media screen and (min-width: 501px) {
-            .side-cap;
-            border-bottom: 1px solid #BBB;
-            border-top-left-radius: 0;
-            border-top-right-radius: 0;
-        }
-    }
 }
 
 [class^="span"] {
@@ -314,7 +327,7 @@ div.center {
     }
 }
 
-#expired-job {
+#issue-content {
     margin: 10px 0;
 
     a {
@@ -402,20 +415,27 @@ div.center {
         }
 
         b {
-            width: 60%;
+            @media screen and (min-width: 501px) {
+                width: 60%;
+            }
         }
 
         input {
             box-sizing: border-box;
-            display: inline-block;
-            margin: 0;
             padding: 20px 0;
-            width: 60%;
+
+            @media screen and (min-width: 501px) {
+                display: inline-block;
+                margin: 0;
+                width: 60%;
+            }
         }
 
         button {
-            display: inline-block;
-            width: 39%;
+            @media screen and (min-width: 501px) {
+                display: inline-block;
+                width: 39%;
+            }
         }
     }
 }

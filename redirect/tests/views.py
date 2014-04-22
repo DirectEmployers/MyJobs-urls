@@ -139,6 +139,8 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(reverse('home', args=['1' * 32]))
         self.assertEqual(response.status_code, 404)
         self.assertTemplateUsed(response, '404.html')
+        self.assertTrue('There was an error accessing this job'
+                        in response.content)
         self.assertTrue('google-analytics' in response.content)
 
     def test_open_graph_redirect(self):

@@ -1,15 +1,18 @@
 {% extends 'base.html' %}
 {% block title %}
-    <title>Something went wrong when processing your request!</title>
+    <title>My.jobs - Page Not Found</title>
 {% endblock %}
 
 {% block content %}
-    <div class="center">
-        <h4>
-            Something went wrong when processing your request!
-        </h4>
-        <div>
-                We apologize, the provided information does not match any job in our database.
+    <div id="issue-content">
+        <div class="row">
+            {# TODO: add bordered class when 404 image is added #}
+            <div class="span10 offset1{# bordered#}">
+                <div class="alert alert-block alert-error">
+                    <h4>There was an error accessing this job...</h4>
+                    <p>We apologize, but the provided information does not match any of the jobs in our system.</p>
+                </div>
+            </div>
         </div>
     </div>
 {% endblock %}
