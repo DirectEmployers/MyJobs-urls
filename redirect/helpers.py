@@ -5,22 +5,24 @@ import urllib
 import urllib2
 import urlparse
 
+from jira.client import JIRA
+from jira.exceptions import JIRAError
 import pysolr
 import requests
 
 from django.conf import settings
 from django.contrib.auth import authenticate
+from django.contrib.sites.models import Site
 from django.core import mail
 from django.core.mail import EmailMessage
-from django.shortcuts import render_to_response
+from django.http import HttpResponsePermanentRedirect
+from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.http import urlquote_plus
-from jira.client import JIRA
-from jira.exceptions import JIRAError
-from myjobs.models import User
 
+from myjobs.models import User
 import redirect.actions
 from redirect.models import CanonicalMicrosite, DestinationManipulation
 
@@ -649,3 +651,36 @@ def is_authorized(request):
                     if user is not None and user == target:
                         return True
     return False
+
+
+def get_syndication_redirect(request, redirect, view_source,
+                             debug_content=None):
+    """
+    Determines if the originating request was directed from a syndication
+    feed, retrieves the site we are redirecting to, and constructs a response.
+
+    Inputs:
+    :request: HttpRequest for this session
+    :redirect: Redirect instance for the current job GUID
+    :debug_content: List of debug strings (if provided) or None
+
+    Outputs:
+    :response: HttpResponsePermanentRedirect object if this is a syndication
+        hit, otherwise None
+    """
+    new_site_id = request.REQUEST.get('my.jobs.site.id', None)
+    response = None
+    if new_site_id is not None:
+        try:
+            new_site_id = int(new_site_id)
+        except ValueError:
+            pass
+        else:
+            site = get_object_or_404(Site, id=new_site_id)
+            redirect_url = 'http://{domain}/{id}/job/?vs={view_source}'.format(
+                domain=site.domain, id=redirect.uid, view_source=view_source)
+            response = HttpResponsePermanentRedirect(redirect_url)
+            if debug_content is not None:
+                debug_content.append('Syndication feed override: %s(%s)' %
+                                     (site.name, site.domain))
+    return response

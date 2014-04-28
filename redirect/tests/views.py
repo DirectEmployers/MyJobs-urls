@@ -10,6 +10,7 @@ from jira.client import JIRA
 from testfixtures import Replacer
 
 from django.conf import settings
+from django.contrib.sites.models import Site
 from django.core import mail
 from django.core.cache import cache
 from django.core.urlresolvers import reverse, NoReverseMatch
@@ -754,6 +755,23 @@ class ViewSourceViewTests(TestCase):
                           self.manipulation.view_source]))
         self.assertTrue(response['Location'].endswith('/jobapply.ftl'))
         self.assertFalse('/jobdetail.ftl' in response['Location'])
+
+    def test_syndication_redirect(self):
+        """
+        Ensures that we appropriately redirect to the proper microsite if we are
+        provided one that differs from what is defined for a given BUID.
+        """
+        site = Site.objects.create(domain='google.com',
+                                   name='Google')
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          self.manipulation.view_source]) +
+            '?my.jobs.site.id=%s' % site.pk)
+
+        expected = 'http://%s/%s/job/?vs=%s' % (site.domain, self.redirect.uid,
+                                                self.manipulation.view_source)
+        self.assertEqual(response['Location'], expected)
 
 
 class EmailForwardTests(TestCase):
