@@ -7,6 +7,7 @@ from urllib import unquote
 import uuid
 
 from jira.client import JIRA
+import markdown
 from testfixtures import Replacer
 
 from django.conf import settings
@@ -837,10 +838,9 @@ class EmailForwardTests(TestCase):
         parser = HTMLParser.HTMLParser()
         body = parser.unescape(email.body)
         if job is not None:
-            self.assertTrue(body.strip().endswith(
-                job['description'].strip()))
+            self.assertTrue(markdown.markdown(job['description']) in body)
         else:
-            self.assertTrue(body.strip().endswith(redirect.job_title))
+            self.assertTrue(redirect.job_title in body)
 
     def test_jira_login(self):
         jira = JIRA(options=settings.JIRA_OPTIONS, basic_auth=settings.JIRA_AUTH)
