@@ -21,6 +21,7 @@ from django.utils.http import urlquote_plus
 
 from myjobs.models import User
 from redirect import helpers
+from redirect.actions import sourcecodetag
 from redirect.models import (
     DestinationManipulation, ExcludedViewSource, CompanyEmail)
 from redirect.tests.factories import (
@@ -756,7 +757,7 @@ class ViewSourceViewTests(TestCase):
         self.assertTrue(response['Location'].endswith('/jobapply.ftl'))
         self.assertFalse('/jobdetail.ftl' in response['Location'])
 
-    def test_syndication_redirect(self):
+    def test_syndication_redirect_site_exists(self):
         """
         Ensures that we appropriately redirect to the proper microsite if we are
         provided one that differs from what is defined for a given BUID.
@@ -771,7 +772,25 @@ class ViewSourceViewTests(TestCase):
 
         expected = 'http://%s/%s/job/?vs=%s' % (site.domain, self.redirect.uid,
                                                 self.manipulation.view_source)
+        self.assertEqual(response.status_code, 301)
         self.assertEqual(response['Location'], expected)
+
+    def test_syndication_redirect_no_site(self):
+        """
+        If my.jobs.site.id is provided but does not reference a site, do
+        manipulations as if it was not provided.
+        """
+        site = Site.objects.create(domain='google.com',
+                                   name='Google')
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          self.manipulation.view_source]) +
+            '?my.jobs.site.id=%s' % (site.pk + 1))
+
+        self.assertEqual(response.status_code, 301)
+        self.assertTrue(response['Location'], sourcecodetag(self.redirect,
+                                                            self.manipulation))
 
 
 class EmailForwardTests(TestCase):

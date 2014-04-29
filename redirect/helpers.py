@@ -676,7 +676,10 @@ def get_syndication_redirect(request, redirect, view_source,
         except ValueError:
             pass
         else:
-            site = get_object_or_404(Site, id=new_site_id)
+            try:
+                site = Site.objects.get(id=new_site_id)
+            except Site.DoesNotExist:
+                return None
             redirect_url = 'http://{domain}/{id}/job/?vs={view_source}'.format(
                 domain=site.domain, id=redirect.uid, view_source=view_source)
             response = HttpResponsePermanentRedirect(redirect_url)
