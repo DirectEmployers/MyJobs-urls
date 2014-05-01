@@ -27,3 +27,6 @@ SOLR = {
     'default': 'http://23.21.242.45:8983/solr'
 }
 
+# With COMPRESS_ENABLED = True, you must run ./manage.py compress for each
+# css change and then restart runserver
+COMPRESS_ENABLED = False

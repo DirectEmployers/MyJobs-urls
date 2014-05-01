@@ -40,6 +40,7 @@ def home(request, guid, vsid=None, debug=None):
 
     guid_redirect = get_object_or_404(Redirect,
                                       guid=guid)
+    original_url = guid_redirect.url
     if debug:
         debug_content.append('RetLink(original)=%s' % guid_redirect.url)
 
@@ -92,9 +93,8 @@ def home(request, guid, vsid=None, debug=None):
 
         if expired:
             err = '&jcnlx.err=XIN'
-            data = {'location': guid_redirect.job_location,
-                    'title': guid_redirect.job_title,
-                    'company_name': guid_redirect.company_name}
+            data = {'job': guid_redirect,
+                    'expired_url': original_url}
             if (guid_redirect.buid in [1228, 5480] or
                   2650 <= guid_redirect.buid <= 2703):
                 if guid_redirect.buid in [1228, 5480]:
@@ -102,7 +102,6 @@ def home(request, guid, vsid=None, debug=None):
                 else:
                     err = '&jcnlx.err=XST'
 
-            data['expired_url'] = redirect_url
             if browse_url:
                 data['browse_url'] = browse_url
             else:

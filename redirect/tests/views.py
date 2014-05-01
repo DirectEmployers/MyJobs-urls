@@ -139,6 +139,8 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(reverse('home', args=['1' * 32]))
         self.assertEqual(response.status_code, 404)
         self.assertTemplateUsed(response, '404.html')
+        self.assertTrue('There was an error accessing this job'
+                        in response.content)
         self.assertTrue('google-analytics' in response.content)
 
     def test_open_graph_redirect(self):
@@ -439,12 +441,15 @@ class ViewSourceViewTests(TestCase):
                                   self.manipulation.view_source]))
         self.assertEqual(response.status_code, 410)
         self.assertTemplateUsed(response, 'redirect/expired.html')
-        self.assertTrue('View all current jobs for %s.' %
+
+        content = re.sub('\s+', ' ', response.content)
+        self.assertTrue('View all jobs for<br /> <b>%s</b>' %
                         self.redirect.company_name in
-                        response.content)
-        self.assertTrue('%s (%s)' %
-                        (self.redirect.job_title, self.redirect.job_location)
-                        in response.content)
+                        content)
+
+        count = content.count('class="drill-search"')
+        self.assertEqual(count, 3,
+                         'Expected three search links, found %s' % count)
         self.assertTrue(self.redirect.url in response.content)
         self.assertTrue('google-analytics' in response.content)
 
