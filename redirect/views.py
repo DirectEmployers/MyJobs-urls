@@ -155,16 +155,6 @@ def email_redirect(request):
     """
     Accepts a post from SendGrid's mail parsing webhook and processes it.
 
-    Address is not a guid:
-        Log issue to JIRA (MJA), or email MyJobs admin if that fails
-    Address is not in database:
-        TODO: Send error to sender
-    Address is in database but no company contact exists:
-        TODO: Send job description to sender
-    Address is in database and a company user exists:
-        TODO: Send confirmation to original sender
-        Forward email to company contact
-
     Authentication issues return a status code of 403
     All other paths return a 200 to prevent SendGrid from sending the same
         email repeatedly
