@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-# -*- coding: utf-8 -*-
 import HTMLParser
 import base64
 import datetime
@@ -452,6 +453,15 @@ class ViewSourceViewTests(TestCase):
                          'Expected three search links, found %s' % count)
         self.assertTrue(self.redirect.url in response.content)
         self.assertTrue('google-analytics' in response.content)
+
+    def test_expired_job_with_unicode(self):
+        self.redirect.expired_date = datetime.datetime.now(tz=timezone.utc)
+        self.redirect.job_title = u'это юникода'
+        self.redirect.save()
+
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid]))
+        self.assertTrue(response.status_code, 404)
 
     def test_cookie_domains(self):
         # The value for host is unimportant - if this code does not end up
