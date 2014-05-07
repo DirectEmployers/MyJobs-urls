@@ -320,6 +320,33 @@ div.center {
     text-align: center;
 }
 
+.direct-action-btn {
+    a {
+        display: block !important;
+        text-decoration: none !important;
+        margin: 8px 0 0;
+        width: 36%;
+        margin-left: 32%;
+        margin-right: 32%;
+        text-align: center;
+        background: #5a6d81 url("http://png.nlx.org/content_ms/files/bg-gradient.png") bottom repeat-x;
+        border: 1px solid #5a6d81;
+        padding: 12px 8px;
+        color: #fff !important;
+        font-weight: normal;
+        font-size: 1.6em;
+
+        @media screen and (max-width: 501px) {
+            width: 100%;
+            margin-left: 0;
+            margin-right: 0;
+        }
+    }
+    a:after {
+        clear: both;
+    }
+}
+
 #direct-saved-search {
     a, label {
         display: none;
@@ -438,12 +465,14 @@ div.center {
             box-sizing: border-box;
             -webkit-box-sizing: border-box;
             -moz-box-sizing: border-box;
-            padding: 20px 0;
+            padding: 15px 5px;
+
 
             @media screen and (min-width: 501px) {
                 display: inline-block;
                 margin: 0;
                 width: 60%;
+                margin-left: 20%;
             }
         }
 
