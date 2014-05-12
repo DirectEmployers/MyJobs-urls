@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-# -*- coding: utf-8 -*-
 import HTMLParser
 import base64
 import datetime
@@ -7,6 +8,7 @@ from urllib import unquote
 import uuid
 
 from jira.client import JIRA
+import markdown
 from testfixtures import Replacer
 
 from django.conf import settings
@@ -141,6 +143,8 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(reverse('home', args=['1' * 32]))
         self.assertEqual(response.status_code, 404)
         self.assertTemplateUsed(response, '404.html')
+        self.assertTrue('There was an error accessing this job'
+                        in response.content)
         self.assertTrue('google-analytics' in response.content)
 
     def test_open_graph_redirect(self):
@@ -441,14 +445,26 @@ class ViewSourceViewTests(TestCase):
                                   self.manipulation.view_source]))
         self.assertEqual(response.status_code, 410)
         self.assertTemplateUsed(response, 'redirect/expired.html')
-        self.assertTrue('View all current jobs for %s.' %
+
+        content = re.sub('\s+', ' ', response.content)
+        self.assertTrue('View all jobs for<br /> <b>%s</b>' %
                         self.redirect.company_name in
-                        response.content)
-        self.assertTrue('%s (%s)' %
-                        (self.redirect.job_title, self.redirect.job_location)
-                        in response.content)
+                        content)
+
+        count = content.count('class="drill-search"')
+        self.assertEqual(count, 3,
+                         'Expected three search links, found %s' % count)
         self.assertTrue(self.redirect.url in response.content)
         self.assertTrue('google-analytics' in response.content)
+
+    def test_expired_job_with_unicode(self):
+        self.redirect.expired_date = datetime.datetime.now(tz=timezone.utc)
+        self.redirect.job_title = u'это юникода'
+        self.redirect.save()
+
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid]))
+        self.assertTrue(response.status_code, 404)
 
     def test_cookie_domains(self):
         # The value for host is unimportant - if this code does not end up
@@ -874,10 +890,9 @@ class EmailForwardTests(TestCase):
         parser = HTMLParser.HTMLParser()
         body = parser.unescape(email.body)
         if job is not None:
-            self.assertTrue(body.strip().endswith(
-                job['description'].strip()))
+            self.assertTrue(markdown.markdown(job['description']) in body)
         else:
-            self.assertTrue(body.strip().endswith(redirect.job_title))
+            self.assertTrue(redirect.job_title in body)
 
     def test_jira_login(self):
         jira = JIRA(options=settings.JIRA_OPTIONS, basic_auth=settings.JIRA_AUTH)

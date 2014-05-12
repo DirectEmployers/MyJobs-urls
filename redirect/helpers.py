@@ -4,6 +4,7 @@ from email.utils import getaddresses
 import urllib
 import urllib2
 import urlparse
+import markdown
 
 from jira.client import JIRA
 from jira.exceptions import JIRAError
@@ -570,12 +571,25 @@ def send_response_to_sender(new_to, old_to, email_type, guid='', job=None):
         email.body = render_to_string('redirect/email/no_job.html',
                                       {'to': old_to})
     else:
+        to_parts = getaddresses(new_to)
+        to = to_parts[0][0] or to_parts[0][1]
         solr_job = get_job_from_solr(guid)
-        render_dict = {'job': job,
-                       'solr_job': solr_job,
-                       'success': email_type == 'contact'}
+        title = ''
+        description = ''
+        if solr_job is not None:
+            title = solr_job.get('title', '')
+            description = solr_job.get('description', '')
+            description = markdown.markdown(description)
+        if not title:
+            title = job.job_title
+        render_dict = {'title': title,
+                       'description': description,
+                       'success': email_type == 'contact',
+                       'guid': guid,
+                       'recipient': to}
         email.body = render_to_string('redirect/email/job_exists.html',
                                       render_dict)
+        email.content_subtype = 'html'
         email.subject = 'Email forward success'
     email.send()
 

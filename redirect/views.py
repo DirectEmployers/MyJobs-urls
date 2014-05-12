@@ -46,6 +46,8 @@ def home(request, guid, vsid=None, debug=None):
     syndication_params = {'request': request, 'redirect': guid_redirect,
                           'view_source': vsid}
 
+    original_url = guid_redirect.url
+
     if debug:
         debug_content.append('RetLink(original)=%s' % guid_redirect.url)
         syndication_params['debug_content'] = debug_content
@@ -99,9 +101,8 @@ def home(request, guid, vsid=None, debug=None):
 
         if expired:
             err = '&jcnlx.err=XIN'
-            data = {'location': guid_redirect.job_location,
-                    'title': guid_redirect.job_title,
-                    'company_name': guid_redirect.company_name}
+            data = {'job': guid_redirect,
+                    'expired_url': original_url}
             if (guid_redirect.buid in [1228, 5480] or
                   2650 <= guid_redirect.buid <= 2703):
                 if guid_redirect.buid in [1228, 5480]:
@@ -109,7 +110,6 @@ def home(request, guid, vsid=None, debug=None):
                 else:
                     err = '&jcnlx.err=XST'
 
-            data['expired_url'] = redirect_url
             if browse_url:
                 data['browse_url'] = browse_url
             else:
@@ -162,16 +162,6 @@ def myjobs_redirect(request):
 def email_redirect(request):
     """
     Accepts a post from SendGrid's mail parsing webhook and processes it.
-
-    Address is not a guid:
-        Log issue to JIRA (MJA), or email MyJobs admin if that fails
-    Address is not in database:
-        TODO: Send error to sender
-    Address is in database but no company contact exists:
-        TODO: Send job description to sender
-    Address is in database and a company user exists:
-        TODO: Send confirmation to original sender
-        Forward email to company contact
 
     Authentication issues return a status code of 403
     All other paths return a 200 to prevent SendGrid from sending the same
