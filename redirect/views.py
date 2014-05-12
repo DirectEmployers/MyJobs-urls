@@ -28,6 +28,7 @@ def home(request, guid, vsid=None, debug=None):
     # Providing z=1 as a query parameter enables custom parameters
     enable_custom_queries = request.REQUEST.get('z') == '1'
     expired = False
+    user_agent_vs = None
 
     if debug:
         # On localhost ip will always be empty unless you've got a setup
@@ -40,17 +41,24 @@ def home(request, guid, vsid=None, debug=None):
 
     guid_redirect = get_object_or_404(Redirect,
                                       guid=guid)
-    original_url = guid_redirect.url
-    if debug:
-        debug_content.append('RetLink(original)=%s' % guid_redirect.url)
-
     cleaned_guid = helpers.clean_guid(guid_redirect.guid)
 
-    user_agent_vs, response = helpers.get_opengraph_redirect(request,
-                                                             guid_redirect,
-                                                             cleaned_guid)
+    syndication_params = {'request': request, 'redirect': guid_redirect,
+                          'view_source': vsid}
 
-    if not user_agent_vs:
+    original_url = guid_redirect.url
+
+    if debug:
+        debug_content.append('RetLink(original)=%s' % guid_redirect.url)
+        syndication_params['debug_content'] = debug_content
+
+    response = helpers.get_syndication_redirect(**syndication_params)
+
+    if response is None:
+        user_agent_vs, response = helpers.get_opengraph_redirect(
+            request, guid_redirect, cleaned_guid)
+
+    if response is None:
         if vsid == '1604':
             # msccn redirect
 
