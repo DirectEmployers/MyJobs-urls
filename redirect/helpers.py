@@ -1,20 +1,30 @@
+import base64
 from datetime import datetime, timedelta
 from email.utils import getaddresses
 import pysolr
 import urllib
 import urllib2
 import urlparse
+import markdown
 
-from django.conf import settings
-from django.core import mail
-from django.core.mail import EmailMessage
-from django.shortcuts import render_to_response
-from django.template import RequestContext
-from django.utils import timezone
-from django.utils.http import urlquote_plus
 from jira.client import JIRA
 from jira.exceptions import JIRAError
+import pysolr
+import requests
 
+from django.conf import settings
+from django.contrib.auth import authenticate
+from django.contrib.sites.models import Site
+from django.core import mail
+from django.core.mail import EmailMessage
+from django.http import HttpResponsePermanentRedirect
+from django.shortcuts import render_to_response, get_object_or_404
+from django.template import RequestContext
+from django.template.loader import render_to_string
+from django.utils import timezone
+from django.utils.http import urlquote_plus
+
+from myjobs.models import User
 import redirect.actions
 from redirect.models import CanonicalMicrosite, DestinationManipulation
 
@@ -107,7 +117,7 @@ def do_manipulations(guid_redirect, manipulations,
                     if return_dict['enable_custom_queries']:
                         guid_redirect.url = replace_or_add_query(
                             guid_redirect.url,
-                            return_dict.get('qs'),
+                            '&%s' % return_dict.get('qs'),
                             exclusions=['vs', 'z'])
                     redirect_url = redirect_method(guid_redirect,
                                                    manipulation)
@@ -127,7 +137,7 @@ def do_manipulations(guid_redirect, manipulations,
                         if return_dict['enable_custom_queries']:
                             redirect_url = replace_or_add_query(
                                 redirect_url,
-                                return_dict['qs'],
+                                '&%s' % return_dict.get('qs'),
                                 exclusions=['vs', 'z'])
                 return_dict['redirect_url'] = redirect_url
 
@@ -253,7 +263,7 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
                     # will be passed to the microsite, which will pass
                     # them back to us on apply clicks
                     redirect_url = replace_or_add_query(
-                        redirect_url, request.META.get('QUERY_STRING'),
+                        redirect_url, '&%s' % request.META.get('QUERY_STRING'),
                         exclusions=[])
                 return_dict['redirect_url'] = redirect_url
 
@@ -297,7 +307,7 @@ def get_opengraph_redirect(request, redirect, guid):
                 # Twitter cards already truncates descriptions to the closest
                 # word under 200 characters
                 data['description'] = doc['description']
-                data['raw_company'] = doc['company_exact']
+                data['company_raw'] = doc['company_exact']
         else:
             template = 'redirect/opengraph.html'
         response = render_to_response(template,
@@ -324,28 +334,35 @@ def replace_or_add_query(url, query, exclusions=None):
     """
     if not exclusions:
         exclusions = []
-    query = query.encode('utf-8')
-    url = url.encode('utf-8')
-    url = urlparse.urlparse(url)
-    old_query = urlparse.parse_qsl(url.query, keep_blank_values=True)
-    old_keys = [q[0] for q in old_query]
+    if len(query) > 1 and query[0] in ['?', '&']:
+        query = query[1:]
+        query = query.encode('utf-8')
+        url = url.encode('utf-8')
+        url = urlparse.urlparse(url)
+        old_query = urlparse.parse_qsl(url.query, keep_blank_values=True)
+        old_keys = [q[0] for q in old_query]
 
-    new_query = urlparse.parse_qsl(query)
+        new_query = urlparse.parse_qsl(query)
 
-    for new_index in range(len(new_query)):
-        if new_query[new_index][0] not in exclusions:
-            if new_query[new_index][0] in old_keys:
-                old_index = old_keys.index(new_query[new_index][0])
-                old_query[old_index] = new_query[new_index]
-            else:
-                old_query.append(new_query[new_index])
+        for new_index in range(len(new_query)):
+            if new_query[new_index][0] not in exclusions:
+                if new_query[new_index][0] in old_keys:
+                    old_index = old_keys.index(new_query[new_index][0])
+                    old_query[old_index] = new_query[new_index]
+                else:
+                    old_query.append(new_query[new_index])
 
-    # parse_qsl unencodes the query that you pass it; Re-encode the query
-    # parameters when reconstructing the string.
-    old_query = '&'.join(['='.join([urllib.quote(k), urllib.quote(v)])
-                         for k, v in old_query])
-    url = url._replace(query=old_query)
-    return urlparse.urlunparse(url)
+        # parse_qsl unencodes the query that you pass it; Re-encode the query
+        # parameters when reconstructing the string.
+        old_query = '&'.join(['='.join([urllib.quote(k), urllib.quote(v)])
+                             for k, v in old_query])
+        url = url._replace(query=old_query)
+        url = urlparse.urlunparse(url)
+    else:
+        parts = url.split('#')
+        parts[0] += query
+        url = '#'.join(parts)
+    return url
 
 
 def get_hosted_state_url(redirect, url):
@@ -466,10 +483,11 @@ def add_part(body, part, value, join_str):
     return body
 
 
-def log_failure(post):
+def log_failure(post, subject=None):
     """
     Logs failures in redirecting job@my.jobs emails. This does not mean literal
-    failure, but the email in question is not a guid@my.jobs email and should be forwarded.
+    failure, but the email in question is not a guid@my.jobs email and should
+    be forwarded.
 
     Inputs:
     :post: copy of request.POST QueryDict
@@ -508,7 +526,8 @@ def log_failure(post):
 
     body = add_part(body, 'headers', headers, '\n')
 
-    subject = 'My.jobs contact email'
+    if subject is None:
+        subject = 'My.jobs contact email'
     if jira:
         project = jira.project('MJA')
         issue = {
@@ -527,14 +546,65 @@ def log_failure(post):
         email.send()
 
 
-def send_response_to_sender(from_, to, response_type):
-    email = EmailMessage(from_email=from_,
-                         to=to,
-                         subject='Error sending email')
-    if response_type == 'no_match':
-        email.body = 'TODO: Create template for this (does not match job)'
+def get_job_from_solr(guid):
+    """
+    Retrieves a job from Solr via job GUID
+
+    Inputs:
+    :guid: job guid to search for in Solr
+
+    Outputs:
+    Job dict or None
+    """
+    if len(guid) == 32:
+        solr = pysolr.Solr(settings.SOLR['default'])
+        results = solr.search(q='guid:%s' % guid.upper())
+        if results.hits == 1:
+            return results.docs[0]
+    return None
+
+
+def send_response_to_sender(new_to, old_to, email_type, guid='', job=None):
+    """
+    Send response to guid@my.jobs emails
+
+    Inputs:
+    :new_to:
+    :old_to:
+    :email_type:
+    :guid:
+    """
+    if not isinstance(new_to, (list, set)):
+        new_to = [new_to]
+    if isinstance(old_to, (list, set)):
+        old_to = old_to[0]
+    email = EmailMessage(from_email=settings.DEFAULT_FROM_EMAIL,
+                         to=new_to)
+    if email_type == 'no_job':
+        email.subject = 'Email forward failure'
+        email.body = render_to_string('redirect/email/no_job.html',
+                                      {'to': old_to})
     else:
-        email.body = 'TODO: Create template for this (matches job)'
+        to_parts = getaddresses(new_to)
+        to = to_parts[0][0] or to_parts[0][1]
+        solr_job = get_job_from_solr(guid)
+        title = ''
+        description = ''
+        if solr_job is not None:
+            title = solr_job.get('title', '')
+            description = solr_job.get('description', '')
+            description = markdown.markdown(description)
+        if not title:
+            title = job.job_title
+        render_dict = {'title': title,
+                       'description': description,
+                       'success': email_type == 'contact',
+                       'guid': guid,
+                       'recipient': to}
+        email.body = render_to_string('redirect/email/job_exists.html',
+                                      render_dict)
+        email.content_subtype = 'html'
+        email.subject = 'Email forward success'
     email.send()
 
 
@@ -575,15 +645,73 @@ def create_myjobs_account(from_email):
     return contents
 
 
-def repost_to_mj(post):
+def repost_to_mj(post, files):
     """
     Repost a parsed email to secure.my.jobs
 
     Inputs:
     :post: dictionary to be posted
+    :files: list containing filename, contents, and content type of files
+        to be posted
     """
     post['key'] = settings.EMAIL_KEY
     mj_url = 'https://secure.my.jobs/prm/email'
     if not hasattr(mail, 'outbox'):
-        post = urllib.urlencode(post)
-        urllib2.urlopen(mj_url, data=post).read()
+        new_files = {}
+        for index in range(len(files)):
+            # This fails when we include content type for some reason;
+            # Don't send content type
+            new_files['attachment%s' % (index+1, )] = files[index][:2]
+        r = requests.post(mj_url, data=post, files=new_files)
+
+
+def is_authorized(request):
+    if request.method == 'POST':
+        if 'HTTP_AUTHORIZATION' in request.META:
+            method, details = request.META['HTTP_AUTHORIZATION'].split()
+            if method.lower() == 'basic':
+                login_info = base64.b64decode(details).split(':')
+                if len(login_info) == 2:
+                    login_info[0] = urllib2.unquote(login_info[0])
+                    user = authenticate(username=login_info[0],
+                                        password=login_info[1])
+                    target = User.objects.get(email='accounts@my.jobs')
+                    if user is not None and user == target:
+                        return True
+    return False
+
+
+def get_syndication_redirect(request, redirect, view_source,
+                             debug_content=None):
+    """
+    Determines if the originating request was directed from a syndication
+    feed, retrieves the site we are redirecting to, and constructs a response.
+
+    Inputs:
+    :request: HttpRequest for this session
+    :redirect: Redirect instance for the current job GUID
+    :debug_content: List of debug strings (if provided) or None
+
+    Outputs:
+    :response: HttpResponsePermanentRedirect object if this is a syndication
+        hit, otherwise None
+    """
+    new_site_id = request.REQUEST.get('my.jobs.site.id', None)
+    response = None
+    if new_site_id is not None:
+        try:
+            new_site_id = int(new_site_id)
+        except ValueError:
+            pass
+        else:
+            try:
+                site = Site.objects.get(id=new_site_id)
+            except Site.DoesNotExist:
+                return None
+            redirect_url = 'http://{domain}/{id}/job/?vs={view_source}'.format(
+                domain=site.domain, id=redirect.uid, view_source=view_source)
+            response = HttpResponsePermanentRedirect(redirect_url)
+            if debug_content is not None:
+                debug_content.append('Syndication feed override: %s(%s)' %
+                                     (site.name, site.domain))
+    return response

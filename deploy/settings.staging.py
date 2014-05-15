@@ -12,7 +12,7 @@ DATABASES = {
         'PASSWORD': PROD_DB_PASSWD,
         'HOST': 'db-redirectstaging.c9shuxvtcmer.us-east-1.rds.amazonaws.com',
         'PORT': '3306',
-        }
+    }
 }
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
@@ -26,5 +26,5 @@ CACHES = {
 }
 
 SOLR = {
-    'default': 'http://ec2-50-19-85-235.compute-1.amazonaws.com:8983/solr'
+    'default': 'http://ec2-184-73-29-115.compute-1.amazonaws.com:8983/solr'
 }

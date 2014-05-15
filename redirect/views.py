@@ -1,15 +1,11 @@
-import base64
 from email.utils import getaddresses
 from datetime import datetime
-from itertools import chain
 import json
 from urllib import unquote
-import urllib2
 import uuid
 
 from django.conf import settings
-from django.contrib.auth import authenticate
-from django.contrib.auth.models import User
+from django.core import mail
 from django.core.mail import EmailMultiAlternatives
 from django.http import (HttpResponseGone, HttpResponsePermanentRedirect,
                          HttpResponse)
@@ -32,6 +28,7 @@ def home(request, guid, vsid=None, debug=None):
     # Providing z=1 as a query parameter enables custom parameters
     enable_custom_queries = request.REQUEST.get('z') == '1'
     expired = False
+    user_agent_vs = None
 
     if debug:
         # On localhost ip will always be empty unless you've got a setup
@@ -44,16 +41,24 @@ def home(request, guid, vsid=None, debug=None):
 
     guid_redirect = get_object_or_404(Redirect,
                                       guid=guid)
-    if debug:
-        debug_content.append('RetLink(original)=%s' % guid_redirect.url)
-
     cleaned_guid = helpers.clean_guid(guid_redirect.guid)
 
-    user_agent_vs, response = helpers.get_opengraph_redirect(request,
-                                                             guid_redirect,
-                                                             cleaned_guid)
+    syndication_params = {'request': request, 'redirect': guid_redirect,
+                          'view_source': vsid}
 
-    if not user_agent_vs:
+    original_url = guid_redirect.url
+
+    if debug:
+        debug_content.append('RetLink(original)=%s' % guid_redirect.url)
+        syndication_params['debug_content'] = debug_content
+
+    response = helpers.get_syndication_redirect(**syndication_params)
+
+    if response is None:
+        user_agent_vs, response = helpers.get_opengraph_redirect(
+            request, guid_redirect, cleaned_guid)
+
+    if response is None:
         if vsid == '1604':
             # msccn redirect
 
@@ -81,8 +86,9 @@ def home(request, guid, vsid=None, debug=None):
                 debug_content.append(
                     'ManipulatedLink(No Manipulation)=%s' % redirect_url)
             if enable_custom_queries:
+                custom_queries = '&%s' % request.META.get('QUERY_STRING')
                 redirect_url = helpers.replace_or_add_query(
-                    redirect_url, request.META.get('QUERY_STRING'),
+                    redirect_url, custom_queries,
                     exclusions=['vs', 'z'])
                 if debug:
                     debug_content.append(
@@ -95,9 +101,8 @@ def home(request, guid, vsid=None, debug=None):
 
         if expired:
             err = '&jcnlx.err=XIN'
-            data = {'location': guid_redirect.job_location,
-                    'title': guid_redirect.job_title,
-                    'company_name': guid_redirect.company_name}
+            data = {'job': guid_redirect,
+                    'expired_url': original_url}
             if (guid_redirect.buid in [1228, 5480] or
                   2650 <= guid_redirect.buid <= 2703):
                 if guid_redirect.buid in [1228, 5480]:
@@ -105,7 +110,6 @@ def home(request, guid, vsid=None, debug=None):
                 else:
                     err = '&jcnlx.err=XST'
 
-            data['expired_url'] = redirect_url
             if browse_url:
                 data['browse_url'] = browse_url
             else:
@@ -159,127 +163,138 @@ def email_redirect(request):
     """
     Accepts a post from SendGrid's mail parsing webhook and processes it.
 
-    Address is not a guid:
-        Log issue to JIRA (MJA), or email MyJobs admin if that fails
-    Address is not in database:
-        TODO: Send error to sender
-    Address is in database but no company contact exists:
-        TODO: Send job description to sender
-    Address is in database and a company user exists:
-        TODO: Send confirmation to original sender
-        Forward email to company contact
-
     Authentication issues return a status code of 403
     All other paths return a 200 to prevent SendGrid from sending the same
         email repeatedly
     """
-    if request.method == 'POST':
-        if 'HTTP_AUTHORIZATION' in request.META:
-            method, details = request.META['HTTP_AUTHORIZATION'].split()
-            if method.lower() == 'basic':
-                login_info = base64.b64decode(details).split(':')
-                if len(login_info) == 2:
-                    login_info[0] = urllib2.unquote(login_info[0])
-                    user = authenticate(username=login_info[0],
-                                        password=login_info[1])
-                    target = User.objects.get(username='accounts@my.jobs')
-                    if user is not None and user == target:
-                        try:
-                            to_email = request.POST.get('to', None)
-                            if to_email and type(to_email) != list:
-                                to_email = [to_email]
-                            elif not to_email:
-                                to_email = []
-                            body = request.POST.get('text', '')
-                            html_body = request.POST.get('html', '')
-                            from_email = request.POST.get('from', '')
-                            cc = request.POST.get('cc', None)
-                            if cc and type(cc) != list:
-                                cc = [cc]
-                            elif not cc:
-                                cc = []
-                            subject = request.POST.get('subject', '')
-                            num_attachments = int(request.POST['attachments'])
-                        except (KeyError, ValueError):
-                            # KeyError: key was not in POST dict
-                            # ValueError: num_attachments could not be cast
-                            #     to int
-                            return HttpResponse(status=200)
+    if not helpers.is_authorized(request):
+        return HttpResponse(status=403)
 
-                        addresses = getaddresses(to_email + cc)
-                        individual = [addr[1].lower() for addr in addresses]
+    try:
+        to_email = request.POST.get('to', None)
+        if to_email and type(to_email) != list:
+            to_email = [to_email]
+        elif not to_email:
+            to_email = []
+        body = request.POST.get('text', '')
+        html_body = request.POST.get('html', '')
+        from_email = request.POST.get('from', '')
+        cc = request.POST.get('cc', None)
+        if cc and type(cc) != list:
+            cc = [cc]
+        elif not cc:
+            cc = []
+        subject = request.POST.get('subject', '')
+        num_attachments = int(request.POST['attachments'])
+    except (KeyError, ValueError):
+        # KeyError: key was not in POST dict
+        # ValueError: num_attachments could not be cast
+        #     to int
+        return HttpResponse(status=200)
 
-                        if 'prm@my.jobs' in individual:
-                            # post to my.jobs
-                            helpers.repost_to_mj(request.POST.dict())
-                            return HttpResponse(status=200)
-                        if len(individual) != 1:
-                            # >1 recipients
-                            # or 0 recipients (everyone is bcc)
-                            # Probably not a guid@my.jobs email
-                            helpers.log_failure(request.POST.dict())
-                            return HttpResponse(status=200)
-                        to_guid = addresses[0][1].split('@')[0]
+    attachment_data = []
+    for file_number in range(1, num_attachments+1):
+        try:
+            file_ = request.FILES['attachment%s' % file_number]
+        except KeyError:
+            # Upload problem?
+            helpers.log_failure(request.POST.copy(),
+                                'My.jobs Attachment Failure')
+            return HttpResponse(status=200)
+        name = file_.name
+        content = file_.read()
+        content_type = file_.content_type
+        attachment_data.append((name, content, content_type))
 
-                        # shouldn't happen, but if someone somehow sends an
-                        # email with a view source attached, we should
-                        # remove it
-                        to_guid = to_guid[:32]
-                        try:
-                            to_guid = '{%s}' % uuid.UUID(to_guid)
-                            job = Redirect.objects.get(guid=to_guid)
-                        except ValueError:
-                            helpers.log_failure(request.POST.dict())
-                            return HttpResponse(status=200)
-                        except Redirect.DoesNotExist:
-                            # TODO: improve copy for send_response_to_sender
-                            # TODO: and send an error email to the sender
-                            return HttpResponse(status=200)
+    addresses = getaddresses(to_email + cc)
+    individual = [addr[1].lower() for addr in addresses]
 
-                        helpers.create_myjobs_account(from_email)
+    prm_bcc = False
+    try:
+        # prm@my.jobs appears in the 'envelope' parameter
+        # posted from SendGrid if prm@my.jobs was added
+        # via BCC
+        envelope = json.loads(request.POST.get('envelope',
+                                               ''))
+    except ValueError:
+        # envelope was not valid JSON or was not provided
+        pass
+    else:
+        if 'prm@my.jobs' in [env_email.lower()
+                             for env_email
+                             in envelope.get('to', [])]:
+            prm_bcc = True
 
-                        try:
-                            ce = CompanyEmail.objects.get(buid=job.buid)
-                            new_to = ce.email
-                        except CompanyEmail.DoesNotExist:
-                            # TODO: send job description to sender
-                            return HttpResponse(status=200)
+    if prm_bcc or 'prm@my.jobs' in individual:
+        # post to my.jobs
+        helpers.repost_to_mj(request.POST.copy(),
+                             attachment_data)
+        if hasattr(mail, 'outbox'):
+            return HttpResponse(content='reposted')
+        return HttpResponse(status=200)
+    if len(individual) != 1:
+        # >1 recipients
+        # or 0 recipients (everyone is bcc)
+        # Probably not a guid@my.jobs email
+        helpers.log_failure(request.POST.dict())
+        return HttpResponse(status=200)
+    hex_guid = addresses[0][1].split('@')[0]
 
-                        # TODO: send job description and forward note to sender
+    # shouldn't happen, but if someone somehow sends an
+    # email with a view source attached, we should
+    # remove it
+    hex_guid = hex_guid[:32]
 
-                        attachment_data = []
-                        for file_number in range(1, num_attachments+1):
-                            try:
-                                file_ = request.FILES['attachment%s' % file_number]
-                            except KeyError:
-                                # Upload problem?
-                                return HttpResponse(status=200)
-                            name = file_.name
-                            content = file_.read()
-                            content_type = file_.content_type
-                            attachment_data.append((name, content, content_type))
+    email_dict = {'new_to': from_email,
+                  'old_to': to_email,
+                  'guid': hex_guid}
 
-                        sg_headers = {
-                            'X-SMTPAPI': '{"category": "My.jobs email redirect"}'
-                        }
+    try:
+        to_guid = '{%s}' % uuid.UUID(hex_guid)
+        job = Redirect.objects.get(guid=to_guid)
+    except ValueError:
+        helpers.log_failure(request.POST.dict())
+        return HttpResponse(status=200)
+    except Redirect.DoesNotExist:
+        email_dict['email_type'] = 'no_job'
+        helpers.send_response_to_sender(**email_dict)
+        return HttpResponse(status=200)
 
-                        # We reached this point; the data should be good
-                        email = EmailMultiAlternatives(
-                            to=[new_to], from_email=from_email, subject=subject,
-                            body=body, cc=cc, headers=sg_headers)
-                        email.attach_alternative(html_body, 'text/html')
-                        for attachment in attachment_data:
-                            email.attach(*attachment)
-                        email.send()
+    email_dict['job'] = job
 
-                        log = {'from_addr': from_email,
-                               'to_guid': to_guid,
-                               'buid': job.buid,
-                               'to_addr': new_to}
-                        EmailRedirectLog.objects.create(**log)
+    helpers.create_myjobs_account(from_email)
 
-                        return HttpResponse(status=200)
-    return HttpResponse(status=403)
+    try:
+        ce = CompanyEmail.objects.get(buid=job.buid)
+        new_to = ce.email
+    except CompanyEmail.DoesNotExist:
+        email_dict['email_type'] = 'no_contact'
+        helpers.send_response_to_sender(**email_dict)
+        return HttpResponse(status=200)
+
+    email_dict['email_type'] = 'contact'
+    helpers.send_response_to_sender(**email_dict)
+
+    sg_headers = {
+        'X-SMTPAPI': '{"category": "My.jobs email redirect"}'
+    }
+
+    # We reached this point; the data should be good
+    email = EmailMultiAlternatives(
+        to=[new_to], from_email=from_email, subject=subject,
+        body=body, cc=cc, headers=sg_headers)
+    email.attach_alternative(html_body, 'text/html')
+    for attachment in attachment_data:
+        email.attach(*attachment)
+    email.send()
+
+    log = {'from_addr': from_email,
+           'to_guid': to_guid,
+           'buid': job.buid,
+           'to_addr': new_to}
+    EmailRedirectLog.objects.create(**log)
+
+    return HttpResponse(status=200)
 
 
 def update_buid(request):
