@@ -79,7 +79,6 @@ class ViewSourceViewTests(TestCase):
         The cache is not cleared between tests. We need to do it manually.
         """
         cache.clear()
-        solr = settings.SOLR['default']
         pysolr.Solr(settings.SOLR['default']).delete(q='*:*')
 
     def test_get_with_bad_vsid(self):
