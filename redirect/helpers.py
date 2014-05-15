@@ -308,6 +308,10 @@ def get_opengraph_redirect(request, redirect, guid):
                 # word under 200 characters
                 data['description'] = doc['description']
                 data['company_raw'] = doc['company_exact']
+            else:
+                data['description'] = '%s in %s' % (redirect.job_title,
+                                                    redirect.job_location)
+                data['company_raw'] = redirect.company_name
         else:
             template = 'redirect/opengraph.html'
         response = render_to_response(template,
