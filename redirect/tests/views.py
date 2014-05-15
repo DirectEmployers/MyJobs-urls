@@ -168,7 +168,7 @@ class ViewSourceViewTests(TestCase):
                                   self.manipulation.view_source]),
             HTTP_USER_AGENT='TwitterBot')
         self.assertTemplateUsed(response, 'redirect/twitter.html')
-        self.assertTrue('twitter:img:src' in response.content)
+        self.assertTrue('twitter:image:src' in response.content)
 
     def test_sourcecodetag_redirect(self):
         """
