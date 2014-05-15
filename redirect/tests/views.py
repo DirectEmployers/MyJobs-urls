@@ -157,7 +157,7 @@ class ViewSourceViewTests(TestCase):
             reverse('home', args=[self.redirect_guid,
                                   self.manipulation.view_source]),
             HTTP_USER_AGENT='facebookexternalhit')
-        self.assertContains(response, 'US.jobs - Programmer - DirectEmployers')
+        self.assertContains(response, 'My.jobs - Programmer - DirectEmployers')
         self.assertTemplateUsed(response, 'redirect/opengraph.html')
         self.assertTrue('google-analytics' not in response.content)
 
