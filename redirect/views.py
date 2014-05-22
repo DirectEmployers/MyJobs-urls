@@ -102,7 +102,8 @@ def home(request, guid, vsid=None, debug=None):
         if expired:
             err = '&jcnlx.err=XIN'
             data = {'job': guid_redirect,
-                    'expired_url': original_url}
+                    'expired_url': original_url,
+                    'view_source': vsid}
             if (guid_redirect.buid in [1228, 5480] or
                   2650 <= guid_redirect.buid <= 2703):
                 if guid_redirect.buid in [1228, 5480]:
