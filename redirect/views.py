@@ -82,17 +82,13 @@ def home(request, guid, vsid=None, debug=None):
             browse_url = returned_dict.get('browse_url', '')
         if not redirect_url:
             redirect_url = guid_redirect.url
+            params = {'request': request, 'url': redirect_url,
+                      'exclude': True}
             if debug:
                 debug_content.append(
                     'ManipulatedLink(No Manipulation)=%s' % redirect_url)
-            if enable_custom_queries:
-                custom_queries = '&%s' % request.META.get('QUERY_STRING')
-                redirect_url = helpers.replace_or_add_query(
-                    redirect_url, custom_queries,
-                    exclusions=['vs', 'z'])
-                if debug:
-                    debug_content.append(
-                        'ManipulatedLink(Custom Parameters)=%s' % redirect_url)
+                params['debug_content'] = debug_content
+            redirect_url = helpers.add_custom_queries(**params)
         redirect_url = helpers.get_hosted_state_url(guid_redirect,
                                                     redirect_url)
 
@@ -104,7 +100,7 @@ def home(request, guid, vsid=None, debug=None):
             data = {'job': guid_redirect,
                     'expired_url': original_url}
             if (guid_redirect.buid in [1228, 5480] or
-                  2650 <= guid_redirect.buid <= 2703):
+                    2650 <= guid_redirect.buid <= 2703):
                 if guid_redirect.buid in [1228, 5480]:
                     err = '&jcnlx.err=XJC'
                 else:
@@ -330,7 +326,7 @@ def update_buid(request):
                             status=400)
 
     if CanonicalMicrosite.objects.filter(buid=new) or \
-         DestinationManipulation.objects.filter(buid=new):
+            DestinationManipulation.objects.filter(buid=new):
         data = {'error': 'New business unit already exists'}
         return HttpResponse(json.dumps(data),
                             content_type='application/json',

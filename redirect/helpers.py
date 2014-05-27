@@ -247,8 +247,8 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
             #     microsites yet; skip microsite redirects
             try_manipulations = (
                 (vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
-                 (guid_redirect.buid, vs_to_use) in settings.CUSTOM_EXCLUSIONS or
-                 microsite is None) or skip_microsite or new_job)
+                 (guid_redirect.buid, vs_to_use) in settings.CUSTOM_EXCLUSIONS
+                 or microsite is None) or skip_microsite or new_job)
             if try_manipulations:
                 manipulations = get_manipulations(guid_redirect,
                                                   vs_to_use)
@@ -676,6 +676,7 @@ def get_syndication_redirect(request, redirect, view_source,
     Inputs:
     :request: HttpRequest for this session
     :redirect: Redirect instance for the current job GUID
+    :view_source:
     :debug_content: List of debug strings (if provided) or None
 
     Outputs:
@@ -696,8 +697,43 @@ def get_syndication_redirect(request, redirect, view_source,
                 return None
             redirect_url = 'http://{domain}/{id}/job/?vs={view_source}'.format(
                 domain=site.domain, id=redirect.uid, view_source=view_source)
+
+            enable_custom_queries = request.REQUEST.get('z') == '1'
+            if enable_custom_queries:
+                redirect_url = add_custom_queries(request, redirect_url,
+                                                  debug_content)
+
             response = HttpResponsePermanentRedirect(redirect_url)
             if debug_content is not None:
                 debug_content.append('Syndication feed override: %s(%s)' %
                                      (site.name, site.domain))
+                debug_content.append('Syndication URL: %s' % redirect_url)
     return response
+
+
+def add_custom_queries(request, url, debug_content=None,
+                       exclude=False):
+    """
+    Add custom query parameters to the input url
+
+    Inputs:
+    :request: HttpRequest for this session
+    :url: URL that query parameters will be added to
+    :debug_content: Optional list of debug strings (Default: None)
+    :exclude: Boolean; Should we prevent internal query strings (vs, z) from
+        being added to the url (Default: False)
+
+    Outputs:
+    :redirect_url: Input url with added query strings
+    """
+    custom_queries = '&%s' % request.META.get('QUERY_STRING')
+
+    params = {'url': url,
+              'query': custom_queries}
+    if exclude:
+        params['exclusions'] = ['vs', 'z']
+    redirect_url = replace_or_add_query(**params)
+    if debug_content is not None:
+        debug_content.append(
+            'ManipulatedLink(Custom Parameters)=%s' % redirect_url)
+    return redirect_url
