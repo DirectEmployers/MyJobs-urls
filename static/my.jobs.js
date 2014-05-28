@@ -4,7 +4,7 @@ $(document).ready(function() {
 
 function get_toolbar() {
     $.ajax({
-        url: "http://ec2-23-20-67-65.compute-1.amazonaws.com/topbar/",
+        url: "https://secure.my.jobs/topbar/",
         dataType: "jsonp",
         type: "GET",
         jsonpCallback: "populate_toolbar",
