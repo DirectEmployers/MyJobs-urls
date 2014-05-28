@@ -32,42 +32,8 @@
     {% endblock %}
 </head>
 <body>
-    {%  block topbar %}
-    <div class="topbar" data-dropdown="dropdown">
-        <div class="topbar-inner">
-            <div class="wrapper">
-                <div class="row">
-                    <div class="span5" id="logo-block">
-                        <a href="http://www.my.jobs/">
-                            <h3 id="topbar-logo" class="pull-left">my.jobs</h3>
-                        </a>
-                    </div>
-                    <div class="pull-right span7">
-                        <ul id="nav" class="menu-tabs pull-right menu-login">
-                            <li id="account" class="hidden">
-                                <a id="account-anchor" href="https://secure.my.jobs/">{% trans "Login/Register" %}</a>
-                            </li>
-                        </ul>
-                        <ul id="menu-primary-navigation" class="nav nav-tabs pull-right menu-tabs">
-                            <li>
-                                <a id="profile-link" href="https://secure.my.jobs/profile/view/">{% trans "Profile" %}</a>
-                            </li>
-                            <li>
-                                <a id="savedsearch-link" href="https://secure.my.jobs/saved-search/view/">{% trans "Saved Searches" %}</a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endblock %}
 
     {% block body %}
-    <div class="mobile-header">
-        <h1 id="myjobs-logo"><img src="//d2e48ltfsb5exy.cloudfront.net/myjobs/logos/myjobs_logo_md.145-03.png"></h1>
-        <a href="https://secure.my.jobs" class="account-btn">My Account</a>
-    </div>
     <div class="section">
         <div class="wrapper">
             <div class="row">
