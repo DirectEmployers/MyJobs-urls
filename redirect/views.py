@@ -41,10 +41,10 @@ def home(request, guid, vsid=None, debug=None):
 
     guid_redirect = get_object_or_404(Redirect,
                                       guid=guid)
-    cleaned_guid = helpers.clean_guid(guid_redirect.guid)
+    cleaned_guid = helpers.clean_guid(guid_redirect.guid).upper()
 
     syndication_params = {'request': request, 'redirect': guid_redirect,
-                          'view_source': vsid}
+                          'guid': cleaned_guid, 'view_source': vsid}
 
     original_url = guid_redirect.url
 
@@ -65,11 +65,10 @@ def home(request, guid, vsid=None, debug=None):
             company_name = guid_redirect.company_name
             company_name = helpers.quote_string(company_name)
             redirect_url = ('http://us.jobs/msccn-referral.asp?gi='
-                            '%s%s&cp=%s&u=%s' %
+                            '%s%s&cp=%s' %
                             (cleaned_guid,
                              vsid,
-                             company_name,
-                             guid_redirect.uid))
+                             company_name))
         else:
             args = {'request': request, 'guid_redirect': guid_redirect,
                     'vsid': vsid, 'guid': cleaned_guid}

@@ -69,7 +69,7 @@ class ViewSourceViewTests(TestCase):
         self.redirect = RedirectFactory()
         self.microsite = CanonicalMicrositeFactory()
         self.manipulation = DestinationManipulationFactory()
-        self.redirect_guid = GUID_RE.sub('', self.redirect.guid)
+        self.redirect_guid = GUID_RE.sub('', self.redirect.guid).upper()
 
         self.factory = RequestFactory()
 
@@ -91,7 +91,7 @@ class ViewSourceViewTests(TestCase):
 
             test_url = '%s%s/job/?vs=%s' % \
                 (self.microsite.canonical_microsite_url,
-                 self.redirect.uid,
+                 self.redirect_guid,
                  vsid or '0')
 
             self.assertEqual(response['Location'], test_url)
@@ -190,7 +190,7 @@ class ViewSourceViewTests(TestCase):
             reverse('home', args=[self.redirect_guid,
                                   self.manipulation.view_source]))
         test_url = '%s%s/job/?vs=%s' % (self.microsite.canonical_microsite_url,
-                                        self.redirect.uid,
+                                        self.redirect_guid,
                                         self.manipulation.view_source)
         self.assertEqual(response['Location'], test_url)
 
@@ -624,7 +624,7 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(reverse('home',
                                            args=[self.redirect_guid]))
         test_url = '%s%s/job/?vs=%s' % (self.microsite.canonical_microsite_url,
-                                        self.redirect.uid,
+                                        self.redirect_guid,
                                         self.manipulation.view_source)
         self.assertEqual(response['Location'], test_url)
 
@@ -712,7 +712,7 @@ class ViewSourceViewTests(TestCase):
                     args=[self.redirect_guid]) + '?z=1&foo=bar')
         test_url = '%s%s/job/?vs=%s&z=1&foo=bar' % \
                    (self.microsite.canonical_microsite_url,
-                    self.redirect.uid,
+                    self.redirect_guid,
                     self.manipulation.view_source)
         self.assertEqual(response['Location'], test_url)
 
@@ -786,7 +786,7 @@ class ViewSourceViewTests(TestCase):
                           self.manipulation.view_source]) +
             '?my.jobs.site.id=%s' % site.pk)
 
-        expected = 'http://%s/%s/job/?vs=%s' % (site.domain, self.redirect.uid,
+        expected = 'http://%s/%s/job/?vs=%s' % (site.domain, self.redirect_guid,
                                                 self.manipulation.view_source)
         self.assertEqual(response.status_code, 301)
         self.assertEqual(response['Location'], expected)
@@ -807,6 +807,15 @@ class ViewSourceViewTests(TestCase):
         self.assertEqual(response.status_code, 301)
         self.assertTrue(response['Location'], sourcecodetag(self.redirect,
                                                             self.manipulation))
+
+    def test_msccn_redirect(self):
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          '1604']))
+        expected = 'http://us.jobs/msccn-referral.asp?gi=%s%s&cp=%s' % (
+            self.redirect_guid, '1604', self.redirect.company_name)
+        self.assertEqual(response['Location'], expected)
 
 
 class EmailForwardTests(TestCase):
