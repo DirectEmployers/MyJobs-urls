@@ -256,7 +256,7 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
             elif microsite:
                 redirect_url = '%s%s/job/?vs=%s' % \
                                (microsite.canonical_microsite_url,
-                                guid_redirect.uid,
+                                guid,
                                 vs_to_use)
                 if request.REQUEST.get('z') == '1':
                     # Enable adding vs and z to the query string; these
@@ -685,7 +685,7 @@ def is_authorized(request):
     return False
 
 
-def get_syndication_redirect(request, redirect, view_source,
+def get_syndication_redirect(request, redirect, guid, view_source,
                              debug_content=None):
     """
     Determines if the originating request was directed from a syndication
@@ -714,7 +714,7 @@ def get_syndication_redirect(request, redirect, view_source,
             except Site.DoesNotExist:
                 return None
             redirect_url = 'http://{domain}/{id}/job/?vs={view_source}'.format(
-                domain=site.domain, id=redirect.uid, view_source=view_source)
+                domain=site.domain, id=guid, view_source=view_source)
 
             enable_custom_queries = request.REQUEST.get('z') == '1'
             if enable_custom_queries:
