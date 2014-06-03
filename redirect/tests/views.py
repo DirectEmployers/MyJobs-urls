@@ -9,6 +9,7 @@ import urlparse
 import uuid
 
 from jira.client import JIRA
+import pysolr
 import markdown
 from testfixtures import Replacer
 
@@ -79,6 +80,7 @@ class ViewSourceViewTests(TestCase):
         The cache is not cleared between tests. We need to do it manually.
         """
         cache.clear()
+        pysolr.Solr(settings.SOLR['default']).delete(q='*:*')
 
     def test_get_with_bad_vsid(self):
         """
@@ -156,9 +158,17 @@ class ViewSourceViewTests(TestCase):
             reverse('home', args=[self.redirect_guid,
                                   self.manipulation.view_source]),
             HTTP_USER_AGENT='facebookexternalhit')
-        self.assertContains(response, 'US.jobs - Programmer - DirectEmployers')
+        self.assertContains(response, 'My.jobs - Programmer - DirectEmployers')
         self.assertTemplateUsed(response, 'redirect/opengraph.html')
         self.assertTrue('google-analytics' not in response.content)
+
+    def test_twitter_card(self):
+        response = self.client.get(
+            reverse('home', args=[self.redirect_guid,
+                                  self.manipulation.view_source]),
+            HTTP_USER_AGENT='TwitterBot')
+        self.assertTemplateUsed(response, 'redirect/twitter.html')
+        self.assertTrue('twitter:image:src' in response.content)
 
     def test_sourcecodetag_redirect(self):
         """

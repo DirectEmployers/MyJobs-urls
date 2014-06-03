@@ -1,6 +1,7 @@
 import base64
 from datetime import datetime, timedelta
 from email.utils import getaddresses
+import pysolr
 import urllib
 import urllib2
 import urlparse
@@ -277,7 +278,7 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
 def get_opengraph_redirect(request, redirect, guid):
     response = None
     user_agent_vs = None
-    user_agent = request.META.get('HTTP_USER_AGENT', ''),
+    user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
 
     # open graph bot redirect
     if 'facebookexternalhit' in user_agent:
@@ -296,7 +297,24 @@ def get_opengraph_redirect(request, redirect, guid):
                 'company': company_name,
                 'guid': guid,
                 'vs': user_agent_vs}
-        response = render_to_response('redirect/opengraph.html',
+        if user_agent_vs == '1596':
+            template = 'redirect/twitter.html'
+            solr = pysolr.Solr(settings.SOLR['default'])
+            results = solr.search(q='guid:%s' % guid)
+            if results.hits > 0:
+                doc = results.docs[0]
+
+                # Twitter cards already truncates descriptions to the closest
+                # word under 200 characters
+                data['description'] = doc['description']
+                data['company_raw'] = doc['company_exact']
+            else:
+                data['description'] = '%s in %s' % (redirect.job_title,
+                                                    redirect.job_location)
+                data['company_raw'] = redirect.company_name
+        else:
+            template = 'redirect/opengraph.html'
+        response = render_to_response(template,
                                       data,
                                       context_instance=RequestContext(request))
     return user_agent_vs, response
