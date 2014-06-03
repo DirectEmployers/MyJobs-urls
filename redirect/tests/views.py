@@ -5,9 +5,11 @@ import datetime
 import json
 import re
 from urllib import unquote
+import urlparse
 import uuid
 
 from jira.client import JIRA
+import pysolr
 import markdown
 from testfixtures import Replacer
 
@@ -78,6 +80,7 @@ class ViewSourceViewTests(TestCase):
         The cache is not cleared between tests. We need to do it manually.
         """
         cache.clear()
+        pysolr.Solr(settings.SOLR['default']).delete(q='*:*')
 
     def test_get_with_bad_vsid(self):
         """
@@ -155,9 +158,17 @@ class ViewSourceViewTests(TestCase):
             reverse('home', args=[self.redirect_guid,
                                   self.manipulation.view_source]),
             HTTP_USER_AGENT='facebookexternalhit')
-        self.assertContains(response, 'US.jobs - Programmer - DirectEmployers')
+        self.assertContains(response, 'My.jobs - Programmer - DirectEmployers')
         self.assertTemplateUsed(response, 'redirect/opengraph.html')
         self.assertTrue('google-analytics' not in response.content)
+
+    def test_twitter_card(self):
+        response = self.client.get(
+            reverse('home', args=[self.redirect_guid,
+                                  self.manipulation.view_source]),
+            HTTP_USER_AGENT='TwitterBot')
+        self.assertTemplateUsed(response, 'redirect/twitter.html')
+        self.assertTrue('twitter:image:src' in response.content)
 
     def test_sourcecodetag_redirect(self):
         """
@@ -736,6 +747,22 @@ class ViewSourceViewTests(TestCase):
                                      self.redirect.url)
         self.assertEqual(response['Location'], test_url)
 
+    def test_custom_parameters_on_feed_redirect(self):
+        site = Site.objects.create(domain='google.com',
+                                   name='Google')
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          '20']) + '?z=1&foo=bar&my.jobs.site.id=%d' % site.pk)
+        parts = urlparse.urlparse(response['Location'])
+        self.assertEqual(parts.netloc, site.domain)
+
+        query = urlparse.parse_qs(parts.query)
+        for param in {'z': ['1'], 'foo': ['bar'],
+                      'my.jobs.site.id': [str(site.pk)],
+                      'vs': ['20']}.items():
+            self.assertEqual(query[param[0]], param[1])
+
     def test_source_codes_with_hit_key(self):
         self.manipulation.action = 'replacethenadd'
         self.manipulation.value_1 = '/job!!!!/apply'
@@ -904,7 +931,8 @@ class EmailForwardTests(TestCase):
             self.assertTrue(redirect.job_title in body)
 
     def test_jira_login(self):
-        jira = JIRA(options=settings.JIRA_OPTIONS, basic_auth=settings.JIRA_AUTH)
+        jira = JIRA(options=settings.JIRA_OPTIONS,
+                    basic_auth=settings.JIRA_AUTH)
         self.assertIsNotNone(jira)
 
     def test_bad_authorization(self):
@@ -1063,26 +1091,31 @@ class UpdateBUIDTests(TestCase):
         self.assertEqual(resp.status_code, 401)
 
         resp = self.client.get(reverse('update_buid') + '?key=%s' % self.key)
-        self.assertEqual(resp.content, '{"error": "Invalid format for old business unit"}')
+        self.assertEqual(resp.content,
+                         '{"error": "Invalid format for old business unit"}')
 
     def test_no_new_buid(self):
-        resp = self.client.get(reverse('update_buid') + '?key=%s&old_buid=%s' % (
-            self.key, self.cm.buid))
-        self.assertEqual(resp.content, '{"error": "Invalid format for new business unit"}')
+        resp = self.client.get(reverse('update_buid') + '?key=%s&old_buid=%s' %
+                               (self.key, self.cm.buid))
+        self.assertEqual(resp.content,
+                         '{"error": "Invalid format for new business unit"}')
 
     def test_existing_buid(self):
-        resp = self.client.get(reverse('update_buid') + \
-                               '?key=%s&old_buid=%s&new_buid=%s' % \
+        resp = self.client.get(reverse('update_buid') +
+                               '?key=%s&old_buid=%s&new_buid=%s' %
                                (self.key, self.cm.buid, self.cm.buid))
-        self.assertEqual(resp.content, '{"error": "New business unit already exists"}')
+        self.assertEqual(resp.content,
+                         '{"error": "New business unit already exists"}')
 
     def test_no_old_buid(self):
-        resp = self.client.get(reverse('update_buid') + '?key=%s&new_buid=%s' % \
+        resp = self.client.get(reverse('update_buid') + '?key=%s&new_buid=%s' %
                                (self.key, self.cm.buid + 1))
-        self.assertEqual(resp.content, '{"error": "Invalid format for old business unit"}')
+        self.assertEqual(resp.content,
+                         '{"error": "Invalid format for old business unit"}')
 
     def test_new_buid(self):
-        resp = self.client.get(reverse('update_buid') + '?key=%s&old_buid=%s&new_buid=%s' % \
+        resp = self.client.get(reverse('update_buid') +
+                               '?key=%s&old_buid=%s&new_buid=%s' %
                                (self.key, self.cm.buid, self.cm.buid + 1))
         content = json.loads(resp.content)
         self.assertEqual(content['new_bu'], self.cm.buid + 1)

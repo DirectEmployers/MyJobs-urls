@@ -24,7 +24,7 @@ ALLOWED_HOSTS = []
 #INSTALLED_APPS += ('debug_toolbar',)
 
 SOLR = {
-    'default': 'http://23.21.242.45:8983/solr'
+    'default': 'http://127.0.0.1:8983/solr'
 }
 
 # With COMPRESS_ENABLED = True, you must run ./manage.py compress for each
