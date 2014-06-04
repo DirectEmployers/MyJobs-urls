@@ -87,7 +87,8 @@ def home(request, guid, vsid=None, debug=None):
                 debug_content.append(
                     'ManipulatedLink(No Manipulation)=%s' % redirect_url)
                 params['debug_content'] = debug_content
-            redirect_url = helpers.add_custom_queries(**params)
+            if enable_custom_queries:
+                redirect_url = helpers.add_custom_queries(**params)
         redirect_url = helpers.get_hosted_state_url(guid_redirect,
                                                     redirect_url)
 
