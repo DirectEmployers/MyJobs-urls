@@ -759,9 +759,11 @@ class ViewSourceViewTests(TestCase):
 
         query = urlparse.parse_qs(parts.query)
         for param in {'z': ['1'], 'foo': ['bar'],
-                      'my.jobs.site.id': [str(site.pk)],
                       'vs': ['20']}.items():
             self.assertEqual(query[param[0]], param[1])
+
+        #
+        self.assertRaises(KeyError, lambda: query['my.jobs.site.id'])
 
     def test_source_codes_with_hit_key(self):
         self.manipulation.action = 'replacethenadd'
