@@ -742,14 +742,15 @@ def add_custom_queries(request, url, debug_content=None,
         being added to the url (Default: False)
 
     Outputs:
-    :redirect_url: Input url with added query strings
+    :redirect_url: Input url with added query strings, minus site id
     """
     custom_queries = '&%s' % request.META.get('QUERY_STRING')
 
     params = {'url': url,
-              'query': custom_queries}
+              'query': custom_queries,
+              'exclusions': ['my.jobs.site.id']}
     if exclude:
-        params['exclusions'] = ['vs', 'z']
+        params['exclusions'] += ['vs', 'z']
     redirect_url = replace_or_add_query(**params)
     if debug_content is not None:
         debug_content.append(
