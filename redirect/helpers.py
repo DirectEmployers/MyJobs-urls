@@ -1,20 +1,30 @@
+import base64
 from datetime import datetime, timedelta
 from email.utils import getaddresses
-import requests
+import pysolr
 import urllib
 import urllib2
 import urlparse
+import markdown
 
-from django.conf import settings
-from django.core import mail
-from django.core.mail import EmailMessage
-from django.shortcuts import render_to_response
-from django.template import RequestContext
-from django.utils import timezone
-from django.utils.http import urlquote_plus
 from jira.client import JIRA
 from jira.exceptions import JIRAError
+import pysolr
+import requests
 
+from django.conf import settings
+from django.contrib.auth import authenticate
+from django.contrib.sites.models import Site
+from django.core import mail
+from django.core.mail import EmailMessage
+from django.http import HttpResponsePermanentRedirect
+from django.shortcuts import render_to_response, get_object_or_404
+from django.template import RequestContext
+from django.template.loader import render_to_string
+from django.utils import timezone
+from django.utils.http import urlquote_plus
+
+from myjobs.models import User
 import redirect.actions
 from redirect.models import CanonicalMicrosite, DestinationManipulation
 
@@ -238,15 +248,15 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
             #     microsites yet; skip microsite redirects
             try_manipulations = (
                 (vs_to_use in settings.EXCLUDED_VIEW_SOURCES or
-                 (guid_redirect.buid, vs_to_use) in settings.CUSTOM_EXCLUSIONS or
-                 microsite is None) or skip_microsite or new_job)
+                 (guid_redirect.buid, vs_to_use) in settings.CUSTOM_EXCLUSIONS
+                 or microsite is None) or skip_microsite or new_job)
             if try_manipulations:
                 manipulations = get_manipulations(guid_redirect,
                                                   vs_to_use)
             elif microsite:
                 redirect_url = '%s%s/job/?vs=%s' % \
                                (microsite.canonical_microsite_url,
-                                guid_redirect.uid,
+                                guid,
                                 vs_to_use)
                 if request.REQUEST.get('z') == '1':
                     # Enable adding vs and z to the query string; these
@@ -268,7 +278,7 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
 def get_opengraph_redirect(request, redirect, guid):
     response = None
     user_agent_vs = None
-    user_agent = request.META.get('HTTP_USER_AGENT', ''),
+    user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
 
     # open graph bot redirect
     if 'facebookexternalhit' in user_agent:
@@ -287,7 +297,24 @@ def get_opengraph_redirect(request, redirect, guid):
                 'company': company_name,
                 'guid': guid,
                 'vs': user_agent_vs}
-        response = render_to_response('redirect/opengraph.html',
+        if user_agent_vs == '1596':
+            template = 'redirect/twitter.html'
+            solr = pysolr.Solr(settings.SOLR['default'])
+            results = solr.search(q='guid:%s' % guid)
+            if results.hits > 0:
+                doc = results.docs[0]
+
+                # Twitter cards already truncates descriptions to the closest
+                # word under 200 characters
+                data['description'] = doc['description']
+                data['company_raw'] = doc['company_exact']
+            else:
+                data['description'] = '%s in %s' % (redirect.job_title,
+                                                    redirect.job_location)
+                data['company_raw'] = redirect.company_name
+        else:
+            template = 'redirect/opengraph.html'
+        response = render_to_response(template,
                                       data,
                                       context_instance=RequestContext(request))
     return user_agent_vs, response
@@ -463,7 +490,8 @@ def add_part(body, part, value, join_str):
 def log_failure(post, subject=None):
     """
     Logs failures in redirecting job@my.jobs emails. This does not mean literal
-    failure, but the email in question is not a guid@my.jobs email and should be forwarded.
+    failure, but the email in question is not a guid@my.jobs email and should
+    be forwarded.
 
     Inputs:
     :post: copy of request.POST QueryDict
@@ -522,14 +550,65 @@ def log_failure(post, subject=None):
         email.send()
 
 
-def send_response_to_sender(from_, to, response_type):
-    email = EmailMessage(from_email=from_,
-                         to=to,
-                         subject='Error sending email')
-    if response_type == 'no_match':
-        email.body = 'TODO: Create template for this (does not match job)'
+def get_job_from_solr(guid):
+    """
+    Retrieves a job from Solr via job GUID
+
+    Inputs:
+    :guid: job guid to search for in Solr
+
+    Outputs:
+    Job dict or None
+    """
+    if len(guid) == 32:
+        solr = pysolr.Solr(settings.SOLR['default'])
+        results = solr.search(q='guid:%s' % guid.upper())
+        if results.hits == 1:
+            return results.docs[0]
+    return None
+
+
+def send_response_to_sender(new_to, old_to, email_type, guid='', job=None):
+    """
+    Send response to guid@my.jobs emails
+
+    Inputs:
+    :new_to:
+    :old_to:
+    :email_type:
+    :guid:
+    """
+    if not isinstance(new_to, (list, set)):
+        new_to = [new_to]
+    if isinstance(old_to, (list, set)):
+        old_to = old_to[0]
+    email = EmailMessage(from_email=settings.DEFAULT_FROM_EMAIL,
+                         to=new_to)
+    if email_type == 'no_job':
+        email.subject = 'Email forward failure'
+        email.body = render_to_string('redirect/email/no_job.html',
+                                      {'to': old_to})
     else:
-        email.body = 'TODO: Create template for this (matches job)'
+        to_parts = getaddresses(new_to)
+        to = to_parts[0][0] or to_parts[0][1]
+        solr_job = get_job_from_solr(guid)
+        title = ''
+        description = ''
+        if solr_job is not None:
+            title = solr_job.get('title', '')
+            description = solr_job.get('description', '')
+            description = markdown.markdown(description)
+        if not title:
+            title = job.job_title
+        render_dict = {'title': title,
+                       'description': description,
+                       'success': email_type == 'contact',
+                       'guid': guid,
+                       'recipient': to}
+        email.body = render_to_string('redirect/email/job_exists.html',
+                                      render_dict)
+        email.content_subtype = 'html'
+        email.subject = 'Email forward success'
     email.send()
 
 
@@ -588,3 +667,92 @@ def repost_to_mj(post, files):
             # Don't send content type
             new_files['attachment%s' % (index+1, )] = files[index][:2]
         r = requests.post(mj_url, data=post, files=new_files)
+
+
+def is_authorized(request):
+    if request.method == 'POST':
+        if 'HTTP_AUTHORIZATION' in request.META:
+            method, details = request.META['HTTP_AUTHORIZATION'].split()
+            if method.lower() == 'basic':
+                login_info = base64.b64decode(details).split(':')
+                if len(login_info) == 2:
+                    login_info[0] = urllib2.unquote(login_info[0])
+                    user = authenticate(username=login_info[0],
+                                        password=login_info[1])
+                    target = User.objects.get(email='accounts@my.jobs')
+                    if user is not None and user == target:
+                        return True
+    return False
+
+
+def get_syndication_redirect(request, redirect, guid, view_source,
+                             debug_content=None):
+    """
+    Determines if the originating request was directed from a syndication
+    feed, retrieves the site we are redirecting to, and constructs a response.
+
+    Inputs:
+    :request: HttpRequest for this session
+    :redirect: Redirect instance for the current job GUID
+    :view_source:
+    :debug_content: List of debug strings (if provided) or None
+
+    Outputs:
+    :response: HttpResponsePermanentRedirect object if this is a syndication
+        hit, otherwise None
+    """
+    new_site_id = request.REQUEST.get('my.jobs.site.id', None)
+    response = None
+    if new_site_id is not None:
+        try:
+            new_site_id = int(new_site_id)
+        except ValueError:
+            pass
+        else:
+            try:
+                site = Site.objects.get(id=new_site_id)
+            except Site.DoesNotExist:
+                return None
+            redirect_url = 'http://{domain}/{id}/job/?vs={view_source}'.format(
+                domain=site.domain, id=guid, view_source=view_source)
+
+            enable_custom_queries = request.REQUEST.get('z') == '1'
+            if enable_custom_queries:
+                redirect_url = add_custom_queries(request, redirect_url,
+                                                  debug_content)
+
+            response = HttpResponsePermanentRedirect(redirect_url)
+            if debug_content is not None:
+                debug_content.append('Syndication feed override: %s(%s)' %
+                                     (site.name, site.domain))
+                debug_content.append('Syndication URL: %s' % redirect_url)
+    return response
+
+
+def add_custom_queries(request, url, debug_content=None,
+                       exclude=False):
+    """
+    Add custom query parameters to the input url
+
+    Inputs:
+    :request: HttpRequest for this session
+    :url: URL that query parameters will be added to
+    :debug_content: Optional list of debug strings (Default: None)
+    :exclude: Boolean; Should we prevent internal query strings (vs, z) from
+        being added to the url (Default: False)
+
+    Outputs:
+    :redirect_url: Input url with added query strings, minus site id
+    """
+    custom_queries = '&%s' % request.META.get('QUERY_STRING')
+
+    params = {'url': url,
+              'query': custom_queries,
+              'exclusions': ['my.jobs.site.id']}
+    if exclude:
+        params['exclusions'] += ['vs', 'z']
+    redirect_url = replace_or_add_query(**params)
+    if debug_content is not None:
+        debug_content.append(
+            'ManipulatedLink(Custom Parameters)=%s' % redirect_url)
+    return redirect_url

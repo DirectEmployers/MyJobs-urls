@@ -1,24 +1,33 @@
+# -*- coding: utf-8 -*-# -*- coding: utf-8 -*-
+import HTMLParser
 import base64
 import datetime
 import json
 import re
 from urllib import unquote
+import urlparse
 import uuid
 
 from jira.client import JIRA
+import pysolr
+import markdown
+from testfixtures import Replacer
 
 from django.conf import settings
+from django.contrib.sites.models import Site
 from django.core import mail
 from django.core.cache import cache
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.test import TestCase
 from django.test.client import Client, RequestFactory
-from django.utils import text, timezone
+from django.utils import timezone
 from django.utils.http import urlquote_plus
 
 from myjobs.models import User
 from redirect import helpers
-from redirect.models import DestinationManipulation, ExcludedViewSource, CompanyEmail
+from redirect.actions import sourcecodetag
+from redirect.models import (
+    DestinationManipulation, ExcludedViewSource, CompanyEmail)
 from redirect.tests.factories import (
     RedirectFactory, CanonicalMicrositeFactory, DestinationManipulationFactory,
     CustomExcludedViewSourceFactory)
@@ -26,15 +35,43 @@ from redirect.views import home
 
 GUID_RE = re.compile(r'([{\-}])')
 
+JOB = {
+    'guid': '2' * 32,
+    'buid': 0,
+    'title': 'Underwater Basket Weaver',
+    'description':
+    '''Qualifications:
+    10+ years prior experience weaving baskets underwater
+    BS/MS Underwater Basket Weaving preferable
+    '''
+}
+
+
+def mock_search(self, q=None, kwargs=None):
+    """
+    Helper method that mocks a solr search result
+    """
+    class Result(object):
+        def __init__(self, job):
+            self.docs = job
+            self.hits = len(job)
+
+    job = []
+    if q is not None:
+        q = q.split(':')
+        if q[0] == 'guid' and q[1] == JOB['guid']:
+            job = [JOB]
+
+    return Result(job)
+
 
 class ViewSourceViewTests(TestCase):
-
     def setUp(self):
         self.client = Client()
         self.redirect = RedirectFactory()
         self.microsite = CanonicalMicrositeFactory()
         self.manipulation = DestinationManipulationFactory()
-        self.redirect_guid = GUID_RE.sub('', self.redirect.guid)
+        self.redirect_guid = GUID_RE.sub('', self.redirect.guid).upper()
 
         self.factory = RequestFactory()
 
@@ -43,6 +80,7 @@ class ViewSourceViewTests(TestCase):
         The cache is not cleared between tests. We need to do it manually.
         """
         cache.clear()
+        pysolr.Solr(settings.SOLR['default']).delete(q='*:*')
 
     def test_get_with_bad_vsid(self):
         """
@@ -56,7 +94,7 @@ class ViewSourceViewTests(TestCase):
 
             test_url = '%s%s/job/?vs=%s' % \
                 (self.microsite.canonical_microsite_url,
-                 self.redirect.uid,
+                 self.redirect_guid,
                  vsid or '0')
 
             self.assertEqual(response['Location'], test_url)
@@ -108,6 +146,8 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(reverse('home', args=['1' * 32]))
         self.assertEqual(response.status_code, 404)
         self.assertTemplateUsed(response, '404.html')
+        self.assertTrue('There was an error accessing this job'
+                        in response.content)
         self.assertTrue('google-analytics' in response.content)
 
     def test_open_graph_redirect(self):
@@ -118,9 +158,17 @@ class ViewSourceViewTests(TestCase):
             reverse('home', args=[self.redirect_guid,
                                   self.manipulation.view_source]),
             HTTP_USER_AGENT='facebookexternalhit')
-        self.assertContains(response, 'US.jobs - Programmer - DirectEmployers')
+        self.assertContains(response, 'My.jobs - Programmer - DirectEmployers')
         self.assertTemplateUsed(response, 'redirect/opengraph.html')
         self.assertTrue('google-analytics' not in response.content)
+
+    def test_twitter_card(self):
+        response = self.client.get(
+            reverse('home', args=[self.redirect_guid,
+                                  self.manipulation.view_source]),
+            HTTP_USER_AGENT='TwitterBot')
+        self.assertTemplateUsed(response, 'redirect/twitter.html')
+        self.assertTrue('twitter:image:src' in response.content)
 
     def test_sourcecodetag_redirect(self):
         """
@@ -153,7 +201,7 @@ class ViewSourceViewTests(TestCase):
             reverse('home', args=[self.redirect_guid,
                                   self.manipulation.view_source]))
         test_url = '%s%s/job/?vs=%s' % (self.microsite.canonical_microsite_url,
-                                        self.redirect.uid,
+                                        self.redirect_guid,
                                         self.manipulation.view_source)
         self.assertEqual(response['Location'], test_url)
 
@@ -408,14 +456,26 @@ class ViewSourceViewTests(TestCase):
                                   self.manipulation.view_source]))
         self.assertEqual(response.status_code, 410)
         self.assertTemplateUsed(response, 'redirect/expired.html')
-        self.assertTrue('View all current jobs for %s.' %
+
+        content = re.sub('\s+', ' ', response.content)
+        self.assertTrue('View all jobs for<br /> <b>%s</b>' %
                         self.redirect.company_name in
-                        response.content)
-        self.assertTrue('%s (%s)' %
-                        (self.redirect.job_title, self.redirect.job_location)
-                        in response.content)
+                        content)
+
+        count = content.count('class="drill-search"')
+        self.assertEqual(count, 3,
+                         'Expected three search links, found %s' % count)
         self.assertTrue(self.redirect.url in response.content)
         self.assertTrue('google-analytics' in response.content)
+
+    def test_expired_job_with_unicode(self):
+        self.redirect.expired_date = datetime.datetime.now(tz=timezone.utc)
+        self.redirect.job_title = u'это юникода'
+        self.redirect.save()
+
+        response = self.client.get(reverse('home',
+                                           args=[self.redirect_guid]))
+        self.assertTrue(response.status_code, 404)
 
     def test_cookie_domains(self):
         # The value for host is unimportant - if this code does not end up
@@ -575,7 +635,7 @@ class ViewSourceViewTests(TestCase):
         response = self.client.get(reverse('home',
                                            args=[self.redirect_guid]))
         test_url = '%s%s/job/?vs=%s' % (self.microsite.canonical_microsite_url,
-                                        self.redirect.uid,
+                                        self.redirect_guid,
                                         self.manipulation.view_source)
         self.assertEqual(response['Location'], test_url)
 
@@ -663,7 +723,7 @@ class ViewSourceViewTests(TestCase):
                     args=[self.redirect_guid]) + '?z=1&foo=bar')
         test_url = '%s%s/job/?vs=%s&z=1&foo=bar' % \
                    (self.microsite.canonical_microsite_url,
-                    self.redirect.uid,
+                    self.redirect_guid,
                     self.manipulation.view_source)
         self.assertEqual(response['Location'], test_url)
 
@@ -686,6 +746,25 @@ class ViewSourceViewTests(TestCase):
         test_url = '%s%s?foo=bar' % (self.manipulation.value_1,
                                      self.redirect.url)
         self.assertEqual(response['Location'], test_url)
+
+    def test_custom_parameters_on_feed_redirect(self):
+        site = Site.objects.create(domain='google.com',
+                                   name='Google')
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          '20']) + '?z=1&foo=bar&my.jobs.site.id=%d' % site.pk)
+        parts = urlparse.urlparse(response['Location'])
+        self.assertEqual(parts.netloc, site.domain)
+
+        query = urlparse.parse_qs(parts.query)
+        for param in {'z': ['1'], 'foo': ['bar'],
+                      'vs': ['20']}.items():
+            self.assertEqual(query[param[0]], param[1])
+
+        # When redirecting from a feed and using custom parameters, we create
+        # the potential for a redirect loop. Ensure that isn't happening.
+        self.assertRaises(KeyError, lambda: query['my.jobs.site.id'])
 
     def test_source_codes_with_hit_key(self):
         self.manipulation.action = 'replacethenadd'
@@ -724,11 +803,57 @@ class ViewSourceViewTests(TestCase):
         self.assertTrue(response['Location'].endswith('/jobapply.ftl'))
         self.assertFalse('/jobdetail.ftl' in response['Location'])
 
+    def test_syndication_redirect_site_exists(self):
+        """
+        Ensures that we appropriately redirect to the proper microsite if we are
+        provided one that differs from what is defined for a given BUID.
+        """
+        site = Site.objects.create(domain='google.com',
+                                   name='Google')
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          self.manipulation.view_source]) +
+            '?my.jobs.site.id=%s' % site.pk)
+
+        expected = 'http://%s/%s/job/?vs=%s' % (site.domain, self.redirect_guid,
+                                                self.manipulation.view_source)
+        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response['Location'], expected)
+
+    def test_syndication_redirect_no_site(self):
+        """
+        If my.jobs.site.id is provided but does not reference a site, do
+        manipulations as if it was not provided.
+        """
+        site = Site.objects.create(domain='google.com',
+                                   name='Google')
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          self.manipulation.view_source]) +
+            '?my.jobs.site.id=%s' % (site.pk + 1))
+
+        self.assertEqual(response.status_code, 301)
+        self.assertTrue(response['Location'], sourcecodetag(self.redirect,
+                                                            self.manipulation))
+
+    def test_msccn_redirect(self):
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          '1604']))
+        expected = 'http://us.jobs/msccn-referral.asp?gi=%s%s&cp=%s' % (
+            self.redirect_guid, '1604', self.redirect.company_name)
+        self.assertEqual(response['Location'], expected)
+
 
 class EmailForwardTests(TestCase):
     def setUp(self):
-        self.redirect = RedirectFactory(buid=1)
-        self.redirect_guid = GUID_RE.sub('', self.redirect.guid)
+        self.redirect_guid = JOB['guid']
+        self.redirect = RedirectFactory(buid=JOB['buid'],
+                                        guid='{%s}' %
+                                             uuid.UUID(self.redirect_guid))
 
         self.password = 'secret'
         self.user = User.objects.create(email='accounts@my.jobs')
@@ -755,9 +880,62 @@ class EmailForwardTests(TestCase):
                           'subject': 'Bad Email',
                           'attachments': 0}
 
+        self.r = Replacer()
+        self.r.replace('pysolr.Solr.search', mock_search)
+
+    def tearDown(self):
+        self.r.restore()
+
+    def submit_email(self, use_data=True):
+        """
+        Helper method for submitting parsed emails. Ensures that the request
+        returns a status of 200.
+
+        Inputs:
+        :use_data: Should we include post data; Default: True
+
+        Outputs:
+        :response: HttpResponse from email redirect view
+        """
+        auth = self.auth.get('good')
+        kwargs = {'HTTP_AUTHORIZATION': auth}
+        if use_data:
+            kwargs['data'] = self.post_dict
+        response = self.client.post(reverse('email_redirect'),
+                                    **kwargs)
+        self.assertEqual(response.status_code, 200)
+
+        return response
+
+    def assert_guid_email_responses_are_correct(self,
+                                                redirect,
+                                                job=None):
+        """
+        Helper method for validating parsed guid@my.jobs emails.
+
+        Inputs:
+        :redirect: Redirect instance to use if a job is old
+        :job: Solr result for a new job
+        """
+        email = mail.outbox.pop(0)
+        self.assertEqual(email.from_email,
+                         settings.DEFAULT_FROM_EMAIL)
+        self.assertEqual(email.to, [self.post_dict['from']])
+        self.assertEqual(email.subject, self.post_dict['subject'])
+
+        # Emails turn lots of characters into HTML entities. Results from
+        # Solr and the database do not. Unescape the email body so we can
+        # compare the two.
+        parser = HTMLParser.HTMLParser()
+        body = parser.unescape(email.body)
+        if job is not None:
+            self.assertTrue(markdown.markdown(job['description']) in body)
+        else:
+            self.assertTrue(redirect.job_title in body)
 
     def test_jira_login(self):
-        jira = JIRA(options=settings.JIRA_OPTIONS, basic_auth=settings.JIRA_AUTH)
+        jira = JIRA(options=settings.JIRA_OPTIONS,
+                    basic_auth=settings.JIRA_AUTH)
         self.assertIsNotNone(jira)
 
     def test_bad_authorization(self):
@@ -772,17 +950,11 @@ class EmailForwardTests(TestCase):
             self.assertTrue(response.status_code, 403)
 
     def test_good_authorization(self):
-        auth_value = self.auth.get('good')
-        response = self.client.post(reverse('email_redirect'),
-                                    HTTP_AUTHORIZATION=auth_value)
-        self.assertEqual(response.status_code, 200)
+        self.submit_email(use_data=False)
 
     def test_bad_email(self):
-        auth = self.auth.get('good')
-        response = self.client.post(reverse('email_redirect'),
-                                    HTTP_AUTHORIZATION=auth,
-                                    data=self.post_dict)
-        self.assertEqual(response.status_code, 200)
+        self.submit_email()
+
         email = mail.outbox.pop()
         for field in [self.post_dict['to'][0], self.post_dict['from']]:
             self.assertTrue(field in email.body)
@@ -796,40 +968,63 @@ class EmailForwardTests(TestCase):
         self.post_dict['to'] = '%s@my.jobs' % ('1'*32)
         self.post_dict['text'] = 'This address is not in the database'
 
-        auth = self.auth.get('good')
-        response = self.client.post(reverse('email_redirect'),
-                                    HTTP_AUTHORIZATION=auth,
-                                    data=self.post_dict)
-        self.assertEqual(response.status_code, 200)
-        # TODO: Test that an email gets sent once that functionality is added
-
-    def test_good_guid_email(self):
-        self.post_dict['to'] = ['%s@my.jobs' % self.redirect_guid]
-        self.post_dict['text'] = 'Questions about stuff and things'
-        self.post_dict['subject'] = 'Compliance'
-
-        auth = self.auth.get('good')
-        response = self.client.post(reverse('email_redirect'),
-                                    HTTP_AUTHORIZATION=auth,
-                                    data=self.post_dict)
-        self.assertEqual(response.status_code, 200)
+        self.submit_email()
 
         email = mail.outbox.pop()
-        self.assertEqual(email.from_email, self.post_dict['from'])
-        self.assertEqual(email.to, [self.contact.email])
-        self.assertEqual(email.subject, self.post_dict['subject'])
-        self.assertEqual(email.body, self.post_dict['text'])
+        self.assertEqual(email.subject, 'Email forward failure')
+        self.assertTrue('There is no job associated with this address'
+                        in email.body)
+
+    def test_good_guid_email_new_job(self):
+        self.post_dict['to'] = ['%s@my.jobs' % self.redirect_guid]
+        self.post_dict['text'] = 'Questions about stuff and things'
+        self.post_dict['subject'] = 'Email forward success'
+
+        self.submit_email()
+        self.assert_guid_email_responses_are_correct(self.redirect, JOB)
+
+    def test_good_guid_email_new_job_no_user(self):
+        self.contact.delete()
+
+        self.post_dict['to'] = ['%s@my.jobs' % self.redirect_guid]
+        self.post_dict['text'] = 'Questions about stuff and things'
+        self.post_dict['subject'] = 'Email forward success'
+
+        self.submit_email()
+        self.assert_guid_email_responses_are_correct(self.redirect, JOB)
+
+    def test_good_guid_email_old_job(self):
+        guid = '1'*32
+        redirect = RedirectFactory(guid='{%s}' % uuid.UUID(guid),
+                                   buid=self.redirect.buid,
+                                   uid=self.redirect.uid + 1)
+        self.post_dict['to'] = ['%s@my.jobs' % guid]
+        self.post_dict['text'] = 'Questions about stuff and things'
+        self.post_dict['subject'] = 'Email forward success'
+
+        self.submit_email()
+        self.assert_guid_email_responses_are_correct(redirect)
+
+    def test_good_guid_email_old_job_no_user(self):
+        self.contact.delete()
+
+        guid = '1'*32
+        redirect = RedirectFactory(guid='{%s}' % uuid.UUID(guid),
+                                   buid=self.redirect.buid,
+                                   uid=self.redirect.uid + 1)
+        self.post_dict['to'] = ['%s@my.jobs' % guid]
+        self.post_dict['text'] = 'Questions about stuff and things'
+        self.post_dict['subject'] = 'Email forward success'
+
+        self.submit_email()
+        self.assert_guid_email_responses_are_correct(redirect)
 
     def test_email_with_name(self):
         self.post_dict['to'] = 'User <%s@my.jobs>' % self.redirect_guid
         self.post_dict['text'] = 'Questions about stuff and things'
-        self.post_dict['subject'] = 'Compliance'
+        self.post_dict['subject'] = 'Email forward success'
 
-        auth = self.auth.get('good')
-        response = self.client.post(reverse('email_redirect'),
-                                    HTTP_AUTHORIZATION=auth,
-                                    data=self.post_dict)
-        self.assertEqual(response.status_code, 200)
+        self.submit_email()
 
         email = mail.outbox.pop()
 
@@ -842,24 +1037,16 @@ class EmailForwardTests(TestCase):
 
     def test_no_emails(self):
         self.post_dict.pop('to')
-        auth = self.auth.get('good')
-        response = self.client.post(reverse('email_redirect'),
-                                    HTTP_AUTHORIZATION=auth,
-                                    data=self.post_dict)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(mail.outbox), 1)
+
+        self.submit_email()
 
         email = mail.outbox.pop()
         self.assertTrue('My.jobs contact email' in email.subject)
 
     def test_too_many_emails(self):
         self.post_dict['to'] = 'test@example.com, foo@mail.my.jobs'
-        auth = self.auth.get('good')
-        response = self.client.post(reverse('email_redirect'),
-                                    HTTP_AUTHORIZATION=auth,
-                                    data=self.post_dict)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(mail.outbox), 1)
+
+        self.submit_email()
 
         email = mail.outbox.pop()
         self.assertTrue('My.jobs contact email' in email.subject)
@@ -872,24 +1059,22 @@ class EmailForwardTests(TestCase):
         were sent, this was reasonably likely to have completed successfully.
         """
         prm_list = ['prm@my.jobs', 'PRM@MY.JOBS']
-        auth = self.auth.get('good')
 
         for email in prm_list:
+            # SendGrid adds prm@my.jobs to the 'envelope' JSON string
+            # if it appears as a BCC
             self.post_dict['envelope'] = '{"to":["%s"]}' % email
-            response = self.client.post(reverse('email_redirect'),
-                                        HTTP_AUTHORIZATION=auth,
-                                        data=self.post_dict)
-            self.assertEqual(response.status_code, 200)
+
+            response = self.submit_email()
             self.assertEqual(response.content, 'reposted')
             self.assertEqual(len(mail.outbox), 0)
+
         del self.post_dict['envelope']
 
         for email in prm_list:
             self.post_dict['to'] = email
-            response = self.client.post(reverse('email_redirect'),
-                                        HTTP_AUTHORIZATION=auth,
-                                        data=self.post_dict)
-            self.assertEqual(response.status_code, 200)
+
+            response = self.submit_email()
             self.assertEqual(response.content, 'reposted')
             self.assertEqual(len(mail.outbox), 0)
 
@@ -909,26 +1094,31 @@ class UpdateBUIDTests(TestCase):
         self.assertEqual(resp.status_code, 401)
 
         resp = self.client.get(reverse('update_buid') + '?key=%s' % self.key)
-        self.assertEqual(resp.content, '{"error": "Invalid format for old business unit"}')
+        self.assertEqual(resp.content,
+                         '{"error": "Invalid format for old business unit"}')
 
     def test_no_new_buid(self):
-        resp = self.client.get(reverse('update_buid') + '?key=%s&old_buid=%s' % (
-            self.key, self.cm.buid))
-        self.assertEqual(resp.content, '{"error": "Invalid format for new business unit"}')
+        resp = self.client.get(reverse('update_buid') + '?key=%s&old_buid=%s' %
+                               (self.key, self.cm.buid))
+        self.assertEqual(resp.content,
+                         '{"error": "Invalid format for new business unit"}')
 
     def test_existing_buid(self):
-        resp = self.client.get(reverse('update_buid') + \
-                               '?key=%s&old_buid=%s&new_buid=%s' % \
+        resp = self.client.get(reverse('update_buid') +
+                               '?key=%s&old_buid=%s&new_buid=%s' %
                                (self.key, self.cm.buid, self.cm.buid))
-        self.assertEqual(resp.content, '{"error": "New business unit already exists"}')
+        self.assertEqual(resp.content,
+                         '{"error": "New business unit already exists"}')
 
     def test_no_old_buid(self):
-        resp = self.client.get(reverse('update_buid') + '?key=%s&new_buid=%s' % \
+        resp = self.client.get(reverse('update_buid') + '?key=%s&new_buid=%s' %
                                (self.key, self.cm.buid + 1))
-        self.assertEqual(resp.content, '{"error": "Invalid format for old business unit"}')
+        self.assertEqual(resp.content,
+                         '{"error": "Invalid format for old business unit"}')
 
     def test_new_buid(self):
-        resp = self.client.get(reverse('update_buid') + '?key=%s&old_buid=%s&new_buid=%s' % \
+        resp = self.client.get(reverse('update_buid') +
+                               '?key=%s&old_buid=%s&new_buid=%s' %
                                (self.key, self.cm.buid, self.cm.buid + 1))
         content = json.loads(resp.content)
         self.assertEqual(content['new_bu'], self.cm.buid + 1)

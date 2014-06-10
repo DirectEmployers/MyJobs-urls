@@ -13,3 +13,5 @@ git+ssh://git@degit.directemployers.org/jira/jira-tools.git@57cfb93a7676ca739ce7
 requests==1.2.3
 python-memcached==1.53
 django-compressor==1.3
+pysolr==3.2.0
+Markdown==2.4

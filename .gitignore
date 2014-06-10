@@ -4,6 +4,7 @@
 *.flv
 *.wmv
 CACHE
+static/my.jobs.css
 
 # Editor aritfacts
 *~

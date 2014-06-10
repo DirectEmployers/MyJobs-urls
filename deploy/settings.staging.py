@@ -24,3 +24,7 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
     }
 }
+
+SOLR = {
+    'default': 'http://ec2-184-73-29-115.compute-1.amazonaws.com:8983/solr'
+}

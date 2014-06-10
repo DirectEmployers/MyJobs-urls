@@ -22,3 +22,11 @@ ALLOWED_HOSTS = []
 # Uncomment for Django Debug Toolbar
 #MIDDLEWARE_CLASSES += ('debug_toolbar.middleware.DebugToolbarMiddleware',)
 #INSTALLED_APPS += ('debug_toolbar',)
+
+SOLR = {
+    'default': 'http://127.0.0.1:8983/solr'
+}
+
+# With COMPRESS_ENABLED = True, you must run ./manage.py compress for each
+# css change and then restart runserver
+COMPRESS_ENABLED = False
