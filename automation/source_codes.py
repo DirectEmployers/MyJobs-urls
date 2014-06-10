@@ -9,7 +9,7 @@ def get_book(file_name):
 
 
 def get_source_code_sheet(book):
-    sheet = book.get_sheet(0)
+    sheet = book.sheets()[0]
     return sheet
 
 
@@ -23,16 +23,20 @@ def get_values(sheet, source_name, view_source_column=2, source_code_column=1):
         view_sources = view_sources[1:]
     else:
         header = False
+    view_sources = [int(vs) for vs in view_sources]
     # TODO: Check for multiple view sources per cell
 
-    source_parts = sheet.col(source_code_column)
+    source_parts = [cell.value for cell in sheet.col(source_code_column)]
     if header:
         source_parts = source_parts[1:]
 
-    if source_name[0] not in ['?', '&']:
-        source_name = '?%s' % source_name
-    if source_name[-1] != '=':
-        source_name = '%s=' % source_name
+    if source_name is not None:
+        if source_name[0] not in ['?', '&']:
+            source_name = '?%s' % source_name
+        if source_name[-1] != '=':
+            source_name = '%s=' % source_name
+    else:
+        source_name = ''
 
     source_codes = ['%s%s' % (source_name, part) for part in source_parts]
 
@@ -43,7 +47,7 @@ def add_source_codes(buids, codes):
     for buid in buids:
         for code in codes:
             try:
-                dm = DestinationManipulation.objects.filter(
+                dm = DestinationManipulation.objects.get(
                     buid=buid, view_source=code[0], action='sourcecodetag')
             except DestinationManipulation.DoesNotExist:
                 DestinationManipulation.objects.create(
