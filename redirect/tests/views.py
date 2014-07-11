@@ -835,8 +835,8 @@ class ViewSourceViewTests(TestCase):
             '?my.jobs.site.id=%s' % (site.pk + 1))
 
         self.assertEqual(response.status_code, 301)
-        self.assertTrue(response['Location'], sourcecodetag(self.redirect,
-                                                            self.manipulation))
+        self.assertEqual(response['Location'], sourcecodetag(self.redirect,
+                                                             self.manipulation))
 
     def test_msccn_redirect(self):
         response = self.client.get(
@@ -846,6 +846,29 @@ class ViewSourceViewTests(TestCase):
         expected = 'http://us.jobs/msccn-referral.asp?gi=%s%s&cp=%s' % (
             self.redirect_guid, '1604', self.redirect.company_name)
         self.assertEqual(response['Location'], expected)
+
+    def test_querystring_passes_to_microsite(self):
+        """
+        The microsite can handle any query parameters we throw at it; if we see
+        something, we should pass it along.
+        """
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid]) + '?src=val')
+        expected = self.microsite.canonical_microsite_url + \
+            '{guid}/job/?vs=0&src=val'.format(guid=self.redirect_guid)
+        self.assertEqual(response['Location'], expected)
+
+    def test_querystring_does_not_pass_to_job(self):
+        """
+        Various ATSes dislike query parameters that they don't expect. If we are
+        not redirecting to a microsite, we see extra parameters, and a z
+        parameter is not provided, do not add those extra parameters.
+        """
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid]) + '?vs=0&src=val')
+        self.assertEqual(response['Location'], self.redirect.url)
 
 
 class EmailForwardTests(TestCase):

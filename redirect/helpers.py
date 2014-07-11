@@ -258,10 +258,7 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
                                (microsite.canonical_microsite_url,
                                 guid,
                                 vs_to_use)
-                if request.REQUEST.get('z') == '1':
-                    # Enable adding vs and z to the query string; these
-                    # will be passed to the microsite, which will pass
-                    # them back to us on apply clicks
+                if request.META.get('QUERY_STRING'):
                     redirect_url = replace_or_add_query(
                         redirect_url, '&%s' % request.META.get('QUERY_STRING'),
                         exclusions=[])
