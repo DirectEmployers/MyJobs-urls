@@ -8,14 +8,14 @@ from django.utils import timezone
 from redirect import models
 
 
-class CanonicalMicrositeFactory(factory.Factory):
+class CanonicalMicrositeFactory(factory.django.DjangoModelFactory):
     FACTORY_FOR = models.CanonicalMicrosite
 
     buid = 0
     canonical_microsite_url = 'http://www.my.jobs/'
 
 
-class RedirectFactory(factory.Factory):
+class RedirectFactory(factory.django.DjangoModelFactory):
     FACTORY_FOR = models.Redirect
 
     guid = '{12345678-90ab-cdef-1234-567890abcdef}'
@@ -30,7 +30,7 @@ class RedirectFactory(factory.Factory):
     company_name = 'DirectEmployers'
 
 
-class ViewSourceFactory(factory.Factory):
+class ViewSourceFactory(factory.django.DjangoModelFactory):
     FACTORY_FOR = models.ViewSource
 
     view_source_id = 0
@@ -38,7 +38,7 @@ class ViewSourceFactory(factory.Factory):
     microsite = True
 
 
-class ATSSourceCodeFactory(factory.Factory):
+class ATSSourceCodeFactory(factory.django.DjangoModelFactory):
     FACTORY_FOR = models.ATSSourceCode
 
     buid = 0
@@ -48,7 +48,7 @@ class ATSSourceCodeFactory(factory.Factory):
     parameter_value = 'indeed_test'
 
 
-class RedirectActionFactory(factory.Factory):
+class RedirectActionFactory(factory.django.DjangoModelFactory):
     FACTORY_FOR = models.RedirectAction
 
     buid = 0
@@ -56,7 +56,7 @@ class RedirectActionFactory(factory.Factory):
     action = models.RedirectAction.SOURCECODETAG_ACTION
 
 
-class DestinationManipulationFactory(factory.Factory):
+class DestinationManipulationFactory(factory.django.DjangoModelFactory):
     FACTORY_FOR = models.DestinationManipulation
 
     action_type = 1
@@ -67,7 +67,7 @@ class DestinationManipulationFactory(factory.Factory):
     value_2 = '&codes=ArmyRES'
 
 
-class CustomExcludedViewSourceFactory(factory.Factory):
+class CustomExcludedViewSourceFactory(factory.django.DjangoModelFactory):
     FACTORY_FOR = models.CustomExcludedViewSource
 
     buid = 0
