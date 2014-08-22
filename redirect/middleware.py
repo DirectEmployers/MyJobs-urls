@@ -15,6 +15,7 @@ class MyJobsRedirectMiddleware(object):
             return HttpResponsePermanentRedirect(
                 'http://my.jobs' + request.get_full_path())
 
+
 class ExcludedViewSourceMiddleware:
     """
     Caches excluded view sources (both global and custom) if they are not

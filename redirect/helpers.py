@@ -358,7 +358,8 @@ def replace_or_add_query(url, query, exclusions=None):
 
         # parse_qsl unencodes the query that you pass it; Re-encode the query
         # parameters when reconstructing the string.
-        old_query = '&'.join(['='.join([urllib.quote(k), urllib.quote(v)])
+        old_query = '&'.join(['='.join([urllib.quote(k, safe=','),
+                                        urllib.quote(v, safe=',')])
                              for k, v in old_query])
         url = url._replace(query=old_query)
         url = urlparse.urlunparse(url)
