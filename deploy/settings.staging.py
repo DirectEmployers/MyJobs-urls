@@ -1,7 +1,7 @@
 from default_settings import *
 
 
-DEBUG = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
 DATABASES = {
@@ -17,7 +17,9 @@ DATABASES = {
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'ec2-54-197-41-186.compute-1.amazonaws.com'
+]
 
 CACHES = {
     'default': {
@@ -26,5 +28,5 @@ CACHES = {
 }
 
 SOLR = {
-    'default': 'http://ec2-184-73-29-115.compute-1.amazonaws.com:8983/solr'
+    'default': 'http://ec2-54-242-14-151.compute-1.amazonaws.com/solr'
 }
