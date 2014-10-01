@@ -28,5 +28,5 @@ CACHES = {
 }
 
 SOLR = {
-    'default': 'http://ec2-184-73-29-115.compute-1.amazonaws.com:8983/solr'
+    'default': 'http://ec2-54-242-14-151.compute-1.amazonaws.com/solr'
 }

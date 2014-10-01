@@ -11,7 +11,8 @@ class MyJobsRedirectMiddleware(object):
     """
     def process_request(self, request):
         host = request.META.get('HTTP_HOST', '')
-        if host and 'my.jobs' not in host:
+        if host and not any(domain in host
+                            for domain in settings.ALLOWED_HOSTS):
             return HttpResponsePermanentRedirect(
                 'http://my.jobs' + request.get_full_path())
 
