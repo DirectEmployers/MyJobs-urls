@@ -350,7 +350,7 @@ def replace_or_add_query(url, query, exclusions=None):
 
         new_query = urlparse.parse_qsl(query, keep_blank_values=True)
 
-        # For each source code that we are going to be added
+        # For each source code that we are going to add
         for new_index in range(len(new_query)):
             # Make sure we are not adding a source code that should be excluded
             if new_query[new_index][0] not in exclusions:
