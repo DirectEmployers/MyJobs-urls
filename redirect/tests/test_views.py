@@ -571,12 +571,12 @@ class ViewSourceViewTests(TestCase):
         """
         old_url = self.redirect.url
         parameters = ['src', 'SRC']
-        for parameter in parameters:
-            self.redirect.url = '%s?%s=code' % (old_url, parameter)
+        for url_param in parameters:
+            self.redirect.url = '%s?%s=code' % (old_url, url_param)
             self.redirect.save()
 
-            for parameter2 in parameters:
-                self.manipulation.value_1 = '?%s=foo' % parameter2
+            for manipulation_param in parameters:
+                self.manipulation.value_1 = '?%s=foo' % manipulation_param
                 self.manipulation.save()
 
                 response = self.client.get(
