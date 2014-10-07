@@ -526,13 +526,14 @@ class ViewSourceViewTests(TestCase):
         """
         Test that we never duplicate source codes in the event of a collision
 
-        Tests three circumstances:
+        Tests five circumstances:
         - The source code is the last entry in the query
         - The source code is somewhere in the middle
         - The source code is the first query
         - The source code is the only query
+        - The new source code has a blank value
         """
-        url = 'directemployers.jobs?%ssrc=de%s'
+        url = 'http://directemployers.jobs?%ssrc=de%s'
         for part in [('foo=bar&', ''),  # last
                      ('foo=bar&', '&code=de'),  # middle
                      ('', '&foo=bar'),  # first
@@ -549,6 +550,41 @@ class ViewSourceViewTests(TestCase):
 
             self.assertTrue('src=de' not in response['Location'])
             self.assertTrue('src=JB-DE' in response['Location'])
+
+        # New source code is blank
+        self.manipulation.value_1 = '?src='
+        self.manipulation.save()
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          self.manipulation.view_source]))
+        self.assertEqual(response['Location'],
+                         self.redirect.url.replace('de', ''))
+
+    def test_source_codes_ignore_case(self):
+        """
+        Source codes should be matched case-insensitively between what is
+        already applied to a url and what we are adding. If a matching source
+        code is already in place, its value should be replaced with the new
+        value. If no matching source code is found, we should append the
+        new one and keep its case.
+        """
+        old_url = self.redirect.url
+        parameters = ['src', 'SRC']
+        for parameter in parameters:
+            self.redirect.url = '%s?%s=code' % (old_url, parameter)
+            self.redirect.save()
+
+            for parameter2 in parameters:
+                self.manipulation.value_1 = '?%s=foo' % parameter2
+                self.manipulation.save()
+
+                response = self.client.get(
+                    reverse('home',
+                            args=[self.redirect_guid,
+                                  self.manipulation.view_source]))
+                self.assertEqual(response['Location'],
+                                 self.redirect.url.replace('code', 'foo'))
 
     def test_source_code_with_encoded_parameters(self):
         """
