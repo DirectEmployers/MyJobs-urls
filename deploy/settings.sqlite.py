@@ -24,7 +24,9 @@ ALLOWED_HOSTS = []
 #INSTALLED_APPS += ('debug_toolbar',)
 
 SOLR = {
-    'default': 'http://127.0.0.1:8983/solr'
+    # If you are running combined MyJobs/microsites solr, leave as-is
+    # If you are still using separate solr versions, remove "/seo"
+    'default': 'http://127.0.0.1:8983/solr/seo'
 }
 
 # With COMPRESS_ENABLED = True, you must run ./manage.py compress for each
