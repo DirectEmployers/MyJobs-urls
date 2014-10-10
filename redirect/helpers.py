@@ -345,16 +345,28 @@ def replace_or_add_query(url, query, exclusions=None):
         url = urlparse.urlparse(url)
         old_query = urlparse.parse_qsl(url.query, keep_blank_values=True)
         old_keys = [q[0] for q in old_query]
+        # make a lower-case copy of old_keys so we can do some comparisons
+        insensitive_keys = map(str.lower, old_keys)
 
-        new_query = urlparse.parse_qsl(query)
+        new_query = urlparse.parse_qsl(query, keep_blank_values=True)
 
+        # For each source code that we are going to add
         for new_index in range(len(new_query)):
+            # Make sure we are not adding a source code that should be excluded
             if new_query[new_index][0] not in exclusions:
-                if new_query[new_index][0] in old_keys:
-                    old_index = old_keys.index(new_query[new_index][0])
-                    old_query[old_index] = new_query[new_index]
-                else:
+                try:
+                    # Case-insensitively determine if the new source code
+                    # is already applied
+                    old_index = insensitive_keys.index(
+                        new_query[new_index][0].lower())
+                except ValueError:
+                    # The current source code is not applied; apply it
                     old_query.append(new_query[new_index])
+                else:
+                    # The current source code is already applied; replace its
+                    # value, keeping the case of the old parameter
+                    old_query[old_index] = (old_query[old_index][0],
+                                            new_query[new_index][1])
 
         # parse_qsl unencodes the query that you pass it; Re-encode the query
         # parameters when reconstructing the string.
