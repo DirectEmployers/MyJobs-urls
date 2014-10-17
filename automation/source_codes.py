@@ -3,8 +3,20 @@ import xlrd
 from redirect.models import DestinationManipulation
 
 
-def get_book(file_name):
-    book = xlrd.open_workbook(file_name)
+def get_book(location):
+    """
+    Creates an xlrd Book from the provided location
+
+    Inputs:
+    :location: string or unicode path to a local file or a file-like object
+
+    Outputs:
+    :book: instance of xlrd.book.Book
+    """
+    if not isinstance(location, (unicode, str)):
+        book = xlrd.open_workbook(file_contents=location.read())
+    else:
+        book = xlrd.open_workbook(location)
     return book
 
 
@@ -14,23 +26,24 @@ def get_source_code_sheet(book):
 
 
 def get_values(sheet, source_name, view_source_column=2, source_code_column=1):
-    view_sources = sheet.col(view_source_column)
-    view_sources = [vs.value for vs in view_sources]
-    try:
-        int(view_sources[0])
-    except ValueError:
-        header = True
-        view_sources = view_sources[1:]
-    else:
-        header = False
-    view_sources = [int(vs) for vs in view_sources]
-    # TODO: Check for multiple view sources per cell
-
+    view_sources = [vs.value for vs in sheet.col(view_source_column)]
     source_parts = [cell.value for cell in sheet.col(source_code_column)]
-    if header:
+
+    if not view_sources[0].isdigit():
+        view_sources = view_sources[1:]
         source_parts = source_parts[1:]
 
-    if source_name is not None:
+    multiple_view_sources = [view_sources.index(vs)
+                             for vs in view_sources
+                             if isinstance(vs, (str, unicode)) and '/' in vs]
+    for index in multiple_view_sources:
+        split = view_sources[index].split('/')
+        view_sources[index] = split[0].strip()
+        view_sources.append(split[1].strip())
+        source_parts.append(source_parts[index])
+    view_sources = [int(vs) for vs in view_sources]
+
+    if source_name:
         if source_name[0] not in ['?', '&']:
             source_name = '?%s' % source_name
         if source_name[-1] != '=':
@@ -58,10 +71,13 @@ def add_source_codes(buids, codes):
                 dm.save()
 
 
-def main(file_name, buids, source_name, view_source_column=2, source_code_column=1):
-    book = get_book(file_name)
+def process_spreadsheet(location, buids, source_name, view_source_column=2,
+                        source_code_column=1, add_codes=True):
+    book = get_book(location)
     sheet = get_source_code_sheet(book)
-    codes = get_values(sheet, source_name, view_source_column, source_code_column)
+    codes = get_values(sheet, source_name, view_source_column,
+                       source_code_column)
     if not isinstance(buids, (list, set)):
         buids = [buids]
-    add_source_codes(buids, codes)
+    if add_codes:
+        add_source_codes(buids, codes)

@@ -1,5 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
+
+from automation.source_codes import process_spreadsheet
 from redirect.models import Redirect
 
 PARAMETERS = {
@@ -42,6 +44,8 @@ class SourceCodeFileUpload(forms.Form):
             test_job = test_job[0]
         return parameter
 
-    def clean_source_code_file(self):
-        import ipdb; ipdb.set_trace()
-        return ''
+    def clean(self):
+        self.cleaned_data['source_code_file'] = process_spreadsheet(
+            self.cleaned_data['source_code_file'],
+            self.cleaned_data['buids'],
+            self.cleaned_data['source_code_parameter'])
