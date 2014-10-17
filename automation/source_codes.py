@@ -1,4 +1,5 @@
 import xlrd
+from xlrd.book import Book
 
 from redirect.models import DestinationManipulation
 
@@ -17,12 +18,8 @@ def get_book(location):
         book = xlrd.open_workbook(file_contents=location.read())
     else:
         book = xlrd.open_workbook(location)
+    setattr(book, 'source_code_sheet', book.sheets()[0])
     return book
-
-
-def get_source_code_sheet(book):
-    sheet = book.sheets()[0]
-    return sheet
 
 
 def get_values(sheet, source_name, view_source_column=2, source_code_column=1):
@@ -57,27 +54,39 @@ def get_values(sheet, source_name, view_source_column=2, source_code_column=1):
 
 
 def add_source_codes(buids, codes):
+    print
+    print buids
+    print codes
+    stats = {
+        'added': 0,
+        'modified': 0,
+        'total': len(buids) * len(codes)
+    }
     for buid in buids:
         for code in codes:
             try:
                 dm = DestinationManipulation.objects.get(
                     buid=buid, view_source=code[0], action='sourcecodetag')
             except DestinationManipulation.DoesNotExist:
+                stats['added'] += 1
                 DestinationManipulation.objects.create(
                     action_type=1, buid=buid, view_source=code[0],
                     action='sourcecodetag', value_1=code[1], value_2='')
             else:
+                stats['modified'] += 1
                 dm.value_1 = code[1]
                 dm.save()
+    return stats
 
 
 def process_spreadsheet(location, buids, source_name, view_source_column=2,
                         source_code_column=1, add_codes=True):
     book = get_book(location)
-    sheet = get_source_code_sheet(book)
-    codes = get_values(sheet, source_name, view_source_column,
+    codes = get_values(book.source_code_sheet, source_name, view_source_column,
                        source_code_column)
     if not isinstance(buids, (list, set)):
         buids = [buids]
     if add_codes:
-        add_source_codes(buids, codes)
+        return add_source_codes(buids, codes)
+    else:
+        return codes

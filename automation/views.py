@@ -5,18 +5,18 @@ from automation.forms import SourceCodeFileUpload
 
 
 def source_code_upload(request):
+    context = {}
     if request.method == 'POST':
-        print request.POST
         post = request.POST.copy()
         upload_file = request.FILES.get('source_code_file')
         if hasattr(upload_file, 'name'):
             post['source_code_file'] = upload_file.name
-        print request.FILES
         form = SourceCodeFileUpload(post, request.FILES)
-        print form.is_valid()
-        print form.errors
+        if form.is_valid():
+            context['stats'] = form.save()
     else:
         form = SourceCodeFileUpload()
+    context['form'] = form
     return render_to_response('automation/excel_upload_form.html',
                               {'form': form},
                               context_instance=RequestContext(request))
