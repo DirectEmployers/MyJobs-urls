@@ -3,6 +3,7 @@ from django import forms
 from automation.source_codes import process_spreadsheet, add_source_codes
 from redirect.models import Redirect
 
+#
 ATS_PARAMETERS = {
     'brassring': 'codes',
     # reenable when we come up with a good way of handling this
@@ -25,6 +26,10 @@ class SourceCodeFileUpload(forms.Form):
     source_code_parameter = forms.CharField(required=False)
 
     def clean_buids(self):
+        """
+        Ensures that the buids input is both present and a comma-delimited
+        list of digits
+        """
         buids = self.data['buids']
         if buids:
             buids = buids.split(',')
@@ -36,6 +41,11 @@ class SourceCodeFileUpload(forms.Form):
         return buids
 
     def clean_source_code_parameter(self):
+        """
+        Checks for jobs belonging to the buids provided and auto-determines
+        an acceptable parameter based on the job. If this fails, a parameter
+        must be provided in the form
+        """
         parameter = self.cleaned_data['source_code_parameter']
         buids = self.data['buids'].split(',')
 
@@ -55,6 +65,7 @@ class SourceCodeFileUpload(forms.Form):
         cleaned_data = super(SourceCodeFileUpload, self).clean()
         if all(field in cleaned_data for field in ['source_code_parameter',
                                                    'buids']):
+            # TODO: Detect if the file already contains parameters
             cleaned_data['source_codes'] = process_spreadsheet(
                 cleaned_data['source_code_file'],
                 cleaned_data['buids'],
