@@ -131,11 +131,6 @@ def add_source_codes(buids, codes):
             action='sourcecodetag', value_1=manipulation_info[1]))
     DestinationManipulation.objects.bulk_create(new_list)
 
-    # Doesn't work; leaving this so there is a commit record
-    #DestinationManipulation.objects.filter(
-    #    buid__in=[info[0] for info in existing],
-    #    view_source__in=[info[1] for info in existing],
-    #    action='sourcecodetag').update(value_1=code_dict[F('view_source')][1])
     # Committing manually after all of this is supposed to be faster than
     # after each individual operation. Found originally at the first link,
     # new 1.6 functionality at the second. This still does one query per update
