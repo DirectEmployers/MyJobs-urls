@@ -1,3 +1,5 @@
+from django.db import transaction
+
 import xlrd
 
 from redirect.models import DestinationManipulation
@@ -97,31 +99,59 @@ def add_source_codes(buids, codes):
     :stats: Dictionary describing what happened in this method; contains the
         number of added and modified source codes as well as the total
     """
-    stats = {
-        'added': 0,
-        'modified': 0,
-        'total': len(buids) * len(codes)
-    }
+    # Make source codes easy to look up by view source
+    code_dict = {code[0]: code for code in codes}
 
     if not isinstance(buids, (list, set)):
         buids = [buids]
+    # Pulling buids from the database returns integers; In order to do set
+    # operations between the two, these need to be ints as well
+    buids = [int(buid) for buid in buids]
 
-    # TODO: refactor this to retrieve a list of manipulations to be modified
-    # so we can reduce the number of queries
-    for buid in buids:
-        for code in codes:
-            try:
-                dm = DestinationManipulation.objects.get(
-                    buid=buid, view_source=code[0], action='sourcecodetag')
-            except DestinationManipulation.DoesNotExist:
-                stats['added'] += 1
-                DestinationManipulation.objects.create(
-                    action_type=1, buid=buid, view_source=code[0],
-                    action='sourcecodetag', value_1=code[1], value_2='')
-            else:
-                stats['modified'] += 1
-                dm.value_1 = code[1]
-                dm.save()
+    all_view_sources = [code[0] for code in codes]
+    all_manipulations = set((buid, vs) for buid in buids
+                            for vs in all_view_sources)
+    existing = set(DestinationManipulation.objects.filter(
+        buid__in=buids, view_source__in=all_view_sources,
+        action='sourcecodetag').values_list('buid', 'view_source'))
+    new = all_manipulations.difference(existing)
+
+    stats = {
+        'added': len(new),
+        'modified': len(existing),
+        'total': len(all_manipulations)
+    }
+
+    # Bulk create manipulations that don't exist yet
+    new_list = []
+    for new_info in new:
+        manipulation_info = code_dict[new_info[0]]
+        new_list.append(DestinationManipulation(
+            action_type=1, buid=new_info[0], view_source=manipulation_info[0],
+            action='sourcecodetag', value_1=manipulation_info[1]))
+    DestinationManipulation.objects.bulk_create(new_list)
+
+    # Doesn't work; leaving this so there is a commit record
+    #DestinationManipulation.objects.filter(
+    #    buid__in=[info[0] for info in existing],
+    #    view_source__in=[info[1] for info in existing],
+    #    action='sourcecodetag').update(value_1=code_dict[F('view_source')][1])
+    # Committing manually after all of this is supposed to be faster than
+    # after each individual operation. Found originally at the first link,
+    # new 1.6 functionality at the second. This still does one query per update
+    # http://voorloopnul.com/blog/doing-bulk-update-and-bulk-create-with-django-orm/
+    # https://docs.djangoproject.com/en/1.6/topics/db/transactions/#id5
+    transaction.set_autocommit(False)
+    try:
+        for existing_info in existing:
+            manipulation_info = code_dict[existing_info[0]]
+            DestinationManipulation.objects.filter(
+                buid=existing_info[0], view_source=manipulation_info[0],
+                action='sourcecodetag').update(
+                    value_1=manipulation_info[1])
+    finally:
+        transaction.set_autocommit(True)
+
     return stats
 
 
