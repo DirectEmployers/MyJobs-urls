@@ -625,43 +625,6 @@ def send_response_to_sender(new_to, old_to, email_type, guid='', job=None):
     email.send()
 
 
-def create_myjobs_account(from_email):
-    """
-    Creates a My.jobs account for a given email if one does not exist
-
-    Inputs:
-    :from_email: Email address that will be associated with the new
-        My.jobs account
-
-    Returns:
-    Response from My.jobs (or an error) if tests are not being run
-    My.jobs url if tests are being run
-    """
-    if type(from_email) != list:
-        from_email = [from_email]
-    # getaddresses returns a list of tuples
-    # ['name@example.com'] parses to [('', 'name@example.com')]
-    # ['Name <name@example.com>'] parses to [('Name', 'name@example.com')]
-    from_email = getaddresses(from_email)[0][1]
-    mj_url = 'http://secure.my.jobs:80/api/v1/user/'
-    mj_url = urlparse.urlparse(mj_url)
-    qs = {'username': settings.MJ_API['username'],
-          'api_key': settings.MJ_API['key'],
-          'email': from_email,
-          'user_type': 'redirect',
-          'custom_msg': NEW_MJ_CUSTOM_MSG % from_email}
-    qs = urllib.urlencode(qs)
-    mj_url = mj_url._replace(query=qs).geturl()
-    if hasattr(mail, 'outbox'):
-        return mj_url
-
-    try:
-        contents = urllib2.urlopen(mj_url).read()
-    except urllib2.URLError as e:
-        contents = '{"error":"%s"}' % e.args[0]
-    return contents
-
-
 def repost_to_mj(post, files):
     """
     Repost a parsed email to secure.my.jobs
