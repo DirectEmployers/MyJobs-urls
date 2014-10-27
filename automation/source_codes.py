@@ -125,7 +125,7 @@ def add_source_codes(buids, codes):
     # Bulk create manipulations that don't exist yet
     new_list = []
     for new_info in new:
-        manipulation_info = code_dict[new_info[0]]
+        manipulation_info = code_dict[new_info[1]]
         new_list.append(DestinationManipulation(
             action_type=1, buid=new_info[0], view_source=manipulation_info[0],
             action='sourcecodetag', value_1=manipulation_info[1]))
