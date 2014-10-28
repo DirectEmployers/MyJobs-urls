@@ -178,7 +178,11 @@ class ViewSource(models.Model):
                                          default=None)
     name = models.CharField(max_length=255, blank=True)
     friendly_name = models.CharField(max_length=255, blank=True)
-    microsite = models.BooleanField(help_text=_('Defunct; Use CanonicalMicrosite'))
+    microsite = models.BooleanField(help_text=_(
+        'Defunct; Use CanonicalMicrosite'))
+    include_ga_params = models.BooleanField(
+        help_text=_('Enables addition of Google Analytics parameters'),
+        default=False)
 
     class Meta:
         get_latest_by = 'view_source_id'
@@ -198,7 +202,6 @@ class ViewSource(models.Model):
                 self.view_source_id = 0
         super(ViewSource, self).save(*args, **kwargs)
 
-
     def is_excluded(self):
         tag = '<img src="/static/admin/img/icon-%s.gif" alt=%s>'
         if self.view_source_id in settings.EXCLUDED_VIEW_SOURCES:
@@ -208,6 +211,12 @@ class ViewSource(models.Model):
         return tag
     is_excluded.short_description = 'excluded'
     is_excluded.allow_tags = True
+
+
+class ViewSourceGroup(models.Model):
+    name = models.CharField(_('Name of this view source group'),
+                            blank=False, null=False, max_length=100)
+    view_source = models.ForeignKey('ViewSource')
 
 
 class ExcludedViewSource(models.Model):
@@ -229,16 +238,16 @@ class ExcludedViewSource(models.Model):
         except ViewSource.DoesNotExist:
             vs = None
 
-        tag = '<a href="/admin/redirect/excludedviewsource/%s">' % self.view_source
+        tag = '<a href="/admin/redirect/excludedviewsource/%s">' % \
+              self.view_source
 
         if vs:
             tag += '%s</a>' % (str(vs),)
         else:
-            tag += '%s</a>' % (self.view_source)
+            tag += '%s</a>' % self.view_source
         return tag
     get_vs_cell.short_description = 'view source'
     get_vs_cell.allow_tags = True
-
 
 
 def clear_vs_cache(sender, instance, created, **kwargs):
@@ -247,7 +256,8 @@ def clear_vs_cache(sender, instance, created, **kwargs):
 
 
 # Clears excluded view source cache when an instance is saved
-post_save.connect(clear_vs_cache, sender=ExcludedViewSource, dispatch_uid="clear_vs_cache")
+post_save.connect(clear_vs_cache, sender=ExcludedViewSource,
+                  dispatch_uid="clear_vs_cache")
 
 
 class CustomExcludedViewSource(models.Model):
@@ -265,7 +275,7 @@ class CustomExcludedViewSource(models.Model):
 
     class Meta:
         unique_together = (('buid', 'view_source'),)
-        index_together = [['buid', 'view_source'],]
+        index_together = [['buid', 'view_source']]
 
     def get_vs_name(self):
         try:

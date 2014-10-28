@@ -1,7 +1,8 @@
+from django.db import IntegrityError
 from django.test import TestCase
 
-from redirect.models import ViewSource
-from redirect.tests.factories import RedirectFactory, ViewSourceFactory
+from redirect.models import ViewSource, ViewSourceGroup
+from redirect.tests.factories import ViewSourceFactory, ViewSourceGroupFactory
 
 
 class ViewSourceTests(TestCase):
@@ -25,3 +26,15 @@ class ViewSourceTests(TestCase):
         self.assertEqual(vs.view_source_id, 7)
 
         self.assertEqual(ViewSource.objects.count(), 5)
+
+
+class ViewSourceGroupTests(TestCase):
+    def test_view_source_group_without_view_source(self):
+        with self.assertRaises(IntegrityError):
+            ViewSourceGroup(name='foo').save()
+
+    def test_one_view_source_multiple_groups(self):
+        view_source = ViewSourceFactory()
+        groups = []
+        for i in range(2):
+            groups.append(ViewSourceGroupFactory(view_source=view_source))
