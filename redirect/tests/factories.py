@@ -79,4 +79,12 @@ class ViewSourceGroupFactory(django.DjangoModelFactory):
     FACTORY_FOR = models.ViewSourceGroup
 
     name = fuzzy.FuzzyText(prefix='Group ')
-    view_source = factory.SubFactory(ViewSourceFactory)
+
+    @factory.post_generation
+    def view_sources(self, create, extracted, **kwargs):
+        if not create:
+            return
+
+        if extracted:
+            for view_source in extracted:
+                self.view_source.add(view_source)

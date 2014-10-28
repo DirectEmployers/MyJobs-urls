@@ -12,9 +12,17 @@ class Migration(SchemaMigration):
         db.create_table(u'redirect_viewsourcegroup', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('name', self.gf('django.db.models.fields.CharField')(max_length=100)),
-            ('view_source', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['redirect.ViewSource'])),
         ))
         db.send_create_signal(u'redirect', ['ViewSourceGroup'])
+
+        # Adding M2M table for field view_source on 'ViewSourceGroup'
+        m2m_table_name = db.shorten_name(u'redirect_viewsourcegroup_view_source')
+        db.create_table(m2m_table_name, (
+            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
+            ('viewsourcegroup', models.ForeignKey(orm[u'redirect.viewsourcegroup'], null=False)),
+            ('viewsource', models.ForeignKey(orm[u'redirect.viewsource'], null=False))
+        ))
+        db.create_unique(m2m_table_name, ['viewsourcegroup_id', 'viewsource_id'])
 
         # Adding index on 'CustomExcludedViewSource', fields ['buid', 'view_source']
         db.create_index(u'redirect_customexcludedviewsource', ['buid', 'view_source'])
@@ -37,6 +45,9 @@ class Migration(SchemaMigration):
 
         # Deleting model 'ViewSourceGroup'
         db.delete_table(u'redirect_viewsourcegroup')
+
+        # Removing M2M table for field view_source on 'ViewSourceGroup'
+        db.delete_table(db.shorten_name(u'redirect_viewsourcegroup_view_source'))
 
         # Deleting field 'ViewSource.include_ga_params'
         db.delete_column(u'redirect_viewsource', 'include_ga_params')
@@ -122,7 +133,7 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'ViewSourceGroup'},
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'view_source': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['redirect.ViewSource']"})
+            'view_source': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['redirect.ViewSource']", 'symmetrical': 'False'})
         }
     }
 

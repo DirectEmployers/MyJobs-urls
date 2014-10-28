@@ -216,7 +216,7 @@ class ViewSource(models.Model):
 class ViewSourceGroup(models.Model):
     name = models.CharField(_('Name of this view source group'),
                             blank=False, null=False, max_length=100)
-    view_source = models.ForeignKey('ViewSource')
+    view_source = models.ManyToManyField('ViewSource')
 
 
 class ExcludedViewSource(models.Model):

@@ -29,12 +29,8 @@ class ViewSourceTests(TestCase):
 
 
 class ViewSourceGroupTests(TestCase):
-    def test_view_source_group_without_view_source(self):
-        with self.assertRaises(IntegrityError):
-            ViewSourceGroup(name='foo').save()
-
     def test_one_view_source_multiple_groups(self):
         view_source = ViewSourceFactory()
-        groups = []
         for i in range(2):
-            groups.append(ViewSourceGroupFactory(view_source=view_source))
+            ViewSourceGroupFactory(view_sources=(view_source, ))
+        self.assertEqual(ViewSourceGroup.objects.count(), 2)
