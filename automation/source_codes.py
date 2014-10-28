@@ -42,6 +42,17 @@ def get_values(sheet, source_name, view_source_column=2, source_code_column=1):
     view_sources = [vs.value for vs in sheet.col(view_source_column)]
     source_parts = [cell.value for cell in sheet.col(source_code_column)]
 
+    get_blanks = lambda list_: [index for index, element
+                                in enumerate(list_)
+                                if element == '']
+    pop_blanks = lambda blanks: [(view_sources.pop(blank),
+                                  source_parts.pop(blank))
+                                 for blank in blanks[::-1]]
+
+    for list_ in [view_sources, source_parts]:
+        foo = pop_blanks(get_blanks(list_))
+        print foo
+
     if not view_sources[0].isdigit():
         # The first row looks like a header; skip it
         # Assumption: the first cell in the view source column does not contain
