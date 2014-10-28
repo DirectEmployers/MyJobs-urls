@@ -1063,13 +1063,6 @@ class EmailForwardTests(TestCase):
 
         email = mail.outbox.pop()
 
-    def test_creating_mj_user(self):
-        response = helpers.create_myjobs_account(self.user.email)
-        for parameter in ['username=%s' % settings.MJ_API['username'].replace('@', '%40'),
-                          'api_key=%s' % settings.MJ_API['key'],
-                          'email=%s' % self.user.email.replace('@', '%40')]:
-            self.assertTrue(parameter in response)
-
     def test_no_emails(self):
         self.post_dict.pop('to')
 

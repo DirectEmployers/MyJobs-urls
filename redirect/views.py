@@ -259,8 +259,6 @@ def email_redirect(request):
 
     email_dict['job'] = job
 
-    helpers.create_myjobs_account(from_email)
-
     try:
         ce = CompanyEmail.objects.get(buid=job.buid)
         new_to = ce.email
