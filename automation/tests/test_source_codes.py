@@ -51,3 +51,12 @@ class SourceCodeUploadTests(TransactionTestCase):
                               'source_code_parameter': 'src'})
 
         self.assertEqual(DestinationManipulation.objects.count(), 0)
+
+    def test_non_staff_user(self):
+        self.client.logout()
+        user = User(email='random@example.com')
+        user.set_password('secret')
+        user.save()
+        self.client.login(username=user.email, password='secret')
+        response = self.client.get(reverse('source_code_upload'))
+        self.assertTrue('Log in' in response.content)
