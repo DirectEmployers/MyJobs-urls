@@ -1,3 +1,4 @@
+import re
 from django.db import transaction
 
 import xlrd
@@ -42,23 +43,22 @@ def get_values(sheet, source_name, view_source_column=2, source_code_column=1):
     view_sources = [vs.value for vs in sheet.col(view_source_column)]
     source_parts = [cell.value for cell in sheet.col(source_code_column)]
 
+    # Finds and returns all blank entries in a list
     get_blanks = lambda list_: [index for index, element
                                 in enumerate(list_)
                                 if element == '']
+
+    # Pops blank indices from the view_sources and source_parts lists
     pop_blanks = lambda blanks: [(view_sources.pop(blank),
                                   source_parts.pop(blank))
                                  for blank in blanks[::-1]]
 
     for list_ in [view_sources, source_parts]:
-        foo = pop_blanks(get_blanks(list_))
-        print foo
+        pop_blanks(get_blanks(list_))
 
-    if not view_sources[0].isdigit():
-        # The first row looks like a header; skip it
-        # Assumption: the first cell in the view source column does not contain
-        # multiple view sources ("1 / 2".isdigit() == False)
-        view_sources = view_sources[1:]
-        source_parts = source_parts[1:]
+    # The first row is a header; skip it
+    view_sources = view_sources[1:]
+    source_parts = source_parts[1:]
 
     # Make a list of cell indices that contain multiple view sources
     multiple_view_sources = [view_sources.index(vs)
@@ -66,19 +66,34 @@ def get_values(sheet, source_name, view_source_column=2, source_code_column=1):
                              if isinstance(vs, (str, unicode)) and '/' in vs]
 
     for index in multiple_view_sources:
-        # For each entry that contains two view sources, split it into
+        # For each entry that contains multiple view sources, split it into
         # its components,
         split = view_sources[index].split('/')
 
-        # replace the dual cell with one view source,
-        view_sources[index] = split[0].strip()
+        # replace the cell containing multiple view sources with one view source
+        view_sources[index] = split.pop(0).strip()
 
-        # append the remaining view source to the end of the list,
-        view_sources.append(split[1].strip())
+        # append the remaining view sources to the end of the list
+        # and duplicate the relevant source code for each
+        for additional in split:
+            view_sources.append(additional.strip())
+            source_parts.append(source_parts[index])
 
-        # and duplicate the source code across both
-        source_parts.append(source_parts[index])
-    view_sources = [int(vs) for vs in view_sources]
+    parsed_view_sources = []
+    bad_view_sources = []
+    for index, value in enumerate(view_sources):
+        try:
+            # Ensure all elements in the view source list are integers
+            parsed_view_sources.append(int(value))
+        except ValueError:
+            # The current element is not an integer; add it to the list of
+            # elements to be removed
+            bad_view_sources.append(index)
+
+    for index in bad_view_sources[::-1]:
+        # Discard all source codes that correspond to a non-integer view source
+        source_parts.pop(index)
+    view_sources = parsed_view_sources
 
     # Some files already contain query parameters; in those cases, we don't
     # need to do any additional handling.
