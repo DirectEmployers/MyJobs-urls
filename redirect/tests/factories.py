@@ -1,21 +1,22 @@
 from datetime import datetime, timedelta
 
 import factory
+from factory import django
+from factory import fuzzy
 
-from django.contrib.auth.models import User
 from django.utils import timezone
 
 from redirect import models
 
 
-class CanonicalMicrositeFactory(factory.django.DjangoModelFactory):
+class CanonicalMicrositeFactory(django.DjangoModelFactory):
     FACTORY_FOR = models.CanonicalMicrosite
 
     buid = 0
     canonical_microsite_url = 'http://www.my.jobs/'
 
 
-class RedirectFactory(factory.django.DjangoModelFactory):
+class RedirectFactory(django.DjangoModelFactory):
     FACTORY_FOR = models.Redirect
 
     guid = '{12345678-90ab-cdef-1234-567890abcdef}'
@@ -30,7 +31,7 @@ class RedirectFactory(factory.django.DjangoModelFactory):
     company_name = 'DirectEmployers'
 
 
-class ViewSourceFactory(factory.django.DjangoModelFactory):
+class ViewSourceFactory(django.DjangoModelFactory):
     FACTORY_FOR = models.ViewSource
 
     view_source_id = 0
@@ -38,7 +39,7 @@ class ViewSourceFactory(factory.django.DjangoModelFactory):
     microsite = True
 
 
-class ATSSourceCodeFactory(factory.django.DjangoModelFactory):
+class ATSSourceCodeFactory(django.DjangoModelFactory):
     FACTORY_FOR = models.ATSSourceCode
 
     buid = 0
@@ -48,7 +49,7 @@ class ATSSourceCodeFactory(factory.django.DjangoModelFactory):
     parameter_value = 'indeed_test'
 
 
-class RedirectActionFactory(factory.django.DjangoModelFactory):
+class RedirectActionFactory(django.DjangoModelFactory):
     FACTORY_FOR = models.RedirectAction
 
     buid = 0
@@ -56,7 +57,7 @@ class RedirectActionFactory(factory.django.DjangoModelFactory):
     action = models.RedirectAction.SOURCECODETAG_ACTION
 
 
-class DestinationManipulationFactory(factory.django.DjangoModelFactory):
+class DestinationManipulationFactory(django.DjangoModelFactory):
     FACTORY_FOR = models.DestinationManipulation
 
     action_type = 1
@@ -67,8 +68,23 @@ class DestinationManipulationFactory(factory.django.DjangoModelFactory):
     value_2 = '&codes=ArmyRES'
 
 
-class CustomExcludedViewSourceFactory(factory.django.DjangoModelFactory):
+class CustomExcludedViewSourceFactory(django.DjangoModelFactory):
     FACTORY_FOR = models.CustomExcludedViewSource
 
     buid = 0
     view_source = 1
+
+
+class ViewSourceGroupFactory(django.DjangoModelFactory):
+    FACTORY_FOR = models.ViewSourceGroup
+
+    name = fuzzy.FuzzyText(prefix='Group ')
+
+    @factory.post_generation
+    def view_sources(self, create, extracted, **kwargs):
+        if not create:
+            return
+
+        if extracted:
+            for view_source in extracted:
+                self.view_source.add(view_source)
