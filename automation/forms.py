@@ -1,9 +1,11 @@
 from django import forms
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from django.conf import settings
 
 from automation.source_codes import process_spreadsheet, add_source_codes
 from redirect.models import Redirect
 
-#
 ATS_PARAMETERS = {
     'brassring': 'codes',
     # reenable when we come up with a good way of handling this
@@ -74,5 +76,15 @@ class SourceCodeFileUpload(forms.Form):
         return cleaned_data
 
     def save(self):
+        source_code_file = self.cleaned_data['source_code_file']
+        # We already read the file once; seek to the beginning so we can read
+        # it again.
+        source_code_file.seek(0)
+
+        # Save the uploaded file to disk. Saves to settings.MEDIA_ROOT and
+        # automatically resolves name conflicts (filename.xlsx becomes
+        # filename_1.xlsx).
+        default_storage.save(source_code_file.name,
+                             ContentFile(source_code_file.read()))
         return add_source_codes(self.cleaned_data['buids'],
                                 self.cleaned_data['source_codes'])
