@@ -60,6 +60,9 @@ def get_values(sheet, source_name, view_source_column=2, source_code_column=1):
     view_sources = view_sources[1:]
     source_parts = source_parts[1:]
 
+    if isinstance(source_parts[0], float):
+        source_parts = [int(part) for part in source_parts]
+
     # Make a list of cell indices that contain multiple view sources
     multiple_view_sources = [view_sources.index(vs)
                              for vs in view_sources

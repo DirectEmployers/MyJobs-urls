@@ -60,3 +60,19 @@ class SourceCodeUploadTests(TransactionTestCase):
         self.client.login(username=user.email, password='secret')
         response = self.client.get(reverse('source_code_upload'))
         self.assertTrue('Log in' in response.content)
+
+    def test_integer_source_codes(self):
+        with open(self.path % ('good', 'digits')) as fp:
+            self.client.post(reverse('source_code_upload'),
+                             {'source_code_file': fp,
+                              'buids': [1],
+                              'source_code_parameter': 'src'})
+
+        dm = DestinationManipulation.objects.get()
+        # xlrd converts integer values to floating point when pulling from
+        # a spreadsheet. So far, float source codes are not used; ensure
+        # numeric source codes are handled as ints
+        value = dm.value_1.split('=')[1]
+
+        # If this is parsed as a float, int(value) will raise a ValueError
+        int_value = int(value)
