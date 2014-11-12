@@ -23,8 +23,9 @@ ALLOWED_HOSTS = []
 #MIDDLEWARE_CLASSES += ('debug_toolbar.middleware.DebugToolbarMiddleware',)
 #INSTALLED_APPS += ('debug_toolbar',)
 
-# Use local solr 4.x; if using 3.x, remove '/seo'
 SOLR = {
+    # If you are running combined MyJobs/microsites solr, leave as-is
+    # If you are still using separate solr versions, remove "/seo"
     'default': 'http://127.0.0.1:8983/solr/seo'
 }
 

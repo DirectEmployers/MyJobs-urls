@@ -23,6 +23,8 @@ urlpatterns = patterns('',
     # View for updating buids
     url(r'^update_buid/$', update_buid, name='update_buid'),
 
+    url(r'^ajax/', include('automation.urls')),
+
     # Potential www.my.jobs redirect, catches root and anything not caught
     # previously
     url(r'^(?:.*/)?$', myjobs_redirect),
