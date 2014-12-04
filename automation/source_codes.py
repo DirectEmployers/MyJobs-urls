@@ -168,7 +168,7 @@ def add_source_codes(buids, codes):
     transaction.set_autocommit(False)
     try:
         for existing_info in existing:
-            manipulation_info = code_dict[existing_info[0]]
+            manipulation_info = code_dict[existing_info[1]]
             DestinationManipulation.objects.filter(
                 buid=existing_info[0], view_source=manipulation_info[0],
                 action='sourcecodetag').update(
