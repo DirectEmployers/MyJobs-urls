@@ -68,7 +68,13 @@ class DestinationManipulation(models.Model):
 
 class RedirectMixin(object):
     def get_any(self, *args, **kwargs):
+        """
+        Gets a redirect object (with matching args and kwargs)
+        from the first table with a match.
+
+        """
         subclasses = BaseRedirect.__subclasses__()
+        subclasses.insert(0, subclasses.pop(subclasses.index(Redirect)))
         for model in subclasses:
             try:
                 return model.objects.get(*args, **kwargs)
