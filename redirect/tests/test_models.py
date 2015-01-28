@@ -45,10 +45,10 @@ class BaseRedirectTests(TestCase):
         models.Redirect.objects.get_any(guid=archived_redirect.guid)
 
         self.assertRaises(ObjectDoesNotExist,
-                          models.Redirect.objects.get, guid='a')
+                          models.Redirect.objects.get_any, guid='a')
 
         models.RedirectArchive.objects.get_any(guid=redirect.guid)
         models.RedirectArchive.objects.get_any(guid=archived_redirect.guid)
 
         self.assertRaises(ObjectDoesNotExist,
-                          models.RedirectArchive.objects.get, guid='a')
+                          models.RedirectArchive.objects.get_any, guid='a')
