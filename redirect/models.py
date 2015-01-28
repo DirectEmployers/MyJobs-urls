@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.db import models
+from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
 from django.utils.translation import ugettext_lazy as _
 
@@ -64,6 +66,28 @@ class DestinationManipulation(models.Model):
     get_view_source_name.admin_order_field = 'view_source'
 
 
+class RedirectMixin(object):
+    def get_any(self, *args, **kwargs):
+        subclasses = BaseRedirect.__subclasses__()
+        for model in subclasses:
+            try:
+                return model.objects.get(*args, **kwargs)
+            except model.DoesNotExist:
+                pass
+            except model.MultipleObjectsReturned:
+                raise MultipleObjectsReturned
+        raise ObjectDoesNotExist
+
+
+class RedirectQuerySet(QuerySet, RedirectMixin):
+    pass
+
+
+class RedirectManager(models.Manager, RedirectMixin):
+    def get_query_set(self):
+        return RedirectQuerySet(self.model, using=self._db)
+
+
 class BaseRedirect(models.Model):
     """
     Contains most of the information required to determine how a url
@@ -88,6 +112,8 @@ class BaseRedirect(models.Model):
     job_location = models.CharField(max_length=255, blank=True)
     job_title = models.CharField(max_length=255, blank=True)
     company_name = models.TextField(blank=True)
+
+    objects = RedirectManager()
 
     class Meta:
         abstract = True
