@@ -2,6 +2,7 @@
 from south.utils import datetime_utils as datetime
 from south.db import db
 from south.v2 import SchemaMigration
+from django.conf import settings
 from django.db import models
 
 
@@ -9,31 +10,34 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         # Adding model 'RedirectArchive'
-        # db.create_table(u'redirect_redirectarchive', (
-        #     ('guid', self.gf('django.db.models.fields.CharField')(max_length=42, primary_key=True, db_index=True)),
-        #     ('buid', self.gf('django.db.models.fields.IntegerField')(default=0)),
-        #     ('uid', self.gf('django.db.models.fields.IntegerField')(unique=True, null=True, blank=True)),
-        #     ('url', self.gf('django.db.models.fields.TextField')()),
-        #     ('new_date', self.gf('django.db.models.fields.DateTimeField')()),
-        #     ('expired_date', self.gf('django.db.models.fields.DateTimeField')(db_index=True, null=True, blank=True)),
-        #     ('job_location', self.gf('django.db.models.fields.CharField')(max_length=255, blank=True)),
-        #     ('job_title', self.gf('django.db.models.fields.CharField')(max_length=255, blank=True)),
-        #     ('company_name', self.gf('django.db.models.fields.TextField')(blank=True)),
-        # ))
-        # db.send_create_signal(u'redirect', ['RedirectArchive'])
+        db_backend = settings.DATABASES['default']['ENGINE'].split('.')[-1]
+        if db_backend == 'mysql':
+            # The 'else' statement is the command that should've been used to
+            # create the archive table. Unfortunately, there are some
+            # alterations that were made and not recorded. To ensure that we
+            # capture those alterations in the new table, make a copy
+            # of the table instead.
+            db.execute("CREATE TABLE redirect_redirectarchive LIKE redirect_redirect")
 
-        # The above statement is the command that should've been used to
-        # create the archive table. Unfortunately, there are some alterations
-        # that were made and not recorded. To ensure that we
-        # capture those alterations in the new table, make a copy of the table
-        # instead.
-        db.execute("CREATE TABLE redirect_redirectarchive LIKE redirect_redirect")
+            # Adding index on 'Redirect', fields ['expired_date']
+            db.create_index(u'redirect_redirectarchive', ['expired_date'])
 
-        # Adding index on 'Redirect', fields ['expired_date']
-        db.create_index(u'redirect_redirectarchive', ['expired_date'])
+            # Adding index on 'Redirect', fields ['guid']
+            db.create_index(u'redirect_redirectarchive', ['guid'])
+        else:
+            db.create_table(u'redirect_redirectarchive', (
+                ('guid', self.gf('django.db.models.fields.CharField')(max_length=42, primary_key=True, db_index=True)),
+                ('buid', self.gf('django.db.models.fields.IntegerField')(default=0)),
+                ('uid', self.gf('django.db.models.fields.IntegerField')(unique=True, null=True, blank=True)),
+                ('url', self.gf('django.db.models.fields.TextField')()),
+                ('new_date', self.gf('django.db.models.fields.DateTimeField')()),
+                ('expired_date', self.gf('django.db.models.fields.DateTimeField')(db_index=True, null=True, blank=True)),
+                ('job_location', self.gf('django.db.models.fields.CharField')(max_length=255, blank=True)),
+                ('job_title', self.gf('django.db.models.fields.CharField')(max_length=255, blank=True)),
+                ('company_name', self.gf('django.db.models.fields.TextField')(blank=True)),
+            ))
+            db.send_create_signal(u'redirect', ['RedirectArchive'])
 
-        # Adding index on 'Redirect', fields ['guid']
-        db.create_index(u'redirect_redirectarchive', ['guid'])
 
     def backwards(self, orm):
         # Deleting model 'RedirectArchive'
