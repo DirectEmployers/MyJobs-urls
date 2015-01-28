@@ -6,17 +6,19 @@ import uuid
 
 from django.conf import settings
 from django.core import mail
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import EmailMultiAlternatives
 from django.http import (HttpResponseGone, HttpResponsePermanentRedirect,
                          HttpResponse)
-from django.shortcuts import get_object_or_404, render_to_response
+from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils import text, timezone
 from django.views.decorators.csrf import csrf_exempt
 
 from redirect.models import (Redirect, CanonicalMicrosite,
-    DestinationManipulation, CompanyEmail, EmailRedirectLog)
+                             DestinationManipulation, CompanyEmail,
+                             EmailRedirectLog)
 from redirect import helpers
 
 
@@ -39,8 +41,7 @@ def home(request, guid, vsid=None, debug=None):
             debug_content.append('CustomParameters=%s' %
                                  request.META.get('QUERY_STRING'))
 
-    guid_redirect = get_object_or_404(Redirect,
-                                      guid=guid)
+    guid_redirect = helpers.get_redirect_or_404(guid=guid)
     cleaned_guid = helpers.clean_guid(guid_redirect.guid).upper()
 
     syndication_params = {'request': request, 'redirect': guid_redirect,
@@ -248,11 +249,11 @@ def email_redirect(request):
 
     try:
         to_guid = '{%s}' % uuid.UUID(hex_guid)
-        job = Redirect.objects.get(guid=to_guid)
+        job = Redirect.objects.get_any(guid=to_guid)
     except ValueError:
         helpers.log_failure(request.POST.dict())
         return HttpResponse(status=200)
-    except Redirect.DoesNotExist:
+    except ObjectDoesNotExist:
         email_dict['email_type'] = 'no_job'
         helpers.send_response_to_sender(**email_dict)
         return HttpResponse(status=200)

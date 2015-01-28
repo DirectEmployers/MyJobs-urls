@@ -15,8 +15,9 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.sites.models import Site
 from django.core import mail
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.core.mail import EmailMessage
-from django.http import HttpResponsePermanentRedirect
+from django.http import HttpResponsePermanentRedirect, Http404
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
@@ -25,7 +26,8 @@ from django.utils.http import urlquote_plus
 
 from myjobs.models import User
 import redirect.actions
-from redirect.models import CanonicalMicrosite, DestinationManipulation
+from redirect.models import (CanonicalMicrosite, DestinationManipulation,
+                             Redirect)
 
 
 STATE_MAP = {
@@ -720,3 +722,10 @@ def add_custom_queries(request, url, debug_content=None,
         debug_content.append(
             'ManipulatedLink(Custom Parameters)=%s' % redirect_url)
     return redirect_url
+
+
+def get_redirect_or_404(*args, **kwargs):
+    try:
+        return Redirect.objects.get_any(*args, **kwargs)
+    except(ObjectDoesNotExist, MultipleObjectsReturned):
+        raise Http404
