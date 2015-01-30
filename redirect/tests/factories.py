@@ -21,7 +21,7 @@ class RedirectFactory(django.DjangoModelFactory):
 
     guid = '{12345678-90ab-cdef-1234-567890abcdef}'
     buid = 0
-    uid = factory.Sequence(lambda n: n)
+    uid = None
     url = 'http://www.directemployers.org'
     new_date = datetime.now(tz=timezone.utc) - timedelta(minutes=30)
     # Unused for current testing but may be useful later
@@ -36,7 +36,7 @@ class RedirectArchiveFactory(django.DjangoModelFactory):
 
     guid = '{12345678-90ab-cdef-1234-567890abcdef}'
     buid = 0
-    uid = factory.Sequence(lambda n: n)
+    uid = None
     url = 'http://www.directemployers.org'
     new_date = datetime.now(tz=timezone.utc) - timedelta(60)
     # Unused for current testing but may be useful later

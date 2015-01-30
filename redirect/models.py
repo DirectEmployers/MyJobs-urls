@@ -74,6 +74,8 @@ class RedirectMixin(object):
 
         """
         subclasses = BaseRedirect.__subclasses__()
+        # We always want to check the Redirect table first, so make
+        # sure it's first in the list.
         subclasses.insert(0, subclasses.pop(subclasses.index(Redirect)))
         for model in subclasses:
             try:

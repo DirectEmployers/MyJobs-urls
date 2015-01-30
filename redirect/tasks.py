@@ -26,6 +26,15 @@ def unexpired_to_active_table():
     not_expired.delete()
 
 
+def remove_duplicates():
+    """
+    Compares guids in the Redirect and RedirectArchive tables to find
+    duplicates. Removes the duplicates from the RedirectArchive table.
+
+    """
+    return
+
+
 def add_redirects(to_model, redirects):
     """
     Adds an iteratble of redirects to to_model.

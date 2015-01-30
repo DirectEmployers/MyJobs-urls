@@ -1035,7 +1035,7 @@ class EmailForwardTests(TestCase):
         guid = '1'*32
         redirect = RedirectFactory(guid='{%s}' % uuid.UUID(guid),
                                    buid=self.redirect.buid,
-                                   uid=self.redirect.uid + 1)
+                                   uid=1)
         self.post_dict['to'] = ['%s@my.jobs' % guid]
         self.post_dict['text'] = 'Questions about stuff and things'
         self.post_dict['subject'] = 'Email forward success'
@@ -1049,7 +1049,7 @@ class EmailForwardTests(TestCase):
         guid = '1'*32
         redirect = RedirectFactory(guid='{%s}' % uuid.UUID(guid),
                                    buid=self.redirect.buid,
-                                   uid=self.redirect.uid + 1)
+                                   uid=1)
         self.post_dict['to'] = ['%s@my.jobs' % guid]
         self.post_dict['text'] = 'Questions about stuff and things'
         self.post_dict['subject'] = 'Email forward success'
