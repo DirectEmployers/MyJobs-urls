@@ -488,7 +488,7 @@ def add_part(body, part, value, join_str):
     return body
 
 
-def log_failure(post, subject=None):
+def log_failure(post, subject):
     """
     Logs failures in redirecting job@my.jobs emails. This does not mean literal
     failure, but the email in question is not a guid@my.jobs email and should
@@ -531,8 +531,6 @@ def log_failure(post, subject=None):
 
     body = add_part(body, 'headers', headers, '\n')
 
-    if subject is None:
-        subject = 'My.jobs contact email'
     if jira:
         project = jira.project('MJA')
         issue = {
