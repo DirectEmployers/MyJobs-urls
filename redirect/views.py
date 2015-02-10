@@ -204,7 +204,7 @@ def email_redirect(request):
         attachment_data.append((name, content, content_type))
 
     addresses = getaddresses(to_email + cc)
-    individual = [addr[1].lower() for addr in addresses]
+    addresses = [addr[1].lower() for addr in addresses]
 
     prm_bcc = False
     try:
@@ -222,20 +222,19 @@ def email_redirect(request):
                              in envelope.get('to', [])]:
             prm_bcc = True
 
-    if prm_bcc or 'prm@my.jobs' in individual:
+    if prm_bcc or 'prm@my.jobs' in addresses:
         # post to my.jobs
         helpers.repost_to_mj(request.POST.copy(),
                              attachment_data)
         if hasattr(mail, 'outbox'):
             return HttpResponse(content='reposted')
         return HttpResponse(status=200)
-    if len(individual) != 1:
+    if len(addresses) != 1:
         # >1 recipients
         # or 0 recipients (everyone is bcc)
         # Probably not a guid@my.jobs email
-        helpers.log_failure(request.POST.dict())
         return HttpResponse(status=200)
-    hex_guid = addresses[0][1].split('@')[0]
+    hex_guid = addresses[0].split('@')[0]
 
     # shouldn't happen, but if someone somehow sends an
     # email with a view source attached, we should
@@ -250,7 +249,7 @@ def email_redirect(request):
         to_guid = '{%s}' % uuid.UUID(hex_guid)
         job = Redirect.objects.get(guid=to_guid)
     except ValueError:
-        helpers.log_failure(request.POST.dict())
+        # Not a guid
         return HttpResponse(status=200)
     except Redirect.DoesNotExist:
         email_dict['email_type'] = 'no_job'

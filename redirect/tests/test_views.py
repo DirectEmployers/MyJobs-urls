@@ -990,14 +990,7 @@ class EmailForwardTests(TestCase):
     def test_bad_email(self):
         self.submit_email()
 
-        email = mail.outbox.pop()
-        for field in [self.post_dict['to'][0], self.post_dict['from']]:
-            self.assertTrue(field in email.body)
-
-        self.assertEqual(email.from_email, self.post_dict['from'])
-        self.assertEqual(email.to, [settings.EMAIL_TO_ADMIN])
-        self.assertEqual(email.subject, 'My.jobs contact email')
-        self.assertTrue(self.post_dict['text'] in email.body)
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_bad_guid_email(self):
         self.post_dict['to'] = '%s@my.jobs' % ('1'*32)
@@ -1068,16 +1061,14 @@ class EmailForwardTests(TestCase):
 
         self.submit_email()
 
-        email = mail.outbox.pop()
-        self.assertTrue('My.jobs contact email' in email.subject)
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_too_many_emails(self):
         self.post_dict['to'] = 'test@example.com, foo@mail.my.jobs'
 
         self.submit_email()
 
-        email = mail.outbox.pop()
-        self.assertTrue('My.jobs contact email' in email.subject)
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_prm_email(self):
         """
