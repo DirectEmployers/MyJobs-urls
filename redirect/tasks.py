@@ -1,5 +1,7 @@
 import datetime
 
+from django.conf import settings
+
 from redirect.models import Redirect, RedirectArchive
 
 
@@ -9,30 +11,17 @@ def expired_to_archive_table():
     thirty days from Redirect to RedirectArchive.
 
     """
+
     thirty_days_ago = datetime.date.today() - datetime.timedelta(30)
     expired = Redirect.objects.filter(expired_date__lte=thirty_days_ago)
+
+    # If this isn't turned into a list the query will attempt to join
+    # Redirect and RedirectArchive, which won't work since they're on
+    # different databases.
+    expired_guids = list(expired.values_list('guid', flat=True))
+    RedirectArchive.objects.filter(guid__in=expired_guids).delete()
     add_redirects(RedirectArchive, expired)
     expired.delete()
-
-
-def unexpired_to_active_table():
-    """
-    Moves anything that isn't actually expired (expired_date==None) from
-    RedirectArchive to Redirect
-
-    """
-    not_expired = RedirectArchive.objects.filter(expired_date__isnull=True)
-    add_redirects(Redirect, not_expired)
-    not_expired.delete()
-
-
-def remove_duplicates():
-    """
-    Compares guids in the Redirect and RedirectArchive tables to find
-    duplicates. Removes the duplicates from the RedirectArchive table.
-
-    """
-    return
 
 
 def add_redirects(to_model, redirects):

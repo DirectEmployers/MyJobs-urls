@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.test import TestCase
 
@@ -38,8 +40,8 @@ class ViewSourceGroupTests(TestCase):
 
 class BaseRedirectTests(TestCase):
     def test_get_any(self):
-        redirect = factories.RedirectFactory()
-        archived_redirect = factories.RedirectArchiveFactory()
+        redirect = factories.RedirectFactory(guid=uuid4())
+        archived_redirect = factories.RedirectArchiveFactory(guid=uuid4())
 
         models.Redirect.objects.get_any(guid=redirect.guid)
         models.Redirect.objects.get_any(guid=archived_redirect.guid)

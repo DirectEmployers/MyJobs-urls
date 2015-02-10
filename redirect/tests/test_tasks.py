@@ -51,50 +51,28 @@ class TaskTests(TestCase):
             self.assertRaises(RedirectArchive.DoesNotExist,
                               RedirectArchive.objects.get, guid=redirect.guid)
 
-    def test_unexpired_to_active_table(self):
+    def test_expired_already_in_archive_table(self):
         """
-        Redirects that aren't actually expired should be moved from
-        the RedirectArchive table to the Redirect table.
+        Redirects in the Redirect table might've already been put in the
+        RedirectArchive and then readded to the Redirect table.
+        If this happens the entry from Redirect should overwrite
+        the RedirectArchive table when the redirect is re-archived.
 
         """
-        expired = RedirectArchiveFactory(guid=uuid4())
-        unexpired = RedirectArchiveFactory(expired_date=None, guid=uuid4())
+        thirty_one = date.today() - timedelta(31)
+        expired_redirect = RedirectFactory(job_title='Redirect',
+                                           expired_date=thirty_one)
+        archive_redirect = RedirectArchiveFactory(job_title='RedirectArchive',
+                                                  guid=expired_redirect.guid)
+        tasks.expired_to_archive_table()
 
-        tasks.unexpired_to_active_table()
-
-        # Expired jobs should still be in the RedirectArchive table.
-        RedirectArchive.objects.get(guid=expired.guid)
-
-        # Unexpired jobs (i.e. jobs with no expired_date) should not
-        # be kept in the RedirectArchive table.
-        self.assertRaises(RedirectArchive.DoesNotExist,
-                          RedirectArchive.objects.get, guid=unexpired.guid)
-
-        # Unexpired jobs should be moved to the Redirect table.
-        Redirect.objects.get(guid=unexpired.guid)
-
-        # Expired jobs should not be moved back to the Redirect table.
+        # The redirect should've been removed from the Redirect table.
         self.assertRaises(Redirect.DoesNotExist,
-                          Redirect.objects.get, guid=expired.guid)
+                          Redirect.objects.get, guid=expired_redirect.guid)
 
-    def test_remove_duplicates(self):
-        """
-        Duplicates guids across the Redirect - RedirectArchive tables should
-        be removed from the RedirectArchive table but not the Redirect table.
+        # The redirect should be in the RedirectArchive table.
+        redirect = RedirectArchive.objects.get(guid=archive_redirect.guid)
 
-        """
-        unexpired = RedirectFactory(guid=uuid4())
-        expired_duplicate = RedirectArchiveFactory(guid=unexpired.guid)
-        expired_not_duplicate = RedirectArchiveFactory(guid=uuid4())
-
-        tasks.remove_duplicates()
-
-        # Duplicates should not be removed from the Redirect table.
-        # Non-duplicates should be left alone.
-        # Redirect.objects.get(guid=unexpired.guid)
-        # RedirectArchiveFactory.objects.get(guid=expired_not_duplicate.guid)
-        #
-        # # Duplicates should be removed from the RedirectArchive table.
-        # self.assertRaises(RedirectArchive.DoesNotExist,
-        #                   RedirectArchive.objects.get,
-        #                   guid=expired_duplicate.guid)
+        # The redirect should've been updated to match the one that was
+        # in the Redirect table.
+        self.assertEqual(redirect.job_title, expired_redirect.job_title)
