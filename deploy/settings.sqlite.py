@@ -12,6 +12,14 @@ DATABASES = {
         'PASSWORD': '',
         'HOST': '',
         'PORT': '',
+    },
+    'archive': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'archive.db',
+        'USER': '',
+        'PASSWORD': '',
+        'HOST': '',
+        'PORT': '',
     }
 }
 
