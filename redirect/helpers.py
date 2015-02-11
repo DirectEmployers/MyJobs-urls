@@ -25,7 +25,8 @@ from django.utils.http import urlquote_plus
 
 from myjobs.models import User
 import redirect.actions
-from redirect.models import CanonicalMicrosite, DestinationManipulation
+from redirect.models import CanonicalMicrosite, DestinationManipulation, \
+    ViewSource
 
 
 STATE_MAP = {
@@ -246,6 +247,20 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
                                (microsite.canonical_microsite_url,
                                 guid,
                                 vs_to_use)
+                vs = ViewSource.objects.filter(
+                    view_source_id=vs_to_use).prefetch_related(
+                    'viewsourcegroup_set').first()
+                if vs is not None:
+                    group = vs.viewsourcegroup_set.first()
+                    if group is not None:
+                        if vs.include_ga_params:
+                            redirect_url = replace_or_add_query(
+                                redirect_url, '&utm_source={source}-DE'
+                                              '&utm_medium={group}'
+                                              '&utm_campaign={source}'.format(
+                                                  source=vs.name,
+                                                  group=group.name)
+                            )
                 if request.REQUEST.get('z') == '1':
                     # Enable adding vs and z to the query string; these
                     # will be passed to the microsite, which will pass
