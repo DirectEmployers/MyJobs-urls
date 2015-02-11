@@ -9,7 +9,6 @@ import urlparse
 import uuid
 
 from jira.client import JIRA
-import pysolr
 import markdown
 from testfixtures import Replacer
 
@@ -24,13 +23,14 @@ from django.utils import timezone
 from django.utils.http import urlquote_plus
 
 from myjobs.models import User
-from redirect import helpers
 from redirect.actions import sourcecodetag
-from redirect.models import (
-    DestinationManipulation, ExcludedViewSource, CompanyEmail)
-from redirect.tests.factories import (
-    RedirectFactory, CanonicalMicrositeFactory, DestinationManipulationFactory,
-    CustomExcludedViewSourceFactory, ViewSourceFactory, ViewSourceGroupFactory)
+from redirect.models import (DestinationManipulation, ExcludedViewSource,
+                             CompanyEmail)
+from redirect.tests.factories import (RedirectFactory, RedirectArchiveFactory,
+                                      CanonicalMicrositeFactory,
+                                      DestinationManipulationFactory,
+                                      CustomExcludedViewSourceFactory,
+                                      ViewSourceFactory, ViewSourceGroupFactory)
 from redirect.views import home
 
 GUID_RE = re.compile(r'([{\-}])')
@@ -65,13 +65,17 @@ def mock_search(self, q=None, kwargs=None):
     return Result(job)
 
 
+def clean_guid(guid):
+    return GUID_RE.sub('', guid).upper()
+
+
 class ViewSourceViewTests(TestCase):
     def setUp(self):
         self.client = Client()
         self.redirect = RedirectFactory()
         self.microsite = CanonicalMicrositeFactory()
         self.manipulation = DestinationManipulationFactory()
-        self.redirect_guid = GUID_RE.sub('', self.redirect.guid).upper()
+        self.redirect_guid = clean_guid(self.redirect.guid)
 
         self.factory = RequestFactory()
 
@@ -1006,14 +1010,7 @@ class EmailForwardTests(TestCase):
     def test_bad_email(self):
         self.submit_email()
 
-        email = mail.outbox.pop()
-        for field in [self.post_dict['to'][0], self.post_dict['from']]:
-            self.assertTrue(field in email.body)
-
-        self.assertEqual(email.from_email, self.post_dict['from'])
-        self.assertEqual(email.to, [settings.EMAIL_TO_ADMIN])
-        self.assertEqual(email.subject, 'My.jobs contact email')
-        self.assertTrue(self.post_dict['text'] in email.body)
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_bad_guid_email(self):
         self.post_dict['to'] = '%s@my.jobs' % ('1'*32)
@@ -1048,7 +1045,7 @@ class EmailForwardTests(TestCase):
         guid = '1'*32
         redirect = RedirectFactory(guid='{%s}' % uuid.UUID(guid),
                                    buid=self.redirect.buid,
-                                   uid=self.redirect.uid + 1)
+                                   uid=1)
         self.post_dict['to'] = ['%s@my.jobs' % guid]
         self.post_dict['text'] = 'Questions about stuff and things'
         self.post_dict['subject'] = 'Email forward success'
@@ -1062,7 +1059,7 @@ class EmailForwardTests(TestCase):
         guid = '1'*32
         redirect = RedirectFactory(guid='{%s}' % uuid.UUID(guid),
                                    buid=self.redirect.buid,
-                                   uid=self.redirect.uid + 1)
+                                   uid=1)
         self.post_dict['to'] = ['%s@my.jobs' % guid]
         self.post_dict['text'] = 'Questions about stuff and things'
         self.post_dict['subject'] = 'Email forward success'
@@ -1084,16 +1081,14 @@ class EmailForwardTests(TestCase):
 
         self.submit_email()
 
-        email = mail.outbox.pop()
-        self.assertTrue('My.jobs contact email' in email.subject)
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_too_many_emails(self):
         self.post_dict['to'] = 'test@example.com, foo@mail.my.jobs'
 
         self.submit_email()
 
-        email = mail.outbox.pop()
-        self.assertTrue('My.jobs contact email' in email.subject)
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_prm_email(self):
         """
@@ -1167,3 +1162,23 @@ class UpdateBUIDTests(TestCase):
         content = json.loads(resp.content)
         self.assertEqual(content['new_bu'], self.cm.buid + 1)
         self.assertEqual(content['updated'], 2)
+
+
+class RedirectViewTests(TestCase):
+    def test_get_redirect(self):
+        redirect = RedirectFactory(guid='{%s}' % uuid.uuid4())
+        expired_redirect = RedirectArchiveFactory(guid='{%s}' % uuid.uuid4())
+
+        # Follow a redirect in the Redirect table.
+        guid = clean_guid(redirect.guid)
+        response = self.client.get(reverse('home', args=[guid]), follow=True)
+        self.assertEqual(response.status_code, 301)
+
+        # Follow a redirect in the RedirectArchive table.
+        guid = clean_guid(expired_redirect.guid)
+        response = self.client.get(reverse('home', args=[guid]), follow=True)
+        self.assertEqual(response.status_code, 410)
+
+        # Don't follow a bad redirect.
+        response = self.client.get(reverse('home', args=['1'*32]), follow=True)
+        self.assertEqual(response.status_code, 404)

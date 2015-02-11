@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.db import models
+from django.db.models.query import QuerySet
 from django.db.models.signals import post_save
 from django.utils.translation import ugettext_lazy as _
 
@@ -64,13 +66,44 @@ class DestinationManipulation(models.Model):
     get_view_source_name.admin_order_field = 'view_source'
 
 
-class Redirect(models.Model):
+class RedirectMixin(object):
+    def get_any(self, *args, **kwargs):
+        """
+        Gets a redirect object (with matching args and kwargs)
+        from the first table with a match.
+
+        """
+        subclasses = BaseRedirect.__subclasses__()
+        # We always want to check the Redirect table first, so make
+        # sure it's first in the list.
+        subclasses.insert(0, subclasses.pop(subclasses.index(Redirect)))
+        for model in subclasses:
+            try:
+                return model.objects.get(*args, **kwargs)
+            except model.DoesNotExist:
+                pass
+            except model.MultipleObjectsReturned:
+                raise MultipleObjectsReturned
+        raise ObjectDoesNotExist
+
+
+class RedirectQuerySet(QuerySet, RedirectMixin):
+    pass
+
+
+class RedirectManager(models.Manager, RedirectMixin):
+    def get_query_set(self):
+        return RedirectQuerySet(self.model, using=self._db)
+
+
+class BaseRedirect(models.Model):
     """
     Contains most of the information required to determine how a url
     is to be transformed
     """
-    guid = models.CharField(max_length=38, primary_key=True,
-                            help_text=_('36-character hex string'))
+    guid = models.CharField(max_length=42, primary_key=True,
+                            help_text=_('42-character hex string'),
+                            db_index=True)
     buid = models.IntegerField(default=0,
                                help_text=_('Business unit ID for a given '
                                            'job provider'))
@@ -82,13 +115,27 @@ class Redirect(models.Model):
                                                 'added'))
     expired_date = models.DateTimeField(blank=True, null=True,
                                         help_text=_('Date that this job was '
-                                                    'marked as expired'))
+                                                    'marked as expired'),
+                                        db_index=True)
     job_location = models.CharField(max_length=255, blank=True)
     job_title = models.CharField(max_length=255, blank=True)
     company_name = models.TextField(blank=True)
 
+    objects = RedirectManager()
+
+    class Meta:
+        abstract = True
+
     def __unicode__(self):
         return u'%s for guid %s' % (self.url, self.guid)
+
+
+class Redirect(BaseRedirect):
+    pass
+
+
+class RedirectArchive(BaseRedirect):
+    pass
 
 
 class ATSSourceCode(models.Model):

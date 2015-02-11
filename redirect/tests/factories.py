@@ -21,11 +21,26 @@ class RedirectFactory(django.DjangoModelFactory):
 
     guid = '{12345678-90ab-cdef-1234-567890abcdef}'
     buid = 0
-    uid = 0
+    uid = None
     url = 'http://www.directemployers.org'
     new_date = datetime.now(tz=timezone.utc) - timedelta(minutes=30)
     # Unused for current testing but may be useful later
     expired_date = None
+    job_location = 'Indianapolis'
+    job_title = 'Programmer'
+    company_name = 'DirectEmployers'
+
+
+class RedirectArchiveFactory(django.DjangoModelFactory):
+    FACTORY_FOR = models.RedirectArchive
+
+    guid = '{12345678-90ab-cdef-1234-567890abcdef}'
+    buid = 0
+    uid = None
+    url = 'http://www.directemployers.org'
+    new_date = datetime.now(tz=timezone.utc) - timedelta(60)
+    # Unused for current testing but may be useful later
+    expired_date = datetime.now(tz=timezone.utc) - timedelta(30)
     job_location = 'Indianapolis'
     job_title = 'Programmer'
     company_name = 'DirectEmployers'
