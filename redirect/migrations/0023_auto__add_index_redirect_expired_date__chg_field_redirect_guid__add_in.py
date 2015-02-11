@@ -11,13 +11,7 @@ class Migration(SchemaMigration):
         # Adding index on 'Redirect', fields ['expired_date']
         db.create_index(u'redirect_redirect', ['expired_date'])
 
-        # Adding index on 'Redirect', fields ['guid']
-        db.create_index(u'redirect_redirect', ['guid'])
-
     def backwards(self, orm):
-        # Removing index on 'Redirect', fields ['guid']
-        db.delete_index(u'redirect_redirect', ['guid'])
-
         # Removing index on 'Redirect', fields ['expired_date']
         db.delete_index(u'redirect_redirect', ['expired_date'])
 

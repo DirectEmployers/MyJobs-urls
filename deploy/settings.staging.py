@@ -16,7 +16,7 @@ DATABASES = {
     'archive': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'redirect',
-        'USER': 'de_dbuser',
+        'USER': 'db_deuser',
         'PASSWORD': PROD_DB_PASSWD,
         'HOST': 'db-redirectarchivestaging.c9shuxvtcmer.us-east-1.rds.amazonaws.com',
         'PORT': '3306',

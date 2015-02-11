@@ -21,9 +21,6 @@ class Migration(SchemaMigration):
 
             # Adding index on 'Redirect', fields ['expired_date']
             db.create_index(u'redirect_redirectarchive', ['expired_date'])
-
-            # Adding index on 'Redirect', fields ['guid']
-            db.create_index(u'redirect_redirectarchive', ['guid'])
         else:
             db.create_table(u'redirect_redirectarchive', (
                 ('guid', self.gf('django.db.models.fields.CharField')(max_length=42, primary_key=True, db_index=True)),
