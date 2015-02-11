@@ -19,8 +19,11 @@ def expired_to_archive_table():
     # Redirect and RedirectArchive, which won't work since they're on
     # different databases.
     expired_guids = list(expired.values_list('guid', flat=True))
-    RedirectArchive.objects.filter(guid__in=expired_guids).delete()
+    for chunk in make_chunks(expired_guids):
+        RedirectArchive.objects.filter(guid__in=chunk).delete()
+
     add_redirects(RedirectArchive, expired)
+
     expired.delete()
 
 
@@ -37,7 +40,9 @@ def add_redirects(to_model, redirects):
     new_redirects = []
     for redirect in redirects:
         new_redirects.append(copy_redirect(to_model, redirect))
-    to_model.objects.bulk_create(new_redirects)
+
+    for chunk in make_chunks(new_redirects):
+        to_model.objects.bulk_create(chunk)
 
 
 def copy_redirect(model, existing_redirect):
@@ -64,3 +69,12 @@ def copy_redirect(model, existing_redirect):
                  job_location=existing_redirect.job_location,
                  job_title=existing_redirect.job_title,
                  company_name=existing_redirect.company_name)
+
+
+def make_chunks(l, n=1025):
+    """
+    Yield successive n-sized chunks from a list.
+
+    """
+    for i in xrange(0, len(l), n):
+        yield l[i:i+n]
