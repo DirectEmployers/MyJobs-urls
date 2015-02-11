@@ -71,7 +71,7 @@ def copy_redirect(model, existing_redirect):
                  company_name=existing_redirect.company_name)
 
 
-def make_chunks(l, n=1337):
+def make_chunks(l, n=1025):
     """
     Yield successive n-sized chunks from a list.
 
