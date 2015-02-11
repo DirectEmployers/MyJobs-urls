@@ -52,6 +52,7 @@ class ViewSourceFactory(django.DjangoModelFactory):
     view_source_id = 0
     name = 'View Source'
     microsite = True
+    include_ga_params = False
 
 
 class ATSSourceCodeFactory(django.DjangoModelFactory):

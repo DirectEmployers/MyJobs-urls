@@ -29,7 +29,8 @@ from redirect.models import (DestinationManipulation, ExcludedViewSource,
 from redirect.tests.factories import (RedirectFactory, RedirectArchiveFactory,
                                       CanonicalMicrositeFactory,
                                       DestinationManipulationFactory,
-                                      CustomExcludedViewSourceFactory)
+                                      CustomExcludedViewSourceFactory,
+                                      ViewSourceFactory, ViewSourceGroupFactory)
 from redirect.views import home
 
 GUID_RE = re.compile(r'([{\-}])')
@@ -884,6 +885,22 @@ class ViewSourceViewTests(TestCase):
         expected = 'http://us.jobs/msccn-referral.asp?gi=%s%s&cp=%s' % (
             self.redirect_guid, '1604', self.redirect.company_name)
         self.assertEqual(response['Location'], expected)
+
+    def test_default_google_analytics(self):
+        vs = ViewSourceFactory(include_ga_params=True)
+        group = ViewSourceGroupFactory(view_sources=[vs])
+
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          vs.view_source_id]))
+        expected = 'http://www.my.jobs/{guid}/job/?vs={vs}' \
+                   '&utm_source={source}-DE&utm_medium={group}' \
+                   '&utm_campaign={source}'.format(
+                       guid=self.redirect_guid, vs=vs.view_source_id,
+                       source=vs.name, group=group.name).replace(' ', '%20')
+
+        self.assertEqual(expected, response['Location'])
 
 
 class EmailForwardTests(TestCase):
