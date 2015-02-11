@@ -181,3 +181,5 @@ COMPRESS_CSS_HASHING_METHOD = 'hash'
 COMPRESS_OFFLINE = True
 
 COMPRESS_ENABLED = True
+
+DATABASE_ROUTERS = ['redirect.routers.ArchiveRouter']
