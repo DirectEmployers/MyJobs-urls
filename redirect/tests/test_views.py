@@ -874,8 +874,8 @@ class ViewSourceViewTests(TestCase):
             '?my.jobs.site.id=%s' % (site.pk + 1))
 
         self.assertEqual(response.status_code, 301)
-        self.assertTrue(response['Location'], sourcecodetag(self.redirect,
-                                                            self.manipulation))
+        self.assertEqual(response['Location'], sourcecodetag(self.redirect,
+                                                             self.manipulation))
 
     def test_msccn_redirect(self):
         response = self.client.get(
@@ -901,6 +901,47 @@ class ViewSourceViewTests(TestCase):
                        source=vs.name, group=group.name).replace(' ', '%20')
 
         self.assertEqual(expected, response['Location'])
+
+    def test_syndication_redirect_with_analytics(self):
+        """
+        Analytics parameters should be added to syndication redirects.
+        """
+        vs = ViewSourceFactory(include_ga_params=True)
+        group = ViewSourceGroupFactory(view_sources=[vs])
+        site = Site.objects.create(domain='google.com', name='google')
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          vs.view_source_id]) +
+            '?my.jobs.site.id=%s' % site.pk)
+        location = unquote(response['Location'])
+        self.assertTrue(location.startswith('http://%s' % site.domain))
+        for query in ['&utm_source=%s-DE' % vs.name,
+                      '&utm_medium=%s' % group.name,
+                      '&utm_campaign=%s' % vs.name]:
+            self.assertTrue(query in location)
+
+    def test_syndication_redirect_with_analytics_and_override(self):
+        """
+        Syndication redirects should include any source code overrides that
+        have been added.
+        """
+        vs = ViewSourceFactory(include_ga_params=True,
+                               view_source_id=self.manipulation.view_source)
+        group = ViewSourceGroupFactory(view_sources=[vs])
+        site = Site.objects.create(domain='google.com', name='google')
+        response = self.client.get(
+            reverse('home',
+                    args=[self.redirect_guid,
+                          vs.view_source_id]) +
+            '?my.jobs.site.id=%s&z=1&utm_source=test' % site.pk)
+        location = unquote(response['Location'])
+        self.assertTrue(location.startswith('http://%s' % site.domain))
+        for query in ['&utm_source=test',
+                      '&utm_medium=%s' % group.name,
+                      '&utm_campaign=%s' % vs.name,
+                      '&z=1']:
+            self.assertTrue(query in location)
 
 
 class EmailForwardTests(TestCase):
