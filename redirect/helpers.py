@@ -48,6 +48,24 @@ STATE_MAP = {
 }
 
 
+def add_view_source_group(url, view_source):
+    """
+    Add Google Analytics campaigns to the given url, if applicable.
+    """
+    vs = ViewSource.objects.filter(
+        view_source_id=view_source).prefetch_related(
+        'viewsourcegroup_set').first()
+    if (vs is not None and vs.include_ga_params
+            and vs.viewsourcegroup_set.exists()):
+        url = replace_or_add_query(
+            url, '&utm_source={source}-DE'
+                 '&utm_medium={group}'
+                 '&utm_campaign={source}'.format(
+                     source=vs.name,
+                     group=vs.viewsourcegroup_set.first().name))
+    return url
+
+
 def clean_guid(guid):
     """
     Removes non-hex characters from the provided GUID.
@@ -248,20 +266,7 @@ def get_redirect_url(request, guid_redirect, vsid, guid, debug_content=None):
                                (microsite.canonical_microsite_url,
                                 guid,
                                 vs_to_use)
-                vs = ViewSource.objects.filter(
-                    view_source_id=vs_to_use).prefetch_related(
-                    'viewsourcegroup_set').first()
-                if vs is not None:
-                    group = vs.viewsourcegroup_set.first()
-                    if group is not None:
-                        if vs.include_ga_params:
-                            redirect_url = replace_or_add_query(
-                                redirect_url, '&utm_source={source}-DE'
-                                              '&utm_medium={group}'
-                                              '&utm_campaign={source}'.format(
-                                                  source=vs.name,
-                                                  group=group.name)
-                            )
+                redirect_url = add_view_source_group(redirect_url, vs_to_use)
                 if request.REQUEST.get('z') == '1':
                     # Enable adding vs and z to the query string; these
                     # will be passed to the microsite, which will pass
@@ -699,6 +704,12 @@ def get_syndication_redirect(request, redirect, guid, view_source,
                 redirect_url = add_custom_queries(request, redirect_url,
                                                   debug_content)
 
+            redirect_url = add_view_source_group(redirect_url, view_source)
+            if request.REQUEST.get('z') == '1':
+                # Add all query parameters but my.jobs.site.id to redirect_url.
+                redirect_url = replace_or_add_query(
+                    redirect_url, '&%s' % request.META.get('QUERY_STRING'),
+                    exclusions=['my.jobs.site.id'])
             response = HttpResponsePermanentRedirect(redirect_url)
             if debug_content is not None:
                 debug_content.append('Syndication feed override: %s(%s)' %
