@@ -1,6 +1,7 @@
 import datetime
 
 from django.conf import settings
+from django.db import connection
 
 from redirect.models import Redirect, RedirectArchive
 
@@ -76,5 +77,8 @@ def make_chunks(l, n=1025):
     Yield successive n-sized chunks from a list.
 
     """
+    if connection.vendor == 'sqlite':
+        # SQLite has a default maximum number of SQL variables of 999
+        n = min(n, 999)
     for i in xrange(0, len(l), n):
         yield l[i:i+n]
