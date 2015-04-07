@@ -1,6 +1,5 @@
 import datetime
 
-from django.conf import settings
 from django.db import connection
 
 from redirect.models import Redirect, RedirectArchive
