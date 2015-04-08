@@ -14,5 +14,5 @@ python-memcached==1.53
 django-compressor==1.4
 pysolr==3.2.0
 Markdown==2.4
-jira-python==0.13
+jira==0.41
 xlrd==0.9.3
