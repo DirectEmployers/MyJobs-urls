@@ -226,10 +226,12 @@ class ViewSource(models.Model):
     name = models.CharField(max_length=255, blank=True)
     friendly_name = models.CharField(max_length=255, blank=True)
     microsite = models.BooleanField(help_text=_(
-        'Defunct; Use CanonicalMicrosite'))
+        'Defunct; Use CanonicalMicrosite'),
+        default=False)
     include_ga_params = models.BooleanField(
         help_text=_('Enables addition of Google Analytics parameters'),
         default=False)
+    view_source_type = models.IntegerField(default=0)
 
     class Meta:
         get_latest_by = 'view_source_id'
