@@ -588,7 +588,8 @@ def get_job_from_solr(guid):
     return None
 
 
-def send_response_to_sender(new_to, old_to, email_type, guid='', job=None):
+def send_response_to_sender(new_to, old_to, email_type, guid='', job=None,
+                            solr_job=None):
     """
     Send response to guid@my.jobs emails
 
@@ -611,7 +612,6 @@ def send_response_to_sender(new_to, old_to, email_type, guid='', job=None):
     else:
         to_parts = getaddresses(new_to)
         to = to_parts[0][0] or to_parts[0][1]
-        solr_job = get_job_from_solr(guid)
         title = ''
         description = ''
         if solr_job is not None:
