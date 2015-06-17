@@ -49,5 +49,5 @@ NEW_RELIC_TRACKING = True
 MIDDLEWARE_CLASSES += ('redirect.middleware.MyJobsRedirectMiddleware',)
 
 SOLR = {
-    'default': 'http://solr_server/solr'
+    'default': 'http://solr_server:8983/solr/seo'
 }
