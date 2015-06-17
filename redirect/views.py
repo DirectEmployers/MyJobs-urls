@@ -289,7 +289,7 @@ def email_redirect(request):
                    else u"This job ({title}) has expired.".format(
                        title=job.title))
     body = "\n".join([body, dashes, description])
-    html_body = "<br />".join([body, dashes, description])
+    html_body = "<br />".join([html_body, dashes, description])
 
     # We reached this point; the data should be good
     email = EmailMultiAlternatives(
