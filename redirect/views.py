@@ -292,7 +292,7 @@ def email_redirect(request):
                         if solr_job
                         else u"This job ({title}) has expired.".format(
                             title=job.title))
-    body = "\n".join([body, dashes, description])
+    body = "\r\n\r\n".join([body, dashes, description])
     html_body = "<br />".join([html_body, dashes, html_description])
 
     # We reached this point; the data should be good
